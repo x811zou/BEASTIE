@@ -44,5 +44,16 @@ TO DO
 
 
 ### Future
-1. take to Bill to discuss how to proceed next
+* check distribution for all bins, AF,D,R2
+
+* AF separate to three bins: < 1% rare, 1-5% uncommon, >5% common
+
+* separate SNPs into 100 bins, calculate mean (p_hat)=p and var(p_hat)=p(1-p)/N, check out relationship; read deseq2 mean/variance relationship
+
+* check whether those BAM files remove duplicates --> subset --> visualize in IGV for deletion region; check out WGS VCF, find 7-bp deletion for 125249, 125260: /data/reddylab/GSD
+
+* check whether those BAM files remove duplicates --> subset --> visualize in IGV for deletion region
+
+
+
 
