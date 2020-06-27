@@ -6,40 +6,72 @@ https://pandoc.org/installing.html
 Goal
 ======
 #### We want to improve prior for phasing error rate , 𝜋 , in BEASTIE model
-![alt text](figures/model_pi.jpg "BEASTIE model phasing error rate 𝜋")
 1. version 1.0: With simple assumption of low (10%) phasing error rate for data, we use arbitray beta(1,10) distribution centers at 0.09 (highlighted in the figure above) in BEASTIE model.
 2. version 2.0: Use individual data features to estimate more-informative phasing error rate for each SNP.
+![alt text](figures/model_pi.jpg "BEASTIE model phasing error rate 𝜋")
 
 Background
 ======
 #### What we learned from BEASTIE model performance already
-![alt text](figures/model_lowrate.jpg "BEASTIE model phasing error rate 𝜋")
 When we assume data with 10% phasing error rate by setting 𝜋 ~ beta(1,10), we observe:
 1. BEASTIE outperforms ADAM when true error rate belows 10%.
 2. BEASTIE outperforms ADAM when true error rate equal/above 10% with prior distribution centers at true error rate
 
 TO DO
 ======
-#### Step1: Build a more informative prior on phasing error parameter, 𝜋
-![alt text](figures/currentExpect.jpg "Logo Title Text 1")
+
+### Step1: Setting thresholds for filtering
+We want to divide interested features into bins/categories
+
+**Table: Data statistics (example data from NA12898 phased by shapeit)**
+![alt text](figures/NA12878_features.jpg "NA12878_features")
+
+**Table: Divide four features (for each pair of SNPs)**
+| smaller MAF between 2SNPs| distance between 2SNPs| d' between 2SNPs|r2 between 2SNPs|
+| -- |-- |-- |-- |
+| <1% (rare)|  <211 (lower than median)    |<0.9143 (lower than mean) | <0.63 (lower than median)|
+| 1%-5% (uncommon)|  >=211 (higher than median)    |>=0.9143 (higher than mean)| >=0.63 (higher than median) |
+| >5% (common)| | | |
+
+
+### Step2: Build a more informative prior on phasing error parameter, 𝜋
+![alt text](figures/currentExpect.jpg "currentExpect")
+
 ##### Current: simple assumption for low phasing error rate
 ```
 𝑔𝑒𝑛𝑒 𝑠𝑝𝑒𝑐𝑖𝑓𝑖𝑐 𝑝𝑟𝑖𝑜𝑟: 𝜋~𝑏𝑒𝑡𝑎(1,10)
 ```
 ##### Expect: integrate information from relative distance between hets/LD/L.R.R/genetics map
 ```
-ℎ𝑒𝑡𝑠−𝑠𝑖𝑡𝑒 𝑠𝑝𝑒𝑐𝑖𝑓𝑖𝑐 𝑝𝑟𝑖𝑜𝑟: 𝜋~𝑓(𝑑𝑖𝑠𝑡𝑎𝑛𝑐𝑒,𝐿.𝑅.𝑅)
+ℎ𝑒𝑡𝑠−𝑠𝑖𝑡𝑒 𝑠𝑝𝑒𝑐𝑖𝑓𝑖𝑐 𝑝𝑟𝑖𝑜𝑟: 𝜋~𝑓(𝑑𝑖𝑠𝑡𝑎𝑛𝑐𝑒,𝐿.𝑅.𝑅,etc)
 ```
-1. sample a value from an estimated distribution
-![alt text](figures/plan1_demo.jpg "Logo Title Text 1")
+1. sample a value from an estimated distribution. Here, we will explore examples in each feature listed in the table below, respectively
+* **Example1**: Group SNPs into **`22 chr`**, obtain mean/std to fit beta distribution
+* **Example2**: Group SNPs into **`100 bins`**, obtain mean/std to fit beta distribution
 
-* Example1: Divide SNPs into chr, obtain mean/std
-![alt text](figures/phaseError_bychr.jpg "Logo Title Text 1")
-![alt text](figures/example1_fittedBeta.jpg "Logo Title Text 1")
-* Example2: estimate a value from features
-![alt text](figures/plan2_demo.jpg "Logo Title Text 1")
-![alt text](figures/example12_fittedBeta_density.jpg "Logo Title Text 1")
-![alt text](figures/example12_fittedBeta_hist.jpg "Logo Title Text 1")
+![alt text](figures/plan1_demo.jpg "plan1_demo")
+
+
+Example1: group by Chr
+======
+
+**1. Filtering by distance**
+![alt text](figures/example1_fittedBeta.jpg "example1_fittedBetaDistribution")
+
+**2. Filtering by MAF**
+
+**3. Filtering by d'**
+
+**4. Filtering by r2**
+
+
+
+Example2
+======
+* **Example2**: estimate a value from features
+![alt text](figures/plan2_demo.jpg "plan2_demo")
+![alt text](figures/example12_fittedBeta_density.jpg "example12_fittedBeta_density")
+![alt text](figures/example12_fittedBeta_hist.jpg "example12_fittedBeta_hist")
 * conclusion:
 
 
