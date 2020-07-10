@@ -19,6 +19,8 @@ When we assume data with 10% phasing error rate by setting 𝜋 ~ beta(1,10), we
 
 TO DO
 ======
+![alt text](figures/ModelPrior_todo.png "ModelPrior_plan")
+
 
 ### Step1: Setting thresholds for filtering
 We want to divide interested features into bins/categories
@@ -41,7 +43,7 @@ We want to divide interested features into bins/categories
 ```
 𝑔𝑒𝑛𝑒 𝑠𝑝𝑒𝑐𝑖𝑓𝑖𝑐 𝑝𝑟𝑖𝑜𝑟: 𝜋~𝑏𝑒𝑡𝑎(1,10)
 ```
-##### Expect: integrate information from relative distance between hets/LD/L.R.R/genetics map
+##### Expect: integrate information from relati                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       ve distance between hets/LD/L.R.R/genetics map
 ```
 ℎ𝑒𝑡𝑠−𝑠𝑖𝑡𝑒 𝑠𝑝𝑒𝑐𝑖𝑓𝑖𝑐 𝑝𝑟𝑖𝑜𝑟: 𝜋~𝑓(𝑑𝑖𝑠𝑡𝑎𝑛𝑐𝑒,𝐿.𝑅.𝑅,etc)
 ```
@@ -54,7 +56,7 @@ We want to divide interested features into bins/categories
 
 Example1: group by Chr
 ======
-
+                                                                                                                                                                                                                                                                                                                                                                    
 **1. Filtering by distance**
 ![alt text](figures/example1_fittedBeta.jpg "example1_fittedBetaDistribution")
 
@@ -74,6 +76,19 @@ Example2
 ![alt text](figures/example12_fittedBeta_hist.jpg "example12_fittedBeta_hist")
 * conclusion:
 
+Example3
+======
+* **Example3**: estimate a value from estimated distribution with feature binning for SNPs
+![alt text](figures/plan3_demo.png "plan3 demo")
+
+**Table 3.1: example3 feature binning (for each pair of SNPs)**
+| smaller MAF | relative distance | d' |r2 |
+| -- |-- |-- |-- |
+| <1% (rare)|  <211 (lower than median)    |<0.9143 (lower than mean) | <0.63 (lower than median)|
+| 1%-5% (uncommon)|  >=211 (higher than median)    |>=0.9143 (higher than mean)| >=0.63 (higher than median) |
+| >5% (common)| | | |
+
+
 
 ### Future
 * check distribution for all bins, AF,D,R2
@@ -85,6 +100,7 @@ Example2
 * check whether those BAM files remove duplicates --> subset --> visualize in IGV for deletion region; check out WGS VCF, find 7-bp deletion for 125249, 125260: /data/reddylab/GSD
 
 * check whether those BAM files remove duplicates --> subset --> visualize in IGV for deletion region
+VCF:
 
 
 
