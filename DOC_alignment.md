@@ -4,8 +4,17 @@ Minimize reference bias
 ======
 **`Take home msg`**
 
-**`Comparing performance (SSE, precision, TPR), time cost, and reference bias, STAR EndtoEnd (disable soft-cliping) with WASP filtering allows us to identify true ASE signal with highest confidence. `**
+* **`Comparing performance (SSE, precision, TPR), time cost, and reference bias, STAR EndtoEnd (disable soft-cliping) with WASP filtering allows us to identify true ASE signal from het-SNPs with highest confidence. `**
+* **Aligners with local alignment mode (allow soft-clipping) performs beter in identifing indels**.
 
+**Summary**
+|Comparisons made/question asked |paper source| tools compared| conclusion|comments|
+|--|:--:|--|--|--|--|
+|Identification of known 15bp deletion|Sun et al 2016|TopHat 1, 2 (with Bowtie 1, 2), Bowtie 2, HISAT, HISAT2, STAR, GSNAP, RUM and BWA|**GSNAP** > STAR > HISAT2| **`GSNAP with input of SNPs may perform the best, but it requires an input of data generated using VCF. VCF source may cause bias.`**|
+|Identification of true het-SNPs|Hodgkinson et al 2016 |TopHat2 (with EndtoEnd use default 2 mismatches or 5 mismatches per read), STAR2 (with EndtoEnd and Local use default 10 mismatches per paired read)|**STAR2 EndtoEnd** and **Tophat2 EndtoEnd** have almost equal good performance in TPR and precision| **considering time efficiency, Star2 EndtoEnd is a better choice, comparing to Tophat2**|
+My workflow details
+======
+![alt text](figures/workflow4.jpg " ")
 **Data description:**
 
 Allele-specific expression (ASE) quantifies expression variation between the 2 haplotypes of a diploid individual distinguished by hets. It can be caused by effects of genetic regulatory variants in cis, nonsense-mediated decay triggered by varaints causing a premeature stop codon, and imprinting. It quantifies expression variation between the 2 haplotypes of a diploid individual distinguished by hets.
@@ -43,14 +52,57 @@ and/or	 keeping	 properly	 paired	 and	 uniquely	 mapped	 reads.	 Note	 that	 in
 perform	 the	 next	 step,	 only	 paired	 reads	 should	 be	 kept	 (non-paired	 reads	 will	 be	
 discarded	and	may	thus	bias	the	simulation).
 
-* [TopHat2: accurate alignment of transcriptomes in the presence of insertions, deletions and gene fusions, Kim et al 2013](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2013-14-4-r36) proposed a n
-
+* [TopHat2: accurate alignment of transcriptomes in the presence of insertions, deletions and gene fusions, Kim et al 2013](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2013-14-4-r36) demonstraes that TopHat2 first aligns reads **end to end** with Bowtie2 before trying spliced alignments. Thus if a read is aligned end to end with, for example, one to three mismatches, then without the realignment function, TopHat2 accepts that alignment and may miss a spliced alignment with fewer mismatches. (1) `--read-realign-edit-dist 0` can be used to realign reads in the spliced alignment phase that are mapped against either transcriptome or genome. This option identifies the most spliced pair alignments and read alignments in simulated data with small indels 1-3bps (Tophat2 realignment 0 > GSNAP > STAR 1pass > Tophat2 > MapSplice). (2) Tophat use Bowtie as its core read-alignment engine, and it also has its own Indel-finding algorithm to perform gapped extension that use dynamic programming. `edit-distance = 3` allows identifying indels up to 3bps. (3) For de novo alignment, TopHat2 with realignment had the highest sensitivity, followed by MapSplice. In conclusion: ***if gene annotations are not available, TopHat2 with its realignment algorithm produce the most complete set of alignments.***
 ```
 
 ```
-* [STAR: ultrafast universal RNA-seq aligner, Dobin et al 2013](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3530905/) proposed a n
+* [STAR: ultrafast universal RNA-seq aligner, Dobin et al 2013](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3530905/) provides a new ultrafast RNAseq aligner that performs sequential maximum mappable seed search followed by seed clustering and stitching. It is up to 50X faster than other aligners like TopHat. It is designed for short read sequencing reads (<= 200 bp). In default setting, the maximum number of mismatches was set at 10 per paired-end read, and the minimum/maximum intron sizes were set at 20 b/500 kb. 
 
-**My workflow details:**
+**STAR 2.1.2d**
+```
+STAR --runThreadN <Nthreads> --genomeDir <genome_path>
+--readFilesIn Read1.fastq Read2.fastq --alignIntronMin 20
+--alignIntronMax 500000 -- outFilterMismatchNmax 10
+```
+**GSNAP 2012-07-03**
+```
+gsnap -B 5 -t <Nthreads> -N 1 -A sam --max-mismatches 5
+--pairmax-rna 500000 -D <genome_path> -d <genome_name> Read1.fastq
+Read2.fastq
+```
+**TopHat 2.0.0**
+```
+tophat --solexa1.3-quals -p $1 -r172 --min-segment-intron 20 --maxsegment-intron 500000 --min-intron-length 20 --max-intron-length
+500000 <genome_name> Read1.fastq Read2.fastq
+```
+* [GSNAP](https://github.com/juliangehring/GMAP-GSNAP) provides a junction aware RNAseq alignment program wirks with both short and long sequence reads. They listed on website: GSNAP can detect splice junctions in individual reads.  You can detect splices using a probabilistic model using the **`--novelsplicing (or -N)`** flag. You can also detect splices from a set of splice sites (database) that you
+provide, using the **`--splicesites (or -s) flag`**. You may specify both
+flags, which will report splice junctions involving both known and
+novel sites.
+
+
+* [Indel detection from RNA-seq data: tool evaluation and strategies for accurate detection of actionable mutations, Sun et al 2016](https://academic.oup.com/bib/article/18/6/973/2562816) assess the performance from multiple aligners (***TopHat 1, 2 (with Bowtie 1, 2), Bowtie 2, HISAT, HISAT2, STAR, GSNAP, RUM and BWA***) using data with well-known **15 bp deletion** on exon where the coverage is about 100-150X in a clinical sample. (1) TopHat 1,2 did not have any reads with the deletion aligned because Bowtie2 is gapless alignment and TopHat2 uses EndtoEnd alignment mode. Thus, they concluded that **TopHat could not have good performance in aligning reads with intermediate indels**.(2) Bowtie2 with local alignment mode but not considering splicing identifies more soft-clipped reads around deletion region. no deletion marked with 50 bp reads, 8 bp deletion marked with 100 bp reads. (3) STAR did not mark any reads as deletion but soft clipped many for the 50 bp reads, but aligned a significant number of reads as deletion for the 100bp reads. (4) GSNAP aligns the highest number of deletion reads to the correct location wqith minimal soft clipping for both 50 and 100 bp reads. In summary, soft-clipped reads at the deletion edge by gapped or local alignment algorithm increase alignment sensitivity and can potentially be used for some variant calling programs to find SVs or indels thourght realignment. ***STAR, GSNAP and HISAT2 have good performance on Indel identification.***
+![alt text](figures/deletion.png " ")
+
+**Tophat 2.0.12**
+```
+-p 4 –G -r -150 --mate-std-dev 40
+```
+**HISAT or HISAT2**
+```
+--known-splicesite-infile all default settings
+```
+**STAR 2.3.1z** Sequential maximum mappable seed search followed by seed clustering and stitching
+```
+Default settings
+```
+**GSNAP**
+```
+--use-splicing –N 1
+```
+
+My workflow details
+======
 ![alt text](figures/workflow4.jpg " ")
 my code 
 ```
@@ -64,10 +116,11 @@ tophat -o $OutPATH --read-mismatches 5 --b2-np 0 --read-gap-length 10 --read-edi
 ```
 ```
 gmap-2019-03-15/bin/gsnap --gunzip -D gmap-2019-03-15/share -d hg19 R1.fastq.gz R2.fastq.gz -B 5 -t 20 -N 1 -A sam --max-mismatches 5 -A sam -o GsnapOutput.sam
+
 ```
 1. availble/popular alignment tools
 
-TOPHAT 
+TOPHAT is a popular spliced aligner for RNA-seq experiements. TopHat2 allows for variable-length indels with respect to the reference genome. In addition to de novo spliced alignment, TopHat2 can align reads across fusion breaks. 
 * default setting: allows for a max of 2 mismatches per read
 
 STAR is a popular alignment tool. STAR2 has lots of options to use, we want to choose the optimal one for ASE analysis. Thus, we will combine parameters from the options below:
