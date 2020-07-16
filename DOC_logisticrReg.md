@@ -1,40 +1,43 @@
-# Logistic regression for features on phasing error
-##### Weekly updates: 06/17/2020, 06/30/2020
+# Logistic regression model I
+##### Last updates: 07/15/2020
+Decide what to be included in the model
 
-Goal
+Finalize the model
 ======
-#### We want to explore data features, and then do logistic regression on phasing error
 
-TO DO
-======
-## Step1: Explore the feastures that have predictive power on phasing error
-
-##### four features distribution by class
-![alt text](figures/4features.png "Logo Title Text 1")
-##### four features distribution
-![alt text](figures/4features_all.png "Logo Title Text 1")
-##### dicatomize features
-![alt text](figures/feature_dicatomize.png "Logo Title Text 1")
-
-## Step2: Check mean-variance relationship & mean-square-error relationship
-binned data: data was binned by certain characteristics and then splitted randomly into 50 subgroups
+**`Take home msg`**
+* we choose **log10_distance** over **distance** because model with log10_distance has higher odds ratio. (Figure2)
+```
+Model                                  estimate     odds ratio         AIC
+Error ~ log10_distance                 1.10643     3.0235304727       14957
+Error ~ distance                       1.746e-06   1.00000175         18153
+```
+* we choose **d'** over **r2** because **model2** has higher AIC  compared to **model3** (Figure1)
 
 
-\overline{R}
+**Table1: model AIC**
+|Model| details| AIC|
+|--|--|--|
+|1|MAF + log10(distance) + d' + r2|12585|
+|2|MAF + log10(distance) + d'     |13429|
+|3|MAF + log10(distance) + r2     |12804|
+|4|MAF + log10(distance)          |14501|
+|5|MAF + d'                       |13908|
+|6|MAF + r2                       |13885|
+|7|log10(distance) + d'           |14217|
+|8|log10(distance) + r2           |12815|
+|9|log10(distance)                |14957|
+|10|d' + r2                       |13057|
+|11|d'                            |14871|
+|12|r2                            |13990|
+|13|MAF                           |18805|
 
-![alt text](figures/logreg_step2_plan.png "process of calculating the statistics")
-**sample_varaince**
-![alt text](figures/sample_variance.png "sample_variance")
-**standard error for binomial**
-![alt text](figures/se_binomial.png "standard error for binomial")
+**Figure1: model AIC**
 
-## Step3: Check sample variance and standard error for binomial on mean phasing error rate for binned data
+![alt text](figures/AIC.png "AIC")
 
 
-## Step3: logistic regression
-**1. Intercept model**
+**Figure2: distance and log distance**
+![alt text](figures/distance.png "distance")
+![alt text](figures/log10_distance.png "distance")
 
-**2. full model**
-##### logistic regression model shows that all four features (IVs) have significant affect on error (DV)
-![alt text](figures/logistic_full.png "logistic_full")
-**3. overfitted model (with all intxn terms)**

@@ -1,5 +1,5 @@
 # Alignment statistics comparison
-##### Weekly updates: 07/09/2020
+##### Last updates: 07/14/2020
 Minimize reference bias
 ======
 **`Take home msg`**
@@ -10,7 +10,7 @@ Minimize reference bias
 **Summary**
 |Comparisons made/question asked |paper source| tools compared| conclusion|comments|
 |--|:--:|--|--|--|--|
-|Identification of known 15bp deletion|Sun et al 2016|TopHat 1, 2 (with Bowtie 1, 2), Bowtie 2, HISAT, HISAT2, STAR, GSNAP, RUM and BWA|**GSNAP** > STAR > HISAT2| **`GSNAP with input of SNPs may perform the best, but it requires an input of data generated using VCF. VCF source may cause bias.`**|
+|Identification of known 15bp deletion|Sun et al 2016|TopHat 1, 2 (with Bowtie 1, 2), Bowtie 2, HISAT, HISAT2, STAR, GSNAP, RUM and BWA|**GSNAP** > STAR > HISAT2| **`GSNAP provided with SNP data may perform the best, but it is generated using VCF. VCF source may cause bias.`**|
 |Identification of true het-SNPs|Hodgkinson et al 2016 |TopHat2 (with EndtoEnd use default 2 mismatches or 5 mismatches per read), STAR2 (with EndtoEnd and Local use default 10 mismatches per paired read)|**STAR2 EndtoEnd** and **Tophat2 EndtoEnd** have almost equal good performance in TPR and precision| **considering time efficiency, Star2 EndtoEnd is a better choice, comparing to Tophat2**|
 My workflow details
 ======
