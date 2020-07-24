@@ -75,11 +75,34 @@ Read2.fastq
 tophat --solexa1.3-quals -p $1 -r172 --min-segment-intron 20 --maxsegment-intron 500000 --min-intron-length 20 --max-intron-length
 500000 <genome_name> Read1.fastq Read2.fastq
 ```
-* [GSNAP](https://github.com/juliangehring/GMAP-GSNAP) provides a junction aware RNAseq alignment program wirks with both short and long sequence reads. They listed on website: GSNAP can detect splice junctions in individual reads.  You can detect splices using a probabilistic model using the **`--novelsplicing (or -N)`** flag. You can also detect splices from a set of splice sites (database) that you
-provide, using the **`--splicesites (or -s) flag`**. You may specify both
+* [Fast and SNP-tolerant detection of complex variants and splicing in short reads](https://academic.oup.com/bioinformatics/article/26/7/873/212606)-->[GSNAP](https://github.com/juliangehring/GMAP-GSNAP) provides a junction aware RNAseq alignment program works with both short reads (<=300 bps). They listed on website: (1) GSNAP can detect splice junctions in individual reads.  You can detect splices using a probabilistic model using the **`--novelsplicing (or -N)`** flag. ~~(2) You can also detect splices from a set of splice sites (database) that you provide, using the **`--splicesites (or -s) flag`**. You may specify both
 flags, which will report splice junctions involving both known and
-novel sites.
+novel sites.~~ (3)**`SNP-tolerant alignment`** can align to a reference space instead of a single reference sequence, avoid treating minor alleles as mismatches and thereby penalizing those genotypes in the alignment process. **`-v`** “with longer reads
+now of 75 or more bp, GSNAP alignments are generally fine without
+SNP-tolerant alignment.”
 
+You can process VCF files using our program vcf_iit, like this:
+```
+sample="122687"
+vcf=/data/allenlab/scarlett/data/VCF/GSD/add_chr
+outs=/data/allenlab/scarlett/data/GsnapOutput/snpfile
+gunzip -c $vcf/$sample.*.vcf.gz | vcf_iit > $outs/$sample.snpfile.txt
+```
+Once you have built a <snpfile>.txt file using dbsnp_iit, vcf_iit, or
+gvf_iit, you create an IIT file by doing this --> creates <snpfile>.iit
+```
+cat $outs/$sample.snpfile.txt| iit_store -o $outs/$sample.snpfile
+```
+you can keep it in your own directory for your own use.  Then you
+need to create a reference space index and compressed genome by doing
+```
+snpindex -D /data/allenlab/scarlett/software/gsnap/gmap-2019-03-15/share -d hg19 -V $outs -v $sample.snpfile $sample.snpfile.iit
+```
+you can perform SNP-tolerant alignment by doing
+```
+fastqDir=/data/allenlab/scarlett/data/fastq
+/data/allenlab/scarlett/software/gsnap/gmap-2019-03-15/bin/gsnap -D /data/allenlab/scarlett/software/gsnap/gmap-2019-03-15/share -d hg19 -V $outs -v $outs/$sample.snpfile --use-sarray=0 $fastqDir/$sample/*R1.fastq $fastqDir/$sample/*R2.fastq -B 5 -t 20 -N 1 -A sam --max-mismatches 5 -A sam -o GsnapOutput.sam
+```
 
 * [Indel detection from RNA-seq data: tool evaluation and strategies for accurate detection of actionable mutations, Sun et al 2016](https://academic.oup.com/bib/article/18/6/973/2562816) assess the performance from multiple aligners (***TopHat 1, 2 (with Bowtie 1, 2), Bowtie 2, HISAT, HISAT2, STAR, GSNAP, RUM and BWA***) using data with well-known **15 bp deletion** on exon where the coverage is about 100-150X in a clinical sample. (1) TopHat 1,2 did not have any reads with the deletion aligned because Bowtie2 is gapless alignment and TopHat2 uses EndtoEnd alignment mode. Thus, they concluded that **TopHat could not have good performance in aligning reads with intermediate indels**.(2) Bowtie2 with local alignment mode but not considering splicing identifies more soft-clipped reads around deletion region. no deletion marked with 50 bp reads, 8 bp deletion marked with 100 bp reads. (3) STAR did not mark any reads as deletion but soft clipped many for the 50 bp reads, but aligned a significant number of reads as deletion for the 100bp reads. (4) GSNAP aligns the highest number of deletion reads to the correct location wqith minimal soft clipping for both 50 and 100 bp reads. In summary, soft-clipped reads at the deletion edge by gapped or local alignment algorithm increase alignment sensitivity and can potentially be used for some variant calling programs to find SVs or indels thourght realignment. ***STAR, GSNAP and HISAT2 have good performance on Indel identification.***
 ![alt text](figures/deletion.png " ")
