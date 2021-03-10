@@ -18,8 +18,16 @@ The following are required to install and run BIRD directly on your system:
 * [Python](https://www.python.org/downloads/release/python-360/) version 3.6 or higher is required.
   
 ### Installing and Compiling BEASTIE source code
-<place holder>
-  
+First download BEASTIE, copy its files into your working directory.
+```python
+s = "example code"
+print s
+```
+Then, install [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the environment variable $STAN to the directory where CmdStan has been installed. XXXXXXXXXXXX 
+```python
+s = "example code"
+print s
+```
 ## Running BEASTIE
 ### Prerequisites
 <place holder>
