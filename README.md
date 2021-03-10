@@ -13,9 +13,9 @@ BEASTIE can be downloaded from XXXX
 ## Installation
 ### Prerequisites for installing BEASTIE
 The following are required to install and run BIRD directly on your system:
-⋅⋅* BEASTIE has been tested on **Linux**. It may or may not work on other UNIX systems.
-⋅⋅* [CmdStan](https://mc-stan.org/users/interfaces/cmdstan) must be installed.  This is the command-line interface to the STAN statistical programming language.
-⋅⋅* [Python](https://www.python.org/downloads/release/python-360/) version 3.6 or higher is required.
+* BEASTIE has been tested on **Linux**. It may or may not work on other UNIX systems.
+* [CmdStan](https://mc-stan.org/users/interfaces/cmdstan) must be installed.  This is the command-line interface to the STAN statistical programming language.
+* [Python](https://www.python.org/downloads/release/python-360/) version 3.6 or higher is required.
   
 ### Installing and Compiling BEASTIE source code
 <place holder>
