@@ -6,7 +6,7 @@ BEASTIE has been found to be substantially more accurate than other tests based 
 ## Description
 To be added ...
 
-![alt text]: https://github.com/x811zou/BEASTIE/tree/master/workflow_figure/BEASTIE.png "BEASTIE"
+![alt text]: (https://github.com/x811zou/BEASTIE/tree/master/workflow_figure/BEASTIE.png "BEASTIE")
 
 ## Download
 BEASTIE can be downloaded from XXXX
