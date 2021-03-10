@@ -6,6 +6,8 @@ BEASTIE has been found to be substantially more accurate than other tests based 
 ## Description
 To be added ...
 
+Bill was here!
+
 ![alt text](workflow_figure/BEASTIE.png "BEASTIE")
 
 ## Download
