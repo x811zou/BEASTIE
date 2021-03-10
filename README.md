@@ -5,3 +5,32 @@ BEASTIE uses a Bayesian hierarchical model to integrate prior information with r
 BEASTIE has been found to be substantially more accurate than other tests based on the binomial distribution.
 
 ## Description
+<place holder>
+<figure>
+  
+## Download
+<place holder>
+  
+## Installation
+### Prerequisites for installing BEASTIE
+<place holder>
+  
+### Installing and Compiling BEASTIE source code
+<place holder>
+  
+## Running BEASTIE
+### Prerequisites
+<place holder>
+  
+### Input Format
+<place holder>
+
+## Running the model
+### Output Format
+<place holder>
+
+## Example Inputs and Outputs
+<place holder>
+
+  
+  
