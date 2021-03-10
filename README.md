@@ -30,8 +30,10 @@ print s
 ```
 ## Running BEASTIE
 ### Prerequisites
-<place holder>
-  
+Before the BEASTIE model can be run, you must create a file containing the read counts for each allele of a gene.  The format of this required file is described below.
+```
+gene_ID | ALT1 | REF1 | ALT2 | REF2 | pred_prob
+```
 ### Input Format
 <place holder>
 
