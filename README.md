@@ -42,7 +42,8 @@ gene_ID | ALT1 | REF1 | ALT2 | REF2 | pred_prob
 <place holder>
 
 ## Example Inputs and Outputs
-<place holder>
+In the $BEASTIE directory is a file XXX(....HG00096/NA12878/simulated?)
+
 
   
   
