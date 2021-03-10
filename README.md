@@ -35,11 +35,16 @@ Before the BEASTIE model can be run, you must create a file containing the read 
 gene_ID | ALT1 | REF1 | ALT2 | REF2 | pred_prob
 ```
 ### Input Format
-<place holder>
-
+The model must be run in the $STAN directory.  The following command will run the model on a set of variants:
+```
+BEASTIE.py A B C D > out.txt
+```
+The parameters are:
+* 1
+* 2
 ## Running the model
 ### Output Format
-<place holder>
+The output consists of XXX columns: ???
 
 ## Example Inputs and Outputs
 In the $BEASTIE directory is a file XXX(....HG00096/NA12878/simulated?)
