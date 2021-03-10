@@ -4,8 +4,7 @@ BEASTIE uses a Bayesian hierarchical model to integrate prior information with r
 BEASTIE has been found to be substantially more accurate than other tests based on the binomial distribution.
 
 ## Description
-<place holder>
-<figure>
+To be added ...
   
 ## Download
 BEASTIE can be downloaded from XXXX
@@ -21,12 +20,10 @@ The following are required to install and run BIRD directly on your system:
 First download BEASTIE, copy its files into your working directory.
 ```python
 s = "example code"
-print s
 ```
 Then, install [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the environment variable $STAN to the directory where CmdStan has been installed. XXXXXXXXXXXX 
 ```python
 s = "example code"
-print s
 ```
 ## Running BEASTIE
 ### Prerequisites
@@ -40,8 +37,10 @@ The model must be run in the $STAN directory.  The following command will run th
 BEASTIE.py A B C D > out.txt
 ```
 The parameters are:
-* 1
-* 2
+* A
+* B
+* C
+* D
 ## Running the model
 ### Output Format
 The output consists of XXX columns: ???
