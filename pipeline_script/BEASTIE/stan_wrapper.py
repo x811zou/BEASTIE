@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import (absolute_import, division, print_function,
-   unicode_literals, generators, nested_scopes, with_statement)
-from builtins import (bytes, dict, int, list, object, range, str, ascii,
-   chr, hex, input, next, oct, open, pow, round, super, filter, map, zip)
 import os
 import tempfile
 import sys
@@ -10,7 +6,6 @@ import math
 import ProgramName
 import TempFilename
 import getopt
-#from __future__ import print_function
 from Pipe import Pipe
 import pickle
 from StanParser import StanParser
@@ -86,7 +81,7 @@ def getFieldIndex(label,fields):
 
 
 def getMaxProb(thetas):
-    # 1. no transformation 
+    # 1. no transformation
     p_less1 = len([i for i in thetas if i < 1])/len(thetas)
     p_more1 = 1-p_less1
     max_prob1 = max(p_less1,p_more1)
@@ -105,7 +100,7 @@ def runVariant(model,fields,input_file,tmp_output_file,stan_output_file,init_fil
         #writeInputsFile(fields,tmp_output_file)
         writeInitializationFile(init_file)
         cmd = "%s sample data file=%s init=%s output file=%s" % (model,tmp_output_file,init_file,stan_output_file)
-    #/data/reddylab/scarlett/1000G/software/cmdstan/examples/ase/ase sample data file=/data/reddylab/scarlett/1000G/software/cmdstan/examples/ase/tmp_output.txt init=/data/reddylab/scarlett/1000G/software/cmdstan/examples/ase/initialization_stan.txt output file=/data/reddylab/scarlett/1000G/software/cmdstan/examples/ase/output_theta.txt      
+    #/data/reddylab/scarlett/1000G/software/cmdstan/examples/ase/ase sample data file=/data/reddylab/scarlett/1000G/software/cmdstan/examples/ase/tmp_output.txt init=/data/reddylab/scarlett/1000G/software/cmdstan/examples/ase/initialization_stan.txt output file=/data/reddylab/scarlett/1000G/software/cmdstan/examples/ase/output_theta.txt
         #cmd = "%s sample data file=%s output file=%s" % (model,tmp_output_file,stan_output_file)
         #print (cmd)
         os.system(cmd)# Parse MCMC output
@@ -127,7 +122,7 @@ def runVariant(model,fields,input_file,tmp_output_file,stan_output_file,init_fil
         #         thetas.append(theta)
         #         #print("append")
         #         #thetas.sort()
-        
+
         return med, max_prob1,max_prob2
     else:
         return (None,None,None)
@@ -210,7 +205,7 @@ ALPHA=0.05
 model_theta_med = []   # 150
 model_med_prob = []    # 150
 model_med_prob2 = []
-#   
+#
 baseline_theta_list=[] # 150
 
 with open(input_file,"rt") as IN:

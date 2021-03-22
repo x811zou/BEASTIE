@@ -1,12 +1,14 @@
+#!/usr/bin/env python
+
 ###############################################
-# usage: python run_ConfigFile.py 
+# usage: python run_ConfigFile.py
 ###############################################
 from typing import ForwardRef
 import ConfigFile
 import os
 
 ###############################################
-# read in parameters defined in parameter.txt 
+# read in parameters defined in parameter.txt
 ###############################################
 configFile=ConfigFile("parameter.txt")
 sample_name=configFile.lookup("Sample")
@@ -30,7 +32,7 @@ if os.path.exists(fastq_path):
         if "R1.fastq" in filename:
             R1_fastq = fastq_path+"/"+filename
         if "R2.fastq" in filename:
-            R2_fastq = fastq_path+"/"+filename        
+            R2_fastq = fastq_path+"/"+filename
 else:
     print("Oops! fastq path not existed. Try again ...")
     break
