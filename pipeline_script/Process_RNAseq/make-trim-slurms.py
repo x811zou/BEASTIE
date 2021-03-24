@@ -9,12 +9,6 @@
 # make-trim-slurms.py /data/reddylab/gjohnson/reference_data/trimmomatic_MHPS.fa fastq-dir trimmed-dir slurm-dir
 #make-trim-slurms.py /data/reddylab/gjohnson/reference_data/trimmomatic_MHPS.fa /data/reddylab/scarlett/1000G/data/fastq/HG00097 /data/reddylab/scarlett/1000G/data/trimmed_fastq/HG00097 /data/reddylab/scarlett/1000G/pipeline/trimming_slurm/HG00097
 
-from __future__ import (absolute_import, division, print_function, 
-   unicode_literals, generators, nested_scopes, with_statement)
-from builtins import (bytes, dict, int, list, object, range, str, ascii,
-   chr, hex, input, next, oct, open, pow, round, super, filter, map, zip)
-# The above imports should allow this program to run in both Python 2 and
-# Python 3.  You might need to update your version of module "future".
 import sys
 import os
 import ProgramName
