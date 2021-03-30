@@ -4,20 +4,23 @@
 # usage: python run_ConfigFile.py
 ###############################################
 from typing import ForwardRef
-import ConfigFile
+import configparser
 import os
 
 ###############################################
-# read in parameters defined in parameter.txt
+# read in parameters defined in parameter.cfg
 ###############################################
-configFile=ConfigFile("parameter.txt")
-sample_name=configFile.lookup("Sample")
-fastq_path=configFile.lookup("fastqPath")
-vcf_file=configFile.lookup("vcfFile")
-model_input_path=configFile.lookup("modelInputPath")
-model_input=configFile.lookup("modelInput")
-sigma=configFile.lookup("Sigma")
-model_output_folder=configFile.lookup("modelOutputFolder")
+config = configparser.ConfigParser()
+config.read("parameter.cfg")
+inputs = config['inputs']
+sample_name = inputs["Sample"]
+fastq_path = inputs["fastqPath"]
+vcf_file = inputs["vcfFile"]
+model_input_path = inputs["modelInputPath"]
+model_input = inputs["modelInput"]
+sigma = inputs["Sigma"]
+model_output_folder = inputs["modelOutputFolder"]
+
 ###############################################
 # data processing step by step
 ###############################################
