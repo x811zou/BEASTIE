@@ -6,26 +6,24 @@ BEASTIE has been found to be substantially more accurate than other tests based 
 ## Description
 To be added ...
 
-Bill was here!
-
 ![alt text](workflow_figure/BEASTIE.png "BEASTIE")
 
 ## Download
 BEASTIE can be downloaded from XXXX
-  
+
 ## Installation
 ### Prerequisites for installing BEASTIE
 The following are required to install and run BIRD directly on your system:
 * BEASTIE has been tested on **Linux**. It may or may not work on other UNIX systems.
 * [CmdStan](https://mc-stan.org/users/interfaces/cmdstan) must be installed.  This is the command-line interface to the STAN statistical programming language.
 * [Python](https://www.python.org/downloads/release/python-360/) version 3.6 or higher is required.
-  
+
 ### Installing and Compiling BEASTIE source code
 First download BEASTIE, copy its files into your working directory.
 ```python
 s = "example code"
 ```
-Then, install [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the environment variable $STAN to the directory where CmdStan has been installed. XXXXXXXXXXXX 
+Then, install [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the environment variable $STAN to the directory where CmdStan has been installed. XXXXXXXXXXXX
 ```python
 s = "example code"
 ```
@@ -51,7 +49,3 @@ The output consists of XXX columns: ???
 
 ## Example Inputs and Outputs
 In the $BEASTIE directory is a file XXX(....HG00096/NA12878/simulated?)
-
-
-  
-  

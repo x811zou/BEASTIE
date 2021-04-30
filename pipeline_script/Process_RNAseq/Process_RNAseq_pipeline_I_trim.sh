@@ -1,14 +1,22 @@
 #!/bin/bash
-#sh Process_RNAseq_pipeline_I_trim.sh <sample> <ref> <fastq_Dir>
+# ./Process_RNAseq_pipeline_I_trim.sh <trimmomatic jar location> <illumina adapter fasta> <sample> <fastq dir> <processing output dir>
 
-sample=$1
-fastq_Dir=$2
-fastq_R1=$fastq_Dir/*1.fastq.gz
-fastq_R2=$fastq_Dir/*2.fastq.gz
-pipelineDir=/Process_RNAseq
-mkdir -p $pipelineDir
-mkdir -p $pipelineDir/$sample
-mkdir -p $pipelineDir/$sample/trimmed_fastq
+trimmomatic=${1}
+illuminaAdapters=${2}
+sample=${3}
+fastqDir=${4}
+pipelineDir=${5:-./Process_RNAseq}
+
+processingOutputDir="${pipelineDir}/${sample}/trimmed_fastq"
+mkdir -p ${processingOutputDir}
+
 ####################################
 echo "step1.1: trim fastq"
-sh step1_trim_fastq.sh $fastq_R1 $fastq_R2 $pipelineDir/$sample/trimmed_fastq $sample
+java -jar ${trimmomatic} PE -threads 16 -phred33 "${fastqDir}"/*1.fastq.gz "${fastqDir}"/*2.fastq.gz \
+    ${processingOutputDir}/${sample}_FWD_paired.fq.gz \
+    ${processingOutputDir}/${sample}_FWD_unpaired.fq.gz \
+    ${processingOutputDir}/${sample}_REV_paired.fq.gz \
+    ${processingOutputDir}/${sample}_REV_unpaired.fq.gz \
+    ILLUMINACLIP:${illuminaAdapters}:2:30:10:8:TRUE \
+    LEADING:30 TRAILING:30 SLIDINGWINDOW:4:15 MINLEN:36
+

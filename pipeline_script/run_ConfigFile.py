@@ -3,85 +3,106 @@
 ###############################################
 # usage: python run_ConfigFile.py
 ###############################################
-from typing import ForwardRef
+
 import configparser
 import os
+import os.path
+from subprocess import check_call, CalledProcessError
 
 ###############################################
-# read in parameters defined in parameter.cfg
+# read in parameters defined in parameters.cfg
 ###############################################
 config = configparser.ConfigParser()
-config.read("parameter.cfg")
+config.read('parameters.cfg')
+
 inputs = config['inputs']
-sample_name = inputs["Sample"]
-fastq_path = inputs["fastqPath"]
-vcf_file = inputs["vcfFile"]
-model_input_path = inputs["modelInputPath"]
-model_input = inputs["modelInput"]
-sigma = inputs["Sigma"]
-model_output_folder = inputs["modelOutputFolder"]
+fastq_path = inputs['fastqPath']
+illuminaAdapters = inputs['illuminaAdapterFasta']
+model_input_path = inputs['modelInputPath']
+model_input = inputs['modelInput']
+sample_name = inputs['sample']
+sigma = inputs['sigma']
+vcf_file = inputs['vcfFile']
+
+outputs = config['outputs']
+process_dir = outputs['processDirectory']
+model_output_folder = outputs['modelOutputFolder']
+
+programs = config['programs']
+trimmomatic = programs['trimmomatic']
 
 ###############################################
 # data processing step by step
 ###############################################
 # step0. check data requirement
 ### check the existence of RNAseq fastq file and VCF file path
-### fastq path requirement: fastq path should have files containing "*1.fastq.gz" and "*2.fastq.gz"
-R1_fastq=""
-R2_fastq=""
-VCF=""
+### fastq path requirement: fastq path should have files containing '*1.fastq.gz' and '*2.fastq.gz'
+rnaSeq1_fastq = False
+rnaSeq2_fastq = False
+
 if os.path.exists(fastq_path):
     for filename in os.listdir(fastq_path):
-        if "R1.fastq" in filename:
-            R1_fastq = fastq_path+"/"+filename
-        if "R2.fastq" in filename:
-            R2_fastq = fastq_path+"/"+filename
+        if '1.fastq' in filename:
+            rnaSeq1_fastq = True
+        if '2.fastq' in filename:
+            rnaSeq2_fastq = True
 else:
-    print("Oops! fastq path not existed. Try again ...")
-    break
-if not (R1_fastq or R2_fastq):
-    print("Oops! fastq files could not be located. Try again ...")
-    break
+    print(f"Oops! fastq path ({fastq_path}) doesn't exist. Please try again ...")
+    exit(1)
 
-if os.path.isfile(vcf_file):
-    VCF = vcf_file
-else:
-    print("Oops! VCF file not existed. Try again ...")
-    break
+if not (rnaSeq1_fastq or rnaSeq2_fastq):
+    print("""Oops! fastq files could not be located. The fastq directory should contain files with names matching
+        *1.fastq.gz
+        *2.fastq.gz
+    Please try again ...""")
+    exit(1)
+
+if not os.path.isfile(vcf_file):
+    print(f"Oops! VCF file ({vcf_file}) not found. Please try again ...")
+    exit(1)
+
 ###############################################
 # Process RNAseq & VCF
 ###############################################
 #### step1.1 trimming fastq
-cmd = "sh ./Process_RNAseq/Process_RNAseq_pipeline_I_trim.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
-os.system(cmd)
+try:
+    cmd = f"./Process_RNAseq/Process_RNAseq_pipeline_I_trim.sh \"{trimmomatic}\" \"{illuminaAdapters}\" \"{sample_name}\" \"{fastq_path}\" \"{process_dir}\""
+    check_call(cmd, shell=True)
+except CalledProcessError as cpe:
+    print(cpe.stderr)
+    exit(cpe.returncode)
+
 #### step1.2 RNAseq fastq file alignment
-cmd = "sh ./Process_RNAseq/Process_RNAseq_pipeline_II_align.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
-os.system(cmd)
+cmd = "./Process_RNAseq/Process_RNAseq_pipeline_II_align.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
+check_call(cmd, shell=True)
+
 #### step1.3 clean VCF files
-cmd = "sh ./Process_VCF/Process_VCF_pipeline_I.extractVCF.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
-os.system(cmd)
+cmd = "./Process_VCF/Process_VCF_pipeline_I.extractVCF.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
+check_call(cmd, shell=True)
+
 #### step1.4 extract het sites information and store it in a file for mpileup
-cmd = "sh ./Process_VCF/Process_VCF_pipeline_II_hetsMeta.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
-os.system(cmd)
+cmd = "./Process_VCF/Process_VCF_pipeline_II_hetsMeta.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
+check_call(cmd, shell=True)
+
 #### step1.5 mpileup
-cmd = "sh ./Process_RNAseq/Process_RNAseq_pipeline_III_mpileup.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
-os.system(cmd)
+cmd = "./Process_RNAseq/Process_RNAseq_pipeline_III_mpileup.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
+check_call(cmd, shell=True)
 
 ###############################################
 # Phasing
 ###############################################
 #### step2.1 prepare VCF
-cmd = "sh ./Phasing/step1_prepareVCF.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
-os.system(cmd)
+cmd = "./Phasing/step1_prepareVCF.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
+check_call(cmd, shell=True)
+
 #### step2.2 Phasing
-cmd = "sh ./Phasing/step2_phasing.slurm %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
-os.system(cmd)
+cmd = "./Phasing/step2_phasing.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
+check_call(cmd, shell=True)
 
 ###############################################
 # BEASTIE
 ###############################################
 ### (for now) requires user to make the input file in a format that can be used for BEASTIE
 #### step3.1 run BEASTIE
-cmd = "python ./BEASTIE/wrapper.py %s" % (model_input,sigma,0,"BEASTIE",model_input_path,model_output_folder)
-os.system(cmd)
-
+cmd = f"python ./BEASTIE/wrapper.py {model_input} {sigma} 0 BEASTIE {model_input_path} {model_output_folder}"
+check_call(cmd, shell=True)
