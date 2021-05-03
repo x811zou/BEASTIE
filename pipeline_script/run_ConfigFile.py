@@ -16,12 +16,16 @@ config = configparser.ConfigParser()
 config.read('parameters.cfg')
 
 inputs = config['inputs']
+annotationDir = config['annoDir']
 fastq_path = inputs['fastqPath']
 illuminaAdapters = inputs['illuminaAdapterFasta']
+mismatch_n = inputs['mismatchN']
 model_input_path = inputs['modelInputPath']
 model_input = inputs['modelInput']
+ref_genome = inputs['refGenome']
 sample_name = inputs['sample']
 sigma = inputs['sigma']
+star_ind = inputs['startIndex']
 vcf_file = inputs['vcfFile']
 
 outputs = config['outputs']
@@ -29,6 +33,7 @@ process_dir = outputs['processDirectory']
 model_output_folder = outputs['modelOutputFolder']
 
 programs = config['programs']
+picard = programs['picard']
 trimmomatic = programs['trimmomatic']
 
 ###############################################
@@ -73,8 +78,12 @@ except CalledProcessError as cpe:
     exit(cpe.returncode)
 
 #### step1.2 RNAseq fastq file alignment
-cmd = "./Process_RNAseq/Process_RNAseq_pipeline_II_align.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
-check_call(cmd, shell=True)
+try:
+    cmd = f"./Process_RNAseq/Process_RNAseq_pipeline_II_align.sh \"{sample_name}\" \"{ref_genome}\" \"{star_ind}\" \"{mismatch_n}\" \"{picard}\" \"{process_dir}\""
+    check_call(cmd, shell=True)
+except CalledProcessError as cpe:
+    print(cpe.stderr)
+    exit(cpe.returncode)
 
 #### step1.3 clean VCF files
 cmd = "./Process_VCF/Process_VCF_pipeline_I.extractVCF.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
