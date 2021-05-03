@@ -28,6 +28,13 @@ Then, install [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set t
 s = "example code"
 ```
 ## Running BEASTIE
+### Dependencies
+* [Trimmomatic](https://github.com/usadellab/Trimmomatic) - put location of .jar file in parameters.cfg
+* [samtools](https://github.com/samtools/samtools)
+* [bedtools2](https://github.com/arq5x/bedtools2)
+* [STAR](https://github.com/alexdobin/STAR)
+* [picard](https://broadinstitute.github.io/picard/) - put location of .jar file in parameters.cfg
+
 ### Prerequisites
 Before the BEASTIE model can be run, you must create a file containing the read counts for each allele of a gene.  The format of this required file is described below.
 ```
