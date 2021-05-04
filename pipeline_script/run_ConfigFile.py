@@ -103,7 +103,7 @@ check_call(cmd, shell=True)
 
 #### step1.5 mpileup
 try:
-    cmd = f"./Process_RNAseq/Process_RNAseq_pipeline_III_mpileup.sh \"{sample_name}\" \"{ref_genome}\" \"{mismatch_n}\" \"{hets_meta_positions}\" \"{bam}\" \"{process_dir}\""
+    cmd = f"./Process_RNAseq/Process_RNAseq_pipeline_III_mpileup.sh \"{sample_name}\" \"{ref_genome}\" \"{mismatch_n}\" \"{hets_meta_positions}\" \"{bam}\" \"{rna_pipeline_dir}\""
     check_call(cmd, shell=True)
 except CalledProcessError as cpe:
     print(cpe.stderr)
