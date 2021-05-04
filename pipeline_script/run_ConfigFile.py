@@ -17,7 +17,9 @@ config.read('parameters.cfg')
 
 inputs = config['inputs']
 annotationDir = config['annoDir']
+bam = config['bam']
 fastq_path = inputs['fastqPath']
+hets_meta_positions = inputs['hetsMetaPositions']
 illuminaAdapters = inputs['illuminaAdapterFasta']
 mismatch_n = inputs['mismatchN']
 model_input_path = inputs['modelInputPath']
@@ -100,8 +102,12 @@ cmd = "./Process_VCF/Process_VCF_pipeline_II_hetsMeta.sh %s" % (ref,star_ind,Ann
 check_call(cmd, shell=True)
 
 #### step1.5 mpileup
-cmd = "./Process_RNAseq/Process_RNAseq_pipeline_III_mpileup.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
-check_call(cmd, shell=True)
+try:
+    cmd = f"./Process_RNAseq/Process_RNAseq_pipeline_III_mpileup.sh \"{sample_name}\" \"{ref_genome}\" \"{mismatch_n}\" \"{hets_meta_positions}\" \"{bam}\" \"{rna_pipeline_dir}\""
+    check_call(cmd, shell=True)
+except CalledProcessError as cpe:
+    print(cpe.stderr)
+    exit(cpe.returncode)
 
 ###############################################
 # Phasing

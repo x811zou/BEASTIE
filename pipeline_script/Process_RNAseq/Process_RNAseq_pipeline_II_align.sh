@@ -3,13 +3,13 @@
 sample="${1}"
 ref="${2}"
 star_ind="${3}"
-mismatch_N="${4}"
+mismatchN="${4}"
 picard="${5}"
 pipelineDir="${6:-./Process_RNAseq}"
 
 fastqDir="${pipelineDir}/${sample}/trimmed_fastq"
 VCF="${pipelineDir}/${sample}/chr_vcf/${sample}_chr.vcf"
-outDir="${pipelineDir}/${sample}/star2pass_EndtoEnd_wasp/mismatch${mismatch_N}"
+outDir="${pipelineDir}/${sample}/star2pass_EndtoEnd_wasp/mismatch${mismatchN}"
 
 echo "====================================================================="
 
