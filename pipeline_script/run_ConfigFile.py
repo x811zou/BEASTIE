@@ -26,11 +26,13 @@ ref_genome = inputs['refGenome']
 sample_name = inputs['sample']
 sigma = inputs['sigma']
 star_ind = inputs['startIndex']
+vcf_dir = inputs['vcfDir']
 vcf_file = inputs['vcfFile']
 
 outputs = config['outputs']
-process_dir = outputs['processDirectory']
+rna_pipeline_dir = outputs['rnaPipelineDirectory']
 model_output_folder = outputs['modelOutputFolder']
+vcf_pipeline_dir = outputs['vcfPipelineDirectory']
 
 programs = config['programs']
 picard = programs['picard']
@@ -71,7 +73,7 @@ if not os.path.isfile(vcf_file):
 ###############################################
 #### step1.1 trimming fastq
 try:
-    cmd = f"./Process_RNAseq/Process_RNAseq_pipeline_I_trim.sh \"{trimmomatic}\" \"{illuminaAdapters}\" \"{sample_name}\" \"{fastq_path}\" \"{process_dir}\""
+    cmd = f"./Process_RNAseq/Process_RNAseq_pipeline_I_trim.sh \"{trimmomatic}\" \"{illuminaAdapters}\" \"{sample_name}\" \"{fastq_path}\" \"{rna_pipeline_dir}\""
     check_call(cmd, shell=True)
 except CalledProcessError as cpe:
     print(cpe.stderr)
@@ -79,15 +81,19 @@ except CalledProcessError as cpe:
 
 #### step1.2 RNAseq fastq file alignment
 try:
-    cmd = f"./Process_RNAseq/Process_RNAseq_pipeline_II_align.sh \"{sample_name}\" \"{ref_genome}\" \"{star_ind}\" \"{mismatch_n}\" \"{picard}\" \"{process_dir}\""
+    cmd = f"./Process_RNAseq/Process_RNAseq_pipeline_II_align.sh \"{sample_name}\" \"{ref_genome}\" \"{star_ind}\" \"{mismatch_n}\" \"{picard}\" \"{rna_pipeline_dir}\""
     check_call(cmd, shell=True)
 except CalledProcessError as cpe:
     print(cpe.stderr)
     exit(cpe.returncode)
 
 #### step1.3 clean VCF files
-cmd = "./Process_VCF/Process_VCF_pipeline_I.extractVCF.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
-check_call(cmd, shell=True)
+try:
+    cmd = f"./Process_VCF/Process_VCF_pipeline_I.extractVCF.sh \"{sample_name}\" \"{vcf_dir}\" \"{vcf_pipeline_dir}\""
+    check_call(cmd, shell=True)
+except CalledProcessError as cpe:
+    print(cpe.stderr)
+    exit(cpe.returncode)
 
 #### step1.4 extract het sites information and store it in a file for mpileup
 cmd = "./Process_VCF/Process_VCF_pipeline_II_hetsMeta.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
