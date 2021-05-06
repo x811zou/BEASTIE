@@ -16,7 +16,8 @@ config = configparser.ConfigParser()
 config.read('parameters.cfg')
 
 inputs = config['inputs']
-annotationDir = config['annoDir']
+annotation_dir = config['annotationDir']
+annotation_gtf_file = config['annotationGtfFile']
 bam = config['bam']
 fastq_path = inputs['fastqPath']
 hets_meta_positions = inputs['hetsMetaPositions']
@@ -98,8 +99,12 @@ except CalledProcessError as cpe:
     exit(cpe.returncode)
 
 #### step1.4 extract het sites information and store it in a file for mpileup
-cmd = "./Process_VCF/Process_VCF_pipeline_II_hetsMeta.sh %s" % (ref,star_ind,AnnoDir,pipelineDir,outDir,sample_name)
-check_call(cmd, shell=True)
+try:
+    cmd = f"../Process_VCF/Process_VCF_pipeline_II_hetsMeta.sh \"{sample_name}\"  \"{vcf_dir}\" \"{annotation_gtf_file}\" \"{annotation_dir}\" \"{vcf_pipeline_dir}\""
+    check_call(cmd, shell=True)
+except CalledProcessError as cpe:
+    print(cpe.stderr)
+    exit(cpe.returncode)
 
 #### step1.5 mpileup
 try:
