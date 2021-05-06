@@ -1,25 +1,28 @@
 #!/bin/bash
 
-module load python/3.7.4-gcb01
+sample="${1}"
+vcfDir="${2}"
+annoGtfFile="${3}"
+annoGtfDir="${4}"
+pipelineDir="${5:-./Process_VCF}"
 
-sample=$1
-vcfDir=$2
-PipelineDir=/Process_VCF
-#vcfDir=/data/allenlab/scarlett/data/VCF/GSD/DNA_vcf/${sample}.vcf.recode.vcf.gz
-#PipelineDir=/data/allenlab/scarlett/result/project_ASE/Process_VCF
-mkdir -p $PipelineDir
-outDir=$PipelineDir/$sample
-mkdir -p $outDir
-echo "step1: extract het sites for mpileup"${sample}
-mkdir -p $outDir/hetsMeta
-mkdir -p $outDir/hetsDict
-mkdir -p $outDir/hetsDict/genom_all
-mkdir -p $outDir/hetsDict/trans_all
-python ./Process_VCF/step1_extracthets.py $sample $vcfDir $outDir  
+vcfFile = ${vcfDir}/${sample}.vcf.recode.vcf.gz
 
-#### if input sample is a list
-#for sample in "123375" "125249" "125260" "122687" "122698" "123667"
-#do
-#done
+outDir=${pipelineDir}/${sample}
+mkdir -p ${outDir}
 
+echo "step 1: split the annotation file by chromosome"
+for N in {1..22}; do
+    echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start with chr${N}"
+    vcftools --vcf ${annoGtfFile} --chr chr${N} --out ${annoGtfDir}/chr${N} --recode
+    mv ${annoGtfDir}/chr${N}.recode.vcf ${annoGtfDir}/chr${N}.gtf
+done
 
+echo "step 2: extract het sites for mpileup${sample}"
+mkdir -p ${outDir}/hetsMeta
+python ./step1_extracthets.py ${sample} ${vcfFile} ${annoGtfDir} ${outDir}
+
+echo "step 3: remove per-chromosome annotations"
+for N in {1..22}; do
+    rm ${annoGtfDir}/chr${N}.gtf
+done
