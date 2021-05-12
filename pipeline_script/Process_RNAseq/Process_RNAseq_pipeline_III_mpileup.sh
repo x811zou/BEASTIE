@@ -11,7 +11,7 @@ outDir="${pipelineDir}/${sample}/star2pss_EndtoEnd_wasp/mismatch${mismatchN}/mpi
 mkdir -p ${outDir}
 
 pileup_out="${outDir}/Allchr_hets_all_transcript.pileup"
-echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>> We start with sample: ${sample}"
+echo ">>>>>>>>>>>>>>>> We start with sample: ${sample}"
 
 samtools mpileup -d 0 -B -s -f ${refGenome} -l ${hetsMetaPositions} ${bam} > ${pileup_out}
 
