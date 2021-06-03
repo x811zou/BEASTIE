@@ -41,7 +41,7 @@ Multiple steps are needed to identify gene level ASE. Broadly, these steps are:
 ### Summary of workflow
 
 Functionally, these above steps are accomplished by individual bash/Python3 scripts, alongside the prior listed dependencies. This workflow is summarized in the below figure:
-
+![alt text](workflow_figure/workflow.png "workflow")
  
   
 Before the BEASTIE model can be run, you must create a file containing the read counts for each allele of a gene.  The format of this required file is described below.
