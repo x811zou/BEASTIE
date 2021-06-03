@@ -36,7 +36,7 @@ Multiple steps are needed to identify gene level ASE. Broadly, these steps are:
 * Step2: BEASTIE model input data preparation. Parsing pileup read counts by using the faster adopted python script from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star). 
 * Step3: Identification of genes with ASE by running BEASTIE.
 
-![alt text](workflow_figure/BEASTIE.png "BEASTIE")
+![alt text](workflow_figure/steps.png "steps")
 
 ### Summary of workflow
 <place holder for workflow figure>
