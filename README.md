@@ -14,8 +14,6 @@ The following are required to install and run BEASTIE directly on your system:
 * [htslib](https://www.htslib.org/)
 * [picard](https://broadinstitute.github.io/picard/) - put location of .jar file in parameters.cfg
 * [samtools](https://github.com/samtools/samtools)
-
-### Recommonded (optional)
 * [STAR](https://github.com/alexdobin/STAR)
 * [Trimmomatic](https://github.com/usadellab/Trimmomatic) - put location of .jar file in parameters.cfg
 * [vcftools](https://vcftools.github.io/)
