@@ -12,9 +12,10 @@ The following are required to install and run BEASTIE directly on your system:
 * [CmdStan](https://mc-stan.org/users/interfaces/cmdstan) must be installed.  This is the command-line interface to the STAN statistical programming language.
 * [Python](https://www.python.org/downloads/release/python-360/) version 3.6 or higher is required.
 * [htslib](https://www.htslib.org/)
+* [bedtools2.25]
 * [picard](https://broadinstitute.github.io/picard/) - put location of .jar file in parameters.cfg
-* [samtools](https://github.com/samtools/samtools)
-* [STAR](https://github.com/alexdobin/STAR)
+* [samtools1.9](https://github.com/samtools/samtools)
+* [STAR2.7](https://github.com/alexdobin/STAR)
 * [Trimmomatic](https://github.com/usadellab/Trimmomatic) - put location of .jar file in parameters.cfg
 * [vcftools](https://vcftools.github.io/)
 
@@ -41,42 +42,71 @@ Multiple steps are needed to identify gene level ASE. Broadly, these steps are:
 ### Summary of workflow
 
 Functionally, these above steps are accomplished by individual bash/Python3 scripts, alongside the prior listed dependencies. This workflow is summarized in the below figure:
-![alt text](workflow_figure/workflow.png "workflow")
+
+![alt text](workflow_figure/workflow_new.png "workflow")
  
+This workflow is summarized step-by-step below. 
   
+0. input files
+
+The following input files will be referenced in the below workflow steps:
+* sample.R1.fastq.gz/sample.R2.fastq.gz: paired-end RNAseq fastq files for sample of interest. We recommend using splice-aware aligner STAR: : https://github.com/alexdobin/STAR. If you have already aligned BAM files, you can directly use that as input.
+* sample.vcf: VCF file from whole genome sequencing containing information for variants.
+* reference.fa ($ref): reference genome fasta file, preferably the same file used to generate genme index for STAR.
+
+
+1. process raw data (optional if you use your aligned BAM)
+
+This step trim RNAseq fastq reads with Trimmomatic, and align reads with STAR 
+make sure VCF file has 'chr' in the chromosome column.
+```
+java -jar $trimmomatic_path/trimmomatic-0.33.jar PE -threads 16 -phred33 $fastq_R1 $fastq_R2 $trimmed_fastq/${sample}_FWD_paired.fq.gz $trimmed_fastq/${sample}_FWD_unpaired.fq.gz $trimmed_fastq/${sample}_REV_paired.fq.gz $trimmed_fastq/${sample}_REV_unpaired.fq.gz ILLUMINACLIP:$trimmomatic_reference/trimmomatic_MHPS.fa:2:30:10:8:TRUE LEADING:30 TRAILING:30 SLIDINGWINDOW:4:15 MINLEN:36
+```
+
+```
+STAR --twopassMode Basic --runThreadN 24 --genomeDir $star_ind \
+    --readFilesIn $fastqDir/${sample}_FWD_paired.fq.gz $fastqDir/${sample}_REV_paired.fq.gz \
+    --alignEndsType EndToEnd \
+    --waspOutputMode SAMtag \
+    --varVCFfile $VCF \
+    --outFilterMismatchNmax 10 \
+    --outSAMtype BAM SortedByCoordinate \
+    --outReadsUnmapped Fastx \
+    --outSAMattributes NH HI NM MD AS nM jM jI XS vA vG vW \
+    --readFilesCommand "gunzip -c" \
+    --outFileNamePrefix $prefix
+```
+
+```
+samtools mpileup -d 0 -B -s -f $ref -l $het_sites_for_mpileup $Star_aligned_sortedByCoord_picard_markdup_filter.bam > result.pileup
+```
+The parameters are:
+* $ref: reference fastq file
+* B
+* C
+* D
+
+2. parse_mpileup.py
+
+3. prepare_model_input.py
+
 Before the BEASTIE model can be run, you must create a file containing the read counts for each allele of a gene.  The format of this required file is described below.
 ```
 gene_ID | ALT1 | REF1 | ALT2 | REF2 | pred_prob
 ```
-  
-0. input files
-  
+
+4. BEASTIE.stan
+
 The model must be run in the $STAN directory.  The following command will run the model on a set of variants:
 ```
 BEASTIE.py A B C D > out.txt
 ```
 The parameters are:
-* A
+* $ref: reference fastq file
 * B
 * C
 * D
 
-1. XX.py
-  
-This step XX
-```
-mkdir 
-python /BEASTIE/XX.py 
-```
-  
-2. XX.py
-  
-This step XX
-```
-python /BEASTIE/XX.py 
-```
-  
+5. parse_stan_output.py
 
-n. Output
-The output consists of XXX columns: ???
 
