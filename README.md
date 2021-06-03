@@ -48,7 +48,7 @@ Functionally, these above steps are accomplished by individual bash/Python3 scri
 This workflow is summarized step-by-step below. 
   
 0. input files
-
+----------------------------------------
 The following input files will be referenced in the below workflow steps:
 * sample.R1.fastq.gz/sample.R2.fastq.gz: paired-end RNAseq fastq files for sample of interest. We recommend using splice-aware aligner STAR: : https://github.com/alexdobin/STAR. If you have already aligned BAM files, you can directly use that as input.
 * sample.vcf: VCF file from whole genome sequencing containing information for variants.
@@ -56,7 +56,7 @@ The following input files will be referenced in the below workflow steps:
 
 
 1. process raw data (optional if you use your aligned BAM)
-
+----------------------------------------
 This step trim RNAseq fastq reads with Trimmomatic, and align reads with STAR 
 make sure VCF file has 'chr' in the chromosome column.
 ```
@@ -80,33 +80,31 @@ STAR --twopassMode Basic --runThreadN 24 --genomeDir $star_ind \
 ```
 samtools mpileup -d 0 -B -s -f $ref -l $het_sites_for_mpileup $Star_aligned_sortedByCoord_picard_markdup_filter.bam > result.pileup
 ```
-The parameters are:
-* $ref: reference fastq file
-* B
-* C
-* D
 
 2. parse_mpileup.py
-
+----------------------------------------
 3. prepare_model_input.py
-
+----------------------------------------
 Before the BEASTIE model can be run, you must create a file containing the read counts for each allele of a gene.  The format of this required file is described below.
 ```
 gene_ID | ALT1 | REF1 | ALT2 | REF2 | pred_prob
 ```
 
-4. BEASTIE.stan
-
-The model must be run in the $STAN directory.  The following command will run the model on a set of variants:
+4. stan_wrapper.py
+----------------------------------------
+The model (BEASTIE.stan) must be run in the $STAN directory.  The following command will run the model on a set of variants:
 ```
-BEASTIE.py A B C D > out.txt
+python stan_wrapper.py $model_input $sigma $BEASTIE $in_path $sample
 ```
 The parameters are:
-* $ref: reference fastq file
-* B
-* C
-* D
+* $model_input: prepared model input file
+* $BEASTIE: $STAN/BEASTIE
+* $sigma: 0.5
+* $in_path: path for prepared model input file
+* $sample: sample name
+
 
 5. parse_stan_output.py
-
+----------------------------------------
+TBD
 
