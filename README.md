@@ -20,7 +20,7 @@ The following are required to install and run BEASTIE directly on your system:
 * [samtools1.9](https://github.com/samtools/samtools)
 * [STAR2.7](https://github.com/alexdobin/STAR)
 * [Trimmomatic](https://github.com/usadellab/Trimmomatic) - set location as $trimmomatic_path
-* [vcftools](https://vcftools.github.io/)
+* [vcftools0.1.15](https://vcftools.github.io/)
 
 ### Installation steps
 
@@ -67,6 +67,7 @@ The following input files will be referenced in the below workflow steps:
 * sample.R1.fastq.gz ($fastq_R1)/sample.R2.fastq.gz ($fastq_R2): paired-end RNAseq fastq files for sample of interest. 
 * sample.vcf ($vcf): VCF file from whole genome sequencing containing information for variants.
 * reference.fa ($ref): reference genome fasta file, preferably the same file used to generate genme index for STAR.
+
 ----------------------------------------
 1. process raw data (optional pre-step with provided commands)
 
@@ -103,7 +104,10 @@ STAR --twopassMode Basic --runThreadN 24 --genomeDir $star_ind \
 
 (c) This step pile up reads for each variant. The parameters are:
 * $ref: annotation reference file
-* $het_sites_for_mpileup: heterozygous sites extracted from VCF. Format as "chr position"
+* $het_sites_for_mpileup: heterozygous sites extracted from VCF. Format as "chr | position"
+```
+chr1 | 11111
+```
 * $bam: Star_aligned_sortedByCoord_picard_markdup_filter.bam
 * $prefix: prefix for output
 ```
@@ -118,7 +122,7 @@ samtools mpileup -d 0 -B -s -f $ref -l $het_sites_for_mpileup $bam > ${prefix}.p
 XXX
 ```
 ----------------------------------------
-2. annotate_exons.py (optional pre-step with provided scripts)
+3. annotate_exons.py (optional pre-step with provided scripts)
 
 (a) XXX
 * $trimmed_fastq: saving trimmed fastq output path
@@ -126,7 +130,7 @@ XXX
 XXX
 ```
 ----------------------------------------
-2. parse_mpileup.py (optional pre-step with provided scripts)
+4. parse_mpileup.py (optional pre-step with provided scripts)
 
 (a) XXX
 * $trimmed_fastq: saving trimmed fastq output path
@@ -134,14 +138,18 @@ XXX
 XXX
 ```
 ----------------------------------------
-3. prepare_model_input.py (step1)
+5. self-prepared step to prepare for logistic regression (step1)
+(a) AF information: Allele frequency for sites among people with different ancestries extracted from 1000GP VCF, which is provided in ./BEASTIE_example. Users could also extract customized AF information from $vcf.
+(b) LD information: users could use R package XX to annotate d,r2 for each pair of consecutive hets sites. 
+----------------------------------------
+6. prepare_model_input.py (step1)
 
 Before the BEASTIE model can be run, you must create a file containing the read counts for each allele of a gene.  The format of this required file is described below.
 ```
 gene_ID | ALT1 | REF1 | ALT2 | REF2 | pred_prob
 ```
 ----------------------------------------
-4. stan_wrapper.py (step2)
+7. stan_wrapper.py (step2)
 
 The model (BEASTIE.stan) must be run in the $STAN directory.  The following command will run the model on a set of variants:
 ```
