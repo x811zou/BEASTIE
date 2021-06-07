@@ -137,7 +137,7 @@ The parameters are:
 * $outDir
 
 ----------------------------------------
-4. parse_mpileup.py (optional pre-step with provided scripts)
+3. parse_mpileup.py (optional pre-step with provided scripts)
 
 XXX
 * 
@@ -145,12 +145,12 @@ XXX
 XXX
 ```
 ----------------------------------------
-5. self-annotation step to prepare for logistic regression (step1)
+4. self-annotation step to prepare for logistic regression (step1)
 (a) Exon information: exon start and exon end information for each gene, which is provided in ./BEASTIE_example. Users could use it to filter exonic sites. 
 (a) AF information: Allele frequency for sites among people with different ancestries extracted from 1000GP VCF, which is provided in ./BEASTIE_example. Users could also extract customized AF information from $vcf.
 (b) LD information: users could use R package XX to annotate d,r2 for each pair of consecutive hets sites. 
 ----------------------------------------
-6. prepare_model_input.py (step1)
+5. prepare_model_input.py (step1)
 
 Before the BEASTIE model can be run, you must create a file containing the read counts for each allele of a gene.  The format of this required file is described below.
 ```
@@ -163,7 +163,7 @@ The parameters are:
 * $model_output: model output file
 
 ----------------------------------------
-7. stan_wrapper.py (step2)
+6. stan_wrapper.py (step2)
 
 The model (BEASTIE.stan) must be run in the $STAN directory.  The following command will run the model on a set of variants:
 ```
@@ -177,7 +177,7 @@ The parameters are:
 * $model_output_path: path for model output
 
 ----------------------------------------
-5. parse_stan_output.py (step2)
+7. parse_stan_output.py (step2)
 
 XXX: 
 ```
