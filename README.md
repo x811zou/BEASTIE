@@ -50,18 +50,18 @@ Multiple steps are needed to identify gene level ASE. Broadly, these steps are:
 * Step1: BEASTIE model input data preparation. Parsing pileup read counts by our faster version python script originally adopting from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star). 
 * Step2: Identification of genes with ASE. Parsing BEASTIE model output with customized significance cutoff.
 
-![alt text](workflow_figure/step.png "steps")
+![alt text](image/step.png "steps")
 
 ### Summary of workflow
 
 Functionally, these above steps are accomplished by individual Python3 scripts, alongside the prior listed dependencies. This workflow is summarized in the below figure:
 
-![alt text](workflow_figure/workflow.png "workflow")
+![alt text](image/workflow.png "workflow")
  
 This workflow is summarized step-by-step below. 
   
 ----------------------------------------
-0. input files (required)
+0. input files (as in ./BEASTIE_example)
 
 The following input files will be referenced in the below workflow steps:
 * sample.R1.fastq.gz ($fastq_R1)/sample.R2.fastq.gz ($fastq_R2): paired-end RNAseq fastq files for sample of interest. 
@@ -70,24 +70,20 @@ The following input files will be referenced in the below workflow steps:
 
 ----------------------------------------
 1. process raw data (optional pre-step with provided commands)
-
-(a) This step trim RNAseq fastq reads with Trimmomatic. The parameters are:
-* $trimmed_fastq: saving trimmed fastq output path
-* $sample: sample name or prefix for output
+(a) This step processes trim raw RNAseq fastq reads
 ```
 java -jar $trimmomatic_path/trimmomatic-0.33.jar PE -threads 16 -phred33 $fastq_R1 $fastq_R2 \
    $trimmed_fastq/${sample}_FWD_paired.fq.gz $trimmed_fastq/${sample}_FWD_unpaired.fq.gz \
    $trimmed_fastq/${sample}_REV_paired.fq.gz $trimmed_fastq/${sample}_REV_unpaired.fq.gz \
    ILLUMINACLIP:$trimmomatic_reference/trimmomatic_MHPS.fa:2:30:10:8:TRUE LEADING:30 TRAILING:30 SLIDINGWINDOW:4:15 MINLEN:36
 ```
+The parameters are:
+* $trimmed_fastq: saving trimmed fastq output path
+* $sample: sample name or prefix for output
+----------------------------------------
 
 (b) This step align reads with STAR<br>
-We have done extensive comparison on RNAseq alignes reference allele mapping bias, and found that the best one with high efficiency and minimal bias is splice-aware aligner STAR with 2pass EndtoEnd alignment mode and WASP filtering : https://github.com/alexdobin/STAR. If you prefer to use aligned BAM files, you can directly use that as input. The parameters are:
-* $fastqDir: input path for trimmed fastq
-* $star_ind: index for STAR aligner
-* $VCF: VCF file for sample. VCF file has 'chr' in the chromosome column.
-* $sample: sample name or prefix for output
-* $prefix: output path with output prefix for aligned BAM
+We have done extensive comparison on RNAseq alignes reference allele mapping bias, and found that the best one with high efficiency and minimal bias is splice-aware aligner STAR with 2pass EndtoEnd alignment mode and WASP filtering : https://github.com/alexdobin/STAR. If you prefer to use aligned BAM files, you can directly use that as input. 
 ```
 STAR --twopassMode Basic --runThreadN 24 --genomeDir $star_ind \
     --readFilesIn $fastqDir/${sample}_FWD_paired.fq.gz $fastqDir/${sample}_REV_paired.fq.gz \
@@ -99,10 +95,25 @@ STAR --twopassMode Basic --runThreadN 24 --genomeDir $star_ind \
     --outReadsUnmapped Fastx \
     --outSAMattributes NH HI NM MD AS nM jM jI XS vA vG vW \
     --readFilesCommand "gunzip -c" \
-    --outFileNamePrefix $prefix
+    --outFileNamePrefix $output_prefix
+    
+java -jar $picardDir/picard.jar MarkDuplicates \
+   I=$output_prefix/Aligned.sortedByCoord.out.bam \
+   O=$output_prefix/Aligned.sortedByCoord.out.picard_markdup.bam
 ```
+The parameters are:
+* $fastqDir: input path for trimmed fastq
+* $star_ind: index for STAR aligner
+* $VCF: VCF file for sample. VCF file has 'chr' in the chromosome column.
+* $sample: sample name or prefix for output
+* $output_prefix: output path with output prefix for aligned BAM
 
-(c) This step pile up reads for each variant. The parameters are:
+----------------------------------------
+(c) This step pile up reads for each variant.
+```
+samtools mpileup -d 0 -B -s -f $ref -l $het_sites_for_mpileup $bam > ${prefix}.pileup
+```
+The parameters are:
 * $ref: annotation reference file
 * $het_sites_for_mpileup: heterozygous sites extracted from VCF. Format as "chr | position"
 ```
@@ -110,60 +121,70 @@ chr1 | 11111
 ```
 * $bam: Star_aligned_sortedByCoord_picard_markdup_filter.bam
 * $prefix: prefix for output
-```
-samtools mpileup -d 0 -B -s -f $ref -l $het_sites_for_mpileup $bam > ${prefix}.pileup
-```
+
 ----------------------------------------
 2. extract_het_sites.py (optional pre-step with provided scripts)
 
-(a) XXX
-* $trimmed_fastq: saving trimmed fastq output path
 ```
-XXX
+mkdir -p $outDir/hetsMeta
+mkdir -p $outDir/hetsDict
+mkdir -p $outDir/hetsDict/genom_all
+python extract_het_sites.py $sample $vcfDir $outDir
 ```
-----------------------------------------
-3. annotate_exons.py (optional pre-step with provided scripts)
+The parameters are:
+* $vcfDir: path storing vcf files containing ${sample} in filename
+* $sample: sample name prefix
+* $outDir
 
-(a) XXX
-* $trimmed_fastq: saving trimmed fastq output path
-```
-XXX
-```
 ----------------------------------------
-4. parse_mpileup.py (optional pre-step with provided scripts)
+3. parse_mpileup.py (optional pre-step with provided scripts)
 
-(a) XXX
-* $trimmed_fastq: saving trimmed fastq output path
+XXX
+* 
 ```
 XXX
 ```
 ----------------------------------------
-5. self-prepared step to prepare for logistic regression (step1)
+4. self-annotation step to prepare for logistic regression (step1)
+(a) Exon information: exon start and exon end information for each gene, which is provided in ./BEASTIE_example. Users could use it to filter exonic sites. 
 (a) AF information: Allele frequency for sites among people with different ancestries extracted from 1000GP VCF, which is provided in ./BEASTIE_example. Users could also extract customized AF information from $vcf.
 (b) LD information: users could use R package XX to annotate d,r2 for each pair of consecutive hets sites. 
 ----------------------------------------
-6. prepare_model_input.py (step1)
+5. prepare_model_input.py (step1)
 
 Before the BEASTIE model can be run, you must create a file containing the read counts for each allele of a gene.  The format of this required file is described below.
 ```
-gene_ID | ALT1 | REF1 | ALT2 | REF2 | pred_prob
+python prepare_model_input.py $model_input_path $model_input $model_output_path $model_output
 ```
+The parameters are:
+* $model_input_path: path for model input
+* $model_input: model input file
+* $model_output_path: path for model output
+* $model_output: model output file
+
 ----------------------------------------
-7. stan_wrapper.py (step2)
+6. stan_wrapper.py (step2)
 
 The model (BEASTIE.stan) must be run in the $STAN directory.  The following command will run the model on a set of variants:
 ```
-python stan_wrapper.py $model_input $sigma $BEASTIE $in_path $sample
+python stan_wrapper.py $file $sigma $in_path $model_output_path
 ```
 The parameters are:
-* $model_input: prepared model input file
-* $BEASTIE: $STAN/BEASTIE
-* $sigma: 0.5
+* $file: prepared model input file
+* $sigma: parameter for BEASTIE. We recommed it set as 0.5
+* $model: $BEASITE_model_path/BEASTIE
 * $in_path: path for prepared model input file
-* $sample: sample name
+* $model_output_path: path for model output
 
 ----------------------------------------
-5. parse_stan_output.py (step2)
+7. parse_stan_output.py (step2)
 
-TBD
+XXX: 
+```
+python parse_stan_output.py $model_output_path $model_output_file $cutoff
+```
+The parameters are:
+* $model_output_path: path for model output
+* $model_output_file: path for model output file
+* $cutoff: significance cutoff for iBEASTIE model
 
