@@ -1,3 +1,0 @@
-[submodule "pipeline_script/file_tools"]
-	path = pipeline_script/file_tools
-	url = https://github.com/bmajoros/python.git
