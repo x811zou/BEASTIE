@@ -61,7 +61,7 @@ Functionally, these above steps are accomplished by individual Python3 scripts, 
 This workflow is summarized step-by-step below. 
   
 ----------------------------------------
-0. input files (required)
+0. input files (as in ./BEASTIE_example)
 
 The following input files will be referenced in the below workflow steps:
 * sample.R1.fastq.gz ($fastq_R1)/sample.R2.fastq.gz ($fastq_R2): paired-end RNAseq fastq files for sample of interest. 
