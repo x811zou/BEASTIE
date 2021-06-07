@@ -1,6 +1,9 @@
-# BEASTIE: A bioinformatics method for estimation of gene level ASE
+# BEASTIE: A bioinformatics method for gene level ASE estimation
 BEASTIE (Bayesian Estimation of Allele Specific Transcription Integrating across Exons) is a software suite for identifying allele-specific-expression (ASE) from regulatory variants from RNA-seq and WGS data.
 BEASTIE uses a Bayesian hierarchical model to integrate prior information with read count data and genetic data. Using MCMC (Markov Chain Monte Carlo), BEASTIE efficiently performs posterior inference to estimate effect sizes of ASE. <br>
+
+The BEASTIE workflow is currently set up for gene-level ASE estimation. This method has been tested in Europeran individual NA12878, and African individual NA19247 from 1000 Genome Project. 
+
 BEASTIE has been found to be substantially more accurate than other tests based on the binomial distribution.
 
 BEASTIE is free for academic and non-profit use.
@@ -12,20 +15,24 @@ The following are required to install and run BEASTIE directly on your system:
 * [CmdStan](https://mc-stan.org/users/interfaces/cmdstan) must be installed.  This is the command-line interface to the STAN statistical programming language.
 * [Python](https://www.python.org/downloads/release/python-360/) version 3.6 or higher is required.
 * [htslib](https://www.htslib.org/)
-* [bedtools2.25]
+* [bedtools2.25](https://bedtools.readthedocs.io/en/latest/content/installation.html)
 * [picard](https://broadinstitute.github.io/picard/) - put location of .jar file in parameters.cfg
 * [samtools1.9](https://github.com/samtools/samtools)
 * [STAR2.7](https://github.com/alexdobin/STAR)
 * [Trimmomatic](https://github.com/usadellab/Trimmomatic) - put location of .jar file in parameters.cfg
 * [vcftools](https://vcftools.github.io/)
 
-### Installing and Compiling BEASTIE source code
-First download BEASTIE, copy its files into your working directory.
+### Installation steps
+
+Using a Python 3.8 VirtualEnv:
 ```python
 s = "example code"
 ```
-Then, install [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the environment variable $STAN to the directory where CmdStan has been installed. 
+Using Singularity with Docker Image:
 ```python
+#Installing and Compiling BEASTIE source code
+#First download BEASTIE, copy its files into your working directory.
+#Then, install [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the environment variable $STAN to the directory where CmdStan has been installed. 
 s = "example code"
 ```
 
@@ -33,9 +40,9 @@ s = "example code"
 ### Summary of steps
 Multiple steps are needed to identify gene level ASE. Broadly, these steps are:
 
-* Step1: Gene-level pileup read counts generation. Using STAR 2Pass EndtoEnd alignment mode with WASP filtering for RNAseq fastq data alignment, and extract heterozygous sites from VCF files for samtools mpile up. 
-* Step2: BEASTIE model input data preparation. Parsing pileup read counts by using the faster adopted python script from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star). 
-* Step3: Identification of genes with ASE by running BEASTIE.
+* Pre-step: Gene-level pileup read counts generation. We recommend using STAR 2Pass EndtoEnd alignment mode with WASP filtering for RNAseq fastq data alignment, and extract heterozygous sites from VCF files for samtools mpile up. Extract allele frequency information for each heterozygous variant, and obtain linkage equlibirum information for each pair of consecutive heterozygous variants. 
+* Step1: BEASTIE model input data preparation. Parsing pileup read counts by our faster version python script originally adopting from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star). 
+* Step2: Identification of genes with ASE. Parsing BEASTIE model output with customized significance cutoff.
 
 ![alt text](workflow_figure/steps.png "steps")
 
