@@ -48,14 +48,14 @@ Multiple steps are needed to identify gene level ASE. Broadly, these steps are:
 
 ### Summary of workflow
 
-Functionally, these above steps are accomplished by individual bash/Python3 scripts, alongside the prior listed dependencies. This workflow is summarized in the below figure:
+Functionally, these above steps are accomplished by individual Python3 scripts, alongside the prior listed dependencies. This workflow is summarized in the below figure:
 
 ![alt text](workflow_figure/workflow.png "workflow")
  
 This workflow is summarized step-by-step below. 
   
 ----------------------------------------
-0. input files
+0. input files (required)
 
 The following input files will be referenced in the below workflow steps:
 * sample.R1.fastq.gz/sample.R2.fastq.gz: paired-end RNAseq fastq files for sample of interest. We recommend using splice-aware aligner STAR: : https://github.com/alexdobin/STAR. If you have already aligned BAM files, you can directly use that as input.
@@ -63,7 +63,7 @@ The following input files will be referenced in the below workflow steps:
 * reference.fa ($ref): reference genome fasta file, preferably the same file used to generate genme index for STAR.
 
 ----------------------------------------
-1. process raw data (optional if you use your aligned BAM)
+1. process raw data (optional pre-step with provided scripts)
 
 This step trim RNAseq fastq reads with Trimmomatic, and align reads with STAR 
 make sure VCF file has 'chr' in the chromosome column.
