@@ -56,7 +56,7 @@ Multiple steps are needed to identify gene level ASE. Broadly, these steps are:
 
 Functionally, these above steps are accomplished by individual Python3 scripts, alongside the prior listed dependencies. This workflow is summarized in the below figure:
 
-![alt text](workflow_figure/workflow_new.png "workflow")
+![alt text](workflow_figure/workflow.png "workflow")
  
 This workflow is summarized step-by-step below. 
   
