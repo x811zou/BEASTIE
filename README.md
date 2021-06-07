@@ -154,8 +154,13 @@ XXX
 
 Before the BEASTIE model can be run, you must create a file containing the read counts for each allele of a gene.  The format of this required file is described below.
 ```
-gene_ID | ALT1 | REF1 | ALT2 | REF2 | pred_prob
+python prepare_model_input.py $model_input_path $model_input $model_output_path $model_output
 ```
+The parameters are:
+* $model_input_path: path for model input
+* $model_input: model input file
+* $model_output_path: path for model output
+* $model_output: model output file
 
 ----------------------------------------
 7. stan_wrapper.py (step2)
@@ -167,6 +172,7 @@ python stan_wrapper.py $file $sigma $in_path $model_output_path
 The parameters are:
 * $file: prepared model input file
 * $sigma: parameter for BEASTIE. We recommed it set as 0.5
+* $model: $BEASITE_model_path/BEASTIE
 * $in_path: path for prepared model input file
 * $model_output_path: path for model output
 
