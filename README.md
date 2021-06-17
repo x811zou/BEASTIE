@@ -47,8 +47,7 @@ make $STAN/BEASTIE/BEASTIE
 Multiple steps are needed to identify gene level ASE. Broadly, these steps are:
 
 * Pre-step: Gene-level pileup read counts generation. We recommend using STAR 2Pass EndtoEnd alignment mode with WASP filtering for RNAseq fastq data alignment, and extract heterozygous sites from VCF files for samtools mpile up. Extract allele frequency information for each heterozygous variant, and obtain linkage equlibirum information for each pair of consecutive heterozygous variants. 
-* Step1: BEASTIE model input data preparation. Parsing pileup read counts by our faster version python script originally adopting from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star). 
-* Step2: Identification of genes with ASE. Parsing BEASTIE model output with customized significance cutoff.
+* Pipeline: (i) BEASTIE model input data preparation. Parsing pileup read counts by our faster version python script originally adopting from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star). (ii) Identification of genes with ASE. Parsing BEASTIE model output with customized significance cutoff.
 
 ![alt text](image/step.png "steps")
 
@@ -61,16 +60,8 @@ Functionally, these above steps are accomplished by individual Python3 scripts, 
 This workflow is summarized step-by-step below. 
   
 ----------------------------------------
-0. input files (as in ./BEASTIE_example)
-
-The following input files will be referenced in the below workflow steps:
-* sample.R1.fastq.gz ($fastq_R1)/sample.R2.fastq.gz ($fastq_R2): paired-end RNAseq fastq files for sample of interest. 
-* sample.vcf ($vcf): VCF file from whole genome sequencing containing information for variants.
-* reference.fa ($ref): reference genome fasta file, preferably the same file used to generate genme index for STAR.
-
-----------------------------------------
-1. process raw data (optional pre-step with provided commands)
-(a) This step processes trim raw RNAseq fastq reads
+0. process raw data (optional pre-step with provided commands)
+(a) processes trim raw RNAseq fastq reads
 ```
 java -jar $trimmomatic_path/trimmomatic-0.33.jar PE -threads 16 -phred33 $fastq_R1 $fastq_R2 \
    $trimmed_fastq/${sample}_FWD_paired.fq.gz $trimmed_fastq/${sample}_FWD_unpaired.fq.gz \
@@ -80,9 +71,9 @@ java -jar $trimmomatic_path/trimmomatic-0.33.jar PE -threads 16 -phred33 $fastq_
 The parameters are:
 * $trimmed_fastq: saving trimmed fastq output path
 * $sample: sample name or prefix for output
-----------------------------------------
 
-(b) This step align reads with STAR<br>
+
+(b) align reads with STAR<br>
 We have done extensive comparison on RNAseq alignes reference allele mapping bias, and found that the best one with high efficiency and minimal bias is splice-aware aligner STAR with 2pass EndtoEnd alignment mode and WASP filtering : https://github.com/alexdobin/STAR. If you prefer to use aligned BAM files, you can directly use that as input. 
 ```
 STAR --twopassMode Basic --runThreadN 24 --genomeDir $star_ind \
@@ -108,8 +99,8 @@ The parameters are:
 * $sample: sample name or prefix for output
 * $output_prefix: output path with output prefix for aligned BAM
 
-----------------------------------------
-(c) This step pile up reads for each variant.
+
+(c) pile up reads for each variant.
 ```
 samtools mpileup -d 0 -B -s -f $ref -l $het_sites_for_mpileup $bam > ${prefix}.pileup
 ```
@@ -122,69 +113,18 @@ chr1 | 11111
 * $bam: Star_aligned_sortedByCoord_picard_markdup_filter.bam
 * $prefix: prefix for output
 
-----------------------------------------
-2. extract_het_sites.py (optional pre-step with provided scripts)
 
-```
-mkdir -p $outDir/hetsMeta
-mkdir -p $outDir/hetsDict
-mkdir -p $outDir/hetsDict/genom_all
-python extract_het_sites.py $sample $vcfDir $outDir
-```
-The parameters are:
-* $vcfDir: path storing vcf files containing ${sample} in filename
-* $sample: sample name prefix
-* $outDir
-
-----------------------------------------
-3. parse_mpileup.py (optional pre-step with provided scripts)
-
-XXX
-* 
-```
-XXX
-```
-----------------------------------------
 4. self-annotation step to prepare for logistic regression (step1)
-(a) Exon information: exon start and exon end information for each gene, which is provided in ./BEASTIE_example. Users could use it to filter exonic sites. 
-(a) AF information: Allele frequency for sites among people with different ancestries extracted from 1000GP VCF, which is provided in ./BEASTIE_example. Users could also extract customized AF information from $vcf.
-(b) LD information: users could use R package XX to annotate d,r2 for each pair of consecutive hets sites. 
-----------------------------------------
-5. prepare_model_input.py (step1)
-
-Before the BEASTIE model can be run, you must create a file containing the read counts for each allele of a gene.  The format of this required file is described below.
-```
-python prepare_model_input.py $model_input_path $model_input $model_output_path $model_output
-```
-The parameters are:
-* $model_input_path: path for model input
-* $model_input: model input file
-* $model_output_path: path for model output
-* $model_output: model output file
+* Exon information: exon start and exon end information for each gene, which is provided in ./BEASTIE_example. Users could use it to filter exonic sites. 
+* AF information: Allele frequency for sites among people with different ancestries extracted from 1000GP VCF, which is provided in ./BEASTIE_example. Users could also extract customized AF information from $vcf.
+* LD information: users could use R package XX to annotate d,r2 for each pair of consecutive hets sites. 
 
 ----------------------------------------
-6. stan_wrapper.py (step2)
+1. run BEASTIE pipeline
 
-The model (BEASTIE.stan) must be run in the $STAN directory.  The following command will run the model on a set of variants:
+Parameters can be specificed in parameters.cfg files.
+The model (BEASTIE.stan) must be run in the $STAN directory.
 ```
-python stan_wrapper.py $file $sigma $in_path $model_output_path
+python run_config.py
 ```
-The parameters are:
-* $file: prepared model input file
-* $sigma: parameter for BEASTIE. We recommed it set as 0.5
-* $model: $BEASITE_model_path/BEASTIE
-* $in_path: path for prepared model input file
-* $model_output_path: path for model output
-
-----------------------------------------
-7. parse_stan_output.py (step2)
-
-XXX: 
-```
-python parse_stan_output.py $model_output_path $model_output_file $cutoff
-```
-The parameters are:
-* $model_output_path: path for model output
-* $model_output_file: path for model output file
-* $cutoff: significance cutoff for iBEASTIE model
 
