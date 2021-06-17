@@ -115,12 +115,22 @@ chr1 | 11111
 
 
 4. self-annotation step to prepare for logistic regression (step1)
+```
+chr | pos | rsid | min_EUR_AF | diff_min_AF | log10_distance | r2 | d |
+```
 * Exon information: exon start and exon end information for each gene, which is provided in ./BEASTIE_example. Users could use it to filter exonic sites. 
 * AF information: Allele frequency for sites among people with different ancestries extracted from 1000GP VCF, which is provided in ./BEASTIE_example. Users could also extract customized AF information from $vcf.
 * LD information: users could use R package XX to annotate d,r2 for each pair of consecutive hets sites. 
 
 ----------------------------------------
-1. run BEASTIE pipeline
+1. input files required
+
+* sample.remove_chr.content.SNPs.hets.header.vcf
+* sample.pileup
+* sample_logisticRegression_input.tsv
+
+----------------------------------------
+3. run BEASTIE pipeline
 
 Parameters can be specificed in parameters.cfg files.
 The model (BEASTIE.stan) must be run in the $STAN directory.
