@@ -130,7 +130,7 @@ chr | pos | rsid | min_EUR_AF | diff_min_AF | log10_distance | r2 | d |
 * sample_logisticRegression_input.tsv
 
 ----------------------------------------
-3. run BEASTIE pipeline
+2. run BEASTIE pipeline
 
 Parameters can be specificed in parameters.cfg files.
 The model (BEASTIE.stan) must be run in the $STAN directory.
