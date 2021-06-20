@@ -14,7 +14,7 @@ The following are required to install and run BEASTIE directly on your system:
 * BEASTIE has been tested on **Linux**. It may or may not work on other UNIX systems.
 * [CmdStan](https://mc-stan.org/users/interfaces/cmdstan) must be installed.  This is the command-line interface to the STAN statistical programming language.
 * [Python](https://www.python.org/downloads/release/python-360/) version 3.6 or higher is required.
-* [htslib](https://www.htslib.org/)
+* [htslib-1.12](http://www.htslib.org/download/)
 * [bedtools2.25](https://bedtools.readthedocs.io/en/latest/content/installation.html)
 * [picard](https://broadinstitute.github.io/picard/) - set location as $picard_path
 * [samtools1.9](https://github.com/samtools/samtools)
