@@ -55,5 +55,5 @@ model = STAN+str(modelName)+"/"+str(modelName)
 # BEASTIE
 ###############################################
 
-cmd = f"python BEASTIE.py build --prefix {prefix} --vcf_sample_name {vcf_sample_name} --ref_dir {ref_dir} --vcf {vcf_file} --pileup {pileup_file} --in_path {in_path} --ancestry {ancestry} --chr_start {chr_start} --chr_end {chr_end} --read_length {read_length} --LD_token {LD_token} --model {model} "
+cmd = f"python BEASTIE.py build --prefix {prefix} --vcf_sample_name {vcf_sample_name} --ref_dir {ref_dir} --vcf {vcf_file} --pileup {pileup_file} --in_path {in_path} --ancestry {ancestry} --chr_start {chr_start} --chr_end {chr_end} --read_length {read_length} --LD_token {LD_token} --model {model} > {stderror} 2>&1 &"
 os.system(cmd)
