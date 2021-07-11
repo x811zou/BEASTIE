@@ -15,7 +15,7 @@ import beastie_step1
 import beastie_step2
 
 def _build(args):
-    logname=args.in_path+"log."+args.prefix
+    logname=args.in_path+args.prefix+".log"
     if os.path.isfile(logname):
         os.remove(logname)
     logging.basicConfig(filename=logname,

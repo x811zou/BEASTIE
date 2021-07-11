@@ -47,7 +47,7 @@ tmp_dir=out_dir+"TEMP/"
 vcf_file=in_path+vcf_file_name
 pileup_file=in_path+pileup_file_name
 model = STAN+str(modelName)+"/"+str(modelName)
-stdout_file=in_path+"stdout."+str(prefix)
+stdout_file=in_path+str(prefix)+".stdout"
 
 ###############################################
 # BEASTIE
