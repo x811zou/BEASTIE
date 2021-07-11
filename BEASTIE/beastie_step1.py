@@ -31,14 +31,22 @@ def check_file_existence(prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,hetS
         logging.error('Oops! STAN model {0} doesn\'t exist in {1}. Please try again ...'.format(modelName,STAN))
         sys.exit(1)
     ##### vcf
-    if not os.path.isfile(vcf):
-        logging.error('Oops! vcf file {0} doesn\'t exist. Please try again ...'.format(vcf))
+    vcfgz = '{0}.gz'.format(vcf)
+    if (not os.path.isfile(vcf)) and (not os.path.isfile(vcfgz)) :
+        logging.error('Oops! vcf file {0} or vcfgz file {1} doesn\'t exist. Please try again ...'.format(vcf,vcfgz))
         exit(1)
     ##### vcfgz
     vcfgz = '{0}.gz'.format(vcf)
-    if not os.path.isfile(vcfgz):
+    if (os.path.isfile(vcf)) and (not os.path.isfile(vcfgz)):
         logging.warning('Oops! VCFgz file {0} not found. We will generate that for you ...'.format(vcfgz))
         cmd="bgzip -c %s > %s"%(vcf,vcfgz)
+        os.system(cmd)
+        cmd="tabix -p vcf %s"%(vcfgz)
+        os.system(cmd)
+
+    if (os.path.isfile(vcfgz)) and (not os.path.isfile(vcf)):
+        logging.warning('Oops! VCF file {0} not found. We will generate that for you ...'.format(vcf))
+        cmd="gunzip %s > %s"%(vcfgz,vcf)
         os.system(cmd)
         cmd="tabix -p vcf %s"%(vcfgz)
         os.system(cmd)
