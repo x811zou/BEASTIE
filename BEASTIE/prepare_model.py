@@ -80,74 +80,79 @@ def update_model_input_lambda_phasing(pred_prob_column,base_modelin,base_modelin
 
 
 def significant_genes(prefix,out,modeloutput_dir,outname1,outname2,cutoff,hetSNP_intersect_unique_lambdaPredicted_file):
-    data_beastie_medtheta = pickle.load(
-        open(
-            modeloutput_dir
-            + "model_theta_med/"
-            + outname1,
-            "rb",
-        )
-    )
-    data_beastie_maxtail = pickle.load(
-        open(
-            modeloutput_dir
-            + "model_prob/"
-            + outname1,
-            "rb",
-        )
-    )
-
-    data_beastie_predictedlambda = pickle.load(
-        open(
-            modeloutput_dir
-            + "model_prob_sum_lambda_predicted/"
-            + outname2,
-            "rb",
-        )
-    )
-    #
-    data_modeloutput = pd.read_csv(hetSNP_intersect_unique_lambdaPredicted_file,
-        header=None,
-        sep="\t",
-    )
-    data_modeloutput.columns = [
-        "gene_ID",
-        "median_altratio",
-        "num_hets",
-        "totalRef",
-        "totalAlt",
-        "total_reads",
-        "predicted_lambda",
-    ]
-    data_modeloutput.columns=['gene_ID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda']
-    data_modeloutput['BEASTIE_med_theta']=data_beastie_medtheta
-    data_modeloutput['BEASTIE_maxtail']=data_beastie_maxtail
-    data_modeloutput['BEASTIE_sumtail_lambda_pred']=data_beastie_predictedlambda
-
-    logging.info('ASE gene cut off is {0}'.format(cutoff))
-
-    df_sub = data_modeloutput[['BEASTIE_sumtail_lambda_pred']]
-    columns=list(df_sub.columns.values)
-    for index, method in enumerate(columns):
-        data = df_sub.iloc[:, index]
-        if index == 0:
-            ncount = data_modeloutput[
-                data_modeloutput["BEASTIE_sumtail_lambda_pred"] > 0.5
-            ].count()[8]
-        else:
-            ncount = data_modeloutput[
-                data_modeloutput["BEASTIE_sumtail_lambda_pred"] > 0.5
-            ].count()[8]
-        logging.info('Num significant genes @ {}: {}'.format(method,ncount))
-    data_modeloutput["ASE"] = data_modeloutput["BEASTIE_sumtail_lambda_pred"]
-    data_modeloutput = data_modeloutput.assign(
-        ASE=data_modeloutput.apply(ASE_judge, axis=1)
-    )
     outfilename=out+"/"+prefix+"_ASE_all.tsv"
-    data_modeloutput.to_csv(outfilename,sep="\t",header=True)
-    data_modeloutput_ase=data_modeloutput[data_modeloutput['ASE']=='Y']
     outfilename_ase=out+"/"+prefix+"_ASE_genes.tsv"
-    data_modeloutput_ase.to_csv(outfilename_ase,sep="\t",header=True)
+    if (os.path.isfile(outfilename)) and (os.path.isfile(outfilename_ase)):
+        logging.info('.... Already Processed {0}'.format(outfilename))
+        logging.info('.... Already Processed {0}'.format(outfilename_ase))
+    else:
+        data_beastie_medtheta = pickle.load(
+            open(
+                modeloutput_dir
+                + "model_theta_med/"
+                + outname1,
+                "rb",
+            )
+        )
+        data_beastie_maxtail = pickle.load(
+            open(
+                modeloutput_dir
+                + "model_prob/"
+                + outname1,
+                "rb",
+            )
+        )
+
+        data_beastie_predictedlambda = pickle.load(
+            open(
+                modeloutput_dir
+                + "model_prob_sum_lambda_predicted/"
+                + outname2,
+                "rb",
+            )
+        )
+        #
+        data_modeloutput = pd.read_csv(hetSNP_intersect_unique_lambdaPredicted_file,
+            header=None,
+            sep="\t",
+        )
+        data_modeloutput.columns = [
+            "gene_ID",
+            "median_altratio",
+            "num_hets",
+            "totalRef",
+            "totalAlt",
+            "total_reads",
+            "predicted_lambda",
+        ]
+        data_modeloutput.columns=['gene_ID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda']
+        data_modeloutput['BEASTIE_med_theta']=data_beastie_medtheta
+        data_modeloutput['BEASTIE_maxtail']=data_beastie_maxtail
+        data_modeloutput['BEASTIE_sumtail_lambda_pred']=data_beastie_predictedlambda
+
+        logging.info('ASE gene cut off is {0}'.format(cutoff))
+
+        df_sub = data_modeloutput[['BEASTIE_sumtail_lambda_pred']]
+        columns=list(df_sub.columns.values)
+        for index, method in enumerate(columns):
+            data = df_sub.iloc[:, index]
+            if index == 0:
+                ncount = data_modeloutput[
+                    data_modeloutput["BEASTIE_sumtail_lambda_pred"] > 0.5
+                ].count()[8]
+            else:
+                ncount = data_modeloutput[
+                    data_modeloutput["BEASTIE_sumtail_lambda_pred"] > 0.5
+                ].count()[8]
+            logging.info('Num significant genes @ {}: {}'.format(method,ncount))
+        data_modeloutput["ASE"] = data_modeloutput["BEASTIE_sumtail_lambda_pred"]
+        data_modeloutput = data_modeloutput.assign(
+            ASE=data_modeloutput.apply(ASE_judge, axis=1)
+        )
+
+        data_modeloutput.to_csv(outfilename,sep="\t",header=True)
+        data_modeloutput_ase=data_modeloutput[data_modeloutput['ASE']=='Y']
+        data_modeloutput_ase.to_csv(outfilename_ase,sep="\t",header=True)
 
 def ASE_judge(x):
     if (x['BEASTIE_sumtail_lambda_pred']>0.5):

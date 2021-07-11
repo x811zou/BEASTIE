@@ -216,7 +216,7 @@ def summarize(thetas,alpha):
     (CI_left,CI_right)=getCredibleInterval(thetas,alpha)
     print(median,CI_left,CI_right,sep="\t")
 
-def parse_stan_output(models,input_file,tmp_output_file,stan_output_file,init_file,sigma,out_path,outfix,alphas,lambdas_file,KEEPER=1000,WARMUP=1000):
+def parse_stan_output(out1,out2,out3,out_max_lambda,out_sum_lambda,models,input_file,tmp_output_file,stan_output_file,init_file,sigma,out_path,outfix,alphas,lambdas_file,KEEPER=1000,WARMUP=1000):
     prob_tail_lambda = []
     prob_sum_lambda = []
     lambdas=pd.read_csv(lambdas_file, delimiter='\t', names = ['gene_ID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda'])
@@ -239,23 +239,13 @@ def parse_stan_output(models,input_file,tmp_output_file,stan_output_file,init_fi
     if not os.path.exists(out_path+"model_theta/"):os.makedirs(out_path+"model_theta/")
     if not os.path.exists(out_path+"model_theta_med/"):os.makedirs(out_path+"model_theta_med/")
     if not os.path.exists(out_path+"model_prob/"):os.makedirs(out_path+"model_prob/")
-    outname1=str(outfix)+"_s-"+str(sigma)+".pickle"
-    out1 = out_path+"model_theta/"+outname1
-    out2 = out_path+"model_theta_med/"+outname1
-    out3 = out_path+"model_prob/"+outname1
-    out_max = out_path+"model_prob_tail_lambda_predicted/"
-    out_sum = out_path+"model_prob_sum_lambda_predicted/"
-    if not os.path.exists(out_max):os.makedirs(out_max)
-    if not os.path.exists(out_sum):os.makedirs(out_sum)
-    outname2=str(outfix)+"_s-"+str(sigma)+"_a-"+str(alphas)+".pickle"
-    out_max_lambda = out_max+outname2
-    out_sum_lambda = out_sum+outname2
+
     pickle.dump(model_theta,open(out1,'wb'))
     pickle.dump(model_theta_med,open(out2,'wb'))
     pickle.dump(model_med_prob,open(out3,'wb'))
     pickle.dump(prob_sum_lambda,open(out_sum_lambda,'wb'))
     pickle.dump(prob_tail_lambda,open(out_max_lambda,'wb'))
-    return outname1,outname2
+
 
 def run(inFile,sigma,alpha,models,out_path,lambdas_file,WARMUP=1000,KEEPER=1000):
     if "txt" in inFile:
@@ -271,5 +261,25 @@ def run(inFile,sigma,alpha,models,out_path,lambdas_file,WARMUP=1000,KEEPER=1000)
     init_file=out_path+initFile
     stan_output_file=out_path+outFile
     ###########################################################################################
-    outname1,outname2=parse_stan_output(models,inFile,tmp_output_file,stan_output_file,init_file,sigma,out_path,outfix,alpha,lambdas_file,WARMUP,KEEPER)
+    outname1=str(outfix)+"_s-"+str(sigma)+".pickle"
+    out1 = out_path+"model_theta/"+outname1
+    out2 = out_path+"model_theta_med/"+outname1
+    out3 = out_path+"model_prob/"+outname1
+
+    outname2=str(outfix)+"_s-"+str(sigma)+"_a-"+str(alpha)+".pickle"
+    out_max = out_path+"model_prob_tail_lambda_predicted/"
+    out_sum = out_path+"model_prob_sum_lambda_predicted/"
+    if not os.path.exists(out_max):os.makedirs(out_max)
+    if not os.path.exists(out_sum):os.makedirs(out_sum)
+    out_max_lambda = out_max+outname2
+    out_sum_lambda = out_sum+outname2
+
+    if (os.path.isfile(out1)) and (os.path.isfile(out2)) and (os.path.isfile(out3)) and (os.path.isfile(out_max_lambda)) and (os.path.isfile(out_sum_lambda)):
+        logging.info('.... Already Processed {0}'.format(out1))
+        logging.info('.... Already Processed {0}'.format(out2))
+        logging.info('.... Already Processed {0}'.format(out3))
+        logging.info('.... Already Processed {0}'.format(out_max_lambda))
+        logging.info('.... Already Processed {0}'.format(out_sum_lambda))
+    else:
+        parse_stan_output(out1,out2,out3,out_max_lambda,out_sum_lambda,models,inFile,tmp_output_file,stan_output_file,init_file,sigma,out_path,outfix,alpha,lambdas_file,WARMUP,KEEPER)
     return out_path,outname1,outname2
