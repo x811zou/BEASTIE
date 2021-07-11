@@ -36,11 +36,13 @@ def run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetS
         alpha,tmp,prefix,model,hetSNP_intersect_unique,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,meta,meta_error
     )
     os.system(cmd)
+    logging.info('.... output file save to {0}'.format(hetSNP_intersect_unique_lambdaPredicted_file))
 
     logging.info('>>>>>>>>>>')
     logging.info('>>>>>>>>>> Starting step 2.3 : update model input with phasing')
     # print(base_modelin)
-    update_model_input_lambda_phasing(tmp,'pred_error_GIAB',base_modelin,base_modelin_error,meta_error)
+    update_model_input_lambda_phasing('pred_error_GIAB',base_modelin,base_modelin_error,meta_error)
+    logging.info('.... output file save to {0}'.format(base_modelin_error))
 
     logging.info('>>>>>>>>>>')
     logging.info('>>>>>>>>>> Starting step 2.4 : run model')

@@ -43,7 +43,7 @@ def count_reads(fields):
         total_reads=total_A+total_R
     return total_reads
 
-def update_model_input_lambda_phasing(out,pred_prob_column,base_modelin,base_modelin_error,meta_error):
+def update_model_input_lambda_phasing(pred_prob_column,base_modelin,base_modelin_error,meta_error):
     pred_prob_column="pred_error_GIAB"
     outfile = base_modelin_error
     model_input=base_modelin

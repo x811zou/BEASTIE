@@ -30,13 +30,12 @@ def check_file_existence(prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,hetS
     if stan_model is False:
         logging.error('Oops! STAN model {0} doesn\'t exist in {1}. Please try again ...'.format(modelName,STAN))
         sys.exit(1)
-    ##### vcf
+    ##### vcf & vcfgz
     vcfgz = '{0}.gz'.format(vcf)
     if (not os.path.isfile(vcf)) and (not os.path.isfile(vcfgz)) :
         logging.error('Oops! vcf file {0} or vcfgz file {1} doesn\'t exist. Please try again ...'.format(vcf,vcfgz))
         exit(1)
-    ##### vcfgz
-    vcfgz = '{0}.gz'.format(vcf)
+
     if (os.path.isfile(vcf)) and (not os.path.isfile(vcfgz)):
         logging.warning('Oops! VCFgz file {0} not found. We will generate that for you ...'.format(vcfgz))
         cmd="bgzip -c %s > %s"%(vcf,vcfgz)
