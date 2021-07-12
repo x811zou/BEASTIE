@@ -1,4 +1,10 @@
-library("LDlinkR")
+
+save_file <- function(file,filename,directory){
+  directory=directory
+  filename=paste0(directory,filename,".tsv")
+  file=as.matrix(file)
+  write.table(file,filename,sep = "\t", row.names = FALSE, col.names = TRUE)
+}
 
 process_data<-function(data){
   data$chr<-factor(data$chr,levels = c("chr1","chr2", "chr3", "chr4","chr5","chr6","chr7","chr8","chr9","chr10","chr11","chr12", "chr13", "chr14","chr15","chr16","chr17","chr18","chr19","chr20","chr21","chr22"))   
@@ -112,7 +118,7 @@ calculate_LD_V2 <- function(df,pop,r2d,mytoken){
   }
 
 generate_LD <- function(chr,data,ancestry,batch_size,mytoken,outpath){
-  final_df_filename=paste0(outpath,"temp_chr",chr,"_LD.tsv",sep="")
+  final_df_filename=paste0(outpath,"/temp_chr",chr,"_LD.tsv",sep="")
   if (file.exists(final_df_filename)) {
     final_df=read.table(file = final_df_filename, sep = '\t', header = TRUE)
   }else{
@@ -126,7 +132,7 @@ generate_LD <- function(chr,data,ancestry,batch_size,mytoken,outpath){
       x <- for (i in seq(1, nrow(data), batch_size)){
         start = i
         end = min(i+batch_size-1, nrow(data))
-        temp_d_i_name=paste0(outpath,"temp_chr",chr,"_d_",count,".tsv",sep="")
+        temp_d_i_name=paste0(outpath,"/temp_chr",chr,"_d_",count,".tsv",sep="")
         if(!file.exists(temp_d_i_name)){
           if(dim(data[start:end,])[1]<2){
             temp_d_i = data[start:end,]
@@ -154,7 +160,7 @@ generate_LD <- function(chr,data,ancestry,batch_size,mytoken,outpath){
       x <- for (i in seq(1, nrow(data), batch_size)){
         start = i
         end = min(i+batch_size-1, nrow(data))
-        temp_r2_i_name=paste0(outpath,"temp_chr",chr,"_r2_",count,".tsv",sep="")
+        temp_r2_i_name=paste0(outpath,"/temp_chr",chr,"_r2_",count,".tsv",sep="")
         if(!file.exists(temp_r2_i_name)){
           if(dim(data[start:end,])[1]<2){
             temp_r2_i = data[start:end,]

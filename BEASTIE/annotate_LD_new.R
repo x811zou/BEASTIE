@@ -7,13 +7,13 @@ library("LDlinkR")
 source("Get_LD.R")
 
 args = commandArgs(trailingOnly=TRUE)
-prefix=args[1]
-ancestry=args[2]
-infile=args[3] 
-outpath=args[4]
-mytoken=args[5]
-chr_start=args[6]
-chr_end=args[7]
+prefix=args[1]   #"HG00097"
+ancestry=args[2] #"EUR"
+infile=args[3]   #"/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_hetSNP_intersect_unique_AF.tsv"
+outpath=args[4]  #"/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/"
+mytoken=args[5]  #"c313799c13c3"
+chr_start=args[6]#1
+chr_end=args[7]  #22
 
 outData = paste0(prefix,"_logisticReg_input.tsv",sep="")
 target_data=paste0(outpath,outData,sep="")
@@ -66,10 +66,11 @@ if (!file.exists(target_data)){
         mutate(diff_pos=pos-lag_pos)%>%
         ungroup()
 
-        data_final_reginput<-data_final_reginput%>%select(geneID,chr,pos,lag_pos,rsid,log10_distance,d,r2,MAF,lag_MAF,min_MAF,diff_MAF)
-        outData = paste0(prefix,"_logisticReg_input",sep="")
-        save_file(data_final_reginput,outData,outpath)
-        print(paste0("output saved in ",outData,sep=""))
+    data_final_reginput<-data_final_reginput%>%select(geneID,chr,pos,lag_pos,rsid,log10_distance,d,r2,MAF,lag_MAF,min_MAF,diff_MAF)
+
+    outData = paste0(prefix,"_logisticReg_input",sep="")
+    save_file(data_final_reginput,outData,outpath)
+    print(paste0("output saved in ",target_data,sep=""))
 }else{
     print("file exists!")
 }
