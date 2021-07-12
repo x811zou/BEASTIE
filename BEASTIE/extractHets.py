@@ -37,15 +37,15 @@ def count_all_het_sites(sample,vcfFilename,file_dir,outputFilename,chr_start,chr
                 byGene_trans[geneID]=byGene_trans.get(geneID, set())
                 chrom=transcript.getSubstrate()      # column 1
                 chromN=chrom.strip("chr")
-                begin=gene.getBegin()    # column 7
-                end=gene.getEnd()      # column 8
-                cmd = "tabix " + vcfFilename + " "+chromN+":"+str(begin)+"-"+str(end)#         
-                #tabix /data/allenlab/scarlett/data/VCF/GSD/DNA_vcf/125249.vcf.recode.vcf.gz 1:10042358-10045556
-                output=Pipe.run(cmd)
-                if(not output):
-                    continue
-                else:
-                    if(len(output)<=9):continue
+                rawExons=transcript.getRawExons()
+                for exon in rawExons:
+                    begin=exon.getBegin()    # column 7
+                    end=exon.getEnd()      # column 8
+                    cmd = "tabix " + vcfFilename + " "+chromN+":"+str(begin)+"-"+str(end)#         
+                    #tabix /data/allenlab/scarlett/data/VCF/GSD/DNA_vcf/125249.vcf.recode.vcf.gz 1:10042358-10045556
+                    output=Pipe.run(cmd)
+                    if(len(output)==0):continue
+                    #if(len(output)<=9):continue
                     lines=output.split("\n")
                     for line in lines:
                         fields=line.split("\t")
