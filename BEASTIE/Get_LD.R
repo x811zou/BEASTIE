@@ -62,7 +62,7 @@ loop_chr <-function(outpath,data,ancestry,batch_size,mytoken,chr_start,chr_end){
       data_chr <- data%>%filter(chrN==j)
       if(dim(data_chr)[1]>0){
         counter=counter+1
-        df_LD_chr <- generate_LD(j,data_chr,ancestry,batch_size,mytoken)
+        df_LD_chr <- generate_LD(j,data_chr,ancestry,batch_size,mytoken,outpath)
         if(counter==1){
           first_counter=j
           last_counter=first_counter
@@ -78,8 +78,6 @@ loop_chr <-function(outpath,data,ancestry,batch_size,mytoken,chr_start,chr_end){
         break
       }   
       print(paste0("chr",j," done!",sep=""))
-      # print(paste0("first counter ",first_counter,sep=""))
-      # print(paste0("last counter ",last_counter,sep=""))
     }
     tmp_df_filename=paste0(outpath,prefix,"_chr_",first_counter,"_",last_counter,"_LD.tsv",sep="")
     write.table(df_LD, tmp_df_filename, row.names = FALSE,quote=FALSE, sep='\t')
@@ -113,7 +111,7 @@ calculate_LD_V2 <- function(df,pop,r2d,mytoken){
     return(mat_out)
   }
 
-generate_LD <- function(chr,data,ancestry,batch_size,mytoken){
+generate_LD <- function(chr,data,ancestry,batch_size,mytoken,outpath){
   final_df_filename=paste0(outpath,"temp_chr",chr,"_LD.tsv",sep="")
   if (file.exists(final_df_filename)) {
     final_df=read.table(file = final_df_filename, sep = '\t', header = TRUE)
@@ -185,8 +183,6 @@ generate_LD <- function(chr,data,ancestry,batch_size,mytoken){
     print(paste0("output complete data size: ",dim(final_df)[1],sep=""))
     write.table(final_df, final_df_filename, row.names = FALSE,quote=FALSE, sep='\t')
     print(paste0(final_df_filename," saved!",sep=""))
-
-    outpath=paste0("/Users/scarlett/Box/Allen_lab/Backup/BEASTIE3/github_example/example/",prefix,"/TEMP/",sep="")
     tmp_r2=paste0("temp_chr",chr,"_r2_",sep="")
     tmp_d=paste0("temp_chr",chr,"_d_",sep="")
     for(file in list.files(path = outpath)){

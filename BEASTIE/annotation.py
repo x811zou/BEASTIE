@@ -33,7 +33,6 @@ def annotateAF(ancestry,AF_file,hetSNP_intersect_unique,hetSNP_AF_file):
     data_AF=pd.merge(data,AF,on=['chr','pos'],how='left')
     data_AF=data_AF.drop_duplicates()
     data_AF.to_csv(hetSNP_AF_file,sep='\t')
-    logging.info('..... anntated AF info save at {0}'.format(hetSNP_AF_file))
 
 
 def run(prefix,tmp_dir,ancestry,ref_dir,LD_token,chr_start,chr_end,meta_file,hetSNP_intersect_unique):
@@ -42,7 +41,12 @@ def run(prefix,tmp_dir,ancestry,ref_dir,LD_token,chr_start,chr_end,meta_file,het
     if not os.path.isfile(out_AF):
         annotateAF(ancestry,AF_file,hetSNP_intersect_unique,out_AF)
         logging.info('..... finish annotating AF for SNPs, file save at {0}'.format(out_AF))
-    tmp_dir=tmp_dir+"/"
-    cmd="Rscript --vanilla annotate_LD_new.R %s %s %s %s %s %d %d"%(prefix,ancestry,out_AF,tmp_dir,LD_token,int(chr_start),int(chr_end))
-    os.system(cmd)
-    logging.info('..... finish annotating LD for SNP pairs, file save at {0}'.format(meta_file))
+    else:
+        logging.info('..... skip annotating AF for SNPs, file already saved at {0}'.format(out_AF)) 
+    if not os.path.isfile(meta_file):
+        tmp_dir=tmp_dir+"/"
+        cmd="Rscript --vanilla annotate_LD_new.R %s %s %s %s %s %d %d"%(prefix,ancestry,out_AF,tmp_dir,LD_token,int(chr_start),int(chr_end))
+        os.system(cmd)
+        logging.info('..... finish annotating LD for SNP pairs, file save at {0}'.format(meta_file))
+    else:
+        logging.info('..... skip annotating LD for SNP pairs, file already saved at {0}'.format(meta_file))
