@@ -22,7 +22,7 @@ def create_file_name(hetSNP_intersect_unique,meta,out,tmp):
     meta_error = os.path.join(out,'{0}_w_error.tsv'.format(os.path.splitext(base_meta[1])[0]))
     return base_modelin, base_modelin_error,meta_error
 
-def run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,prefix,read_length,min_total_cov,min_single_cov,alpha,model,sigma,in_path,out,cutoff,SAVE_INT):
+def run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,prefix,alpha,model,sigma,in_path,out,cutoff,SAVE_INT):
     out,tmp = create_output_directory(in_path,out)
     base_modelin, base_modelin_error,meta_error = create_file_name(hetSNP_intersect_unique,meta,out,tmp)
 
@@ -53,3 +53,6 @@ def run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetS
     logging.info('>>>>>>>>>> Starting step 2.5 : generate gene list')
     # add debug msg
     significant_genes(prefix,out,out_path,outname1,outname2,cutoff,hetSNP_intersect_unique_lambdaPredicted_file)
+
+    if SAVE_INT == True:
+        os.rmdir(tmp)

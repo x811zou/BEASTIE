@@ -33,7 +33,7 @@ def _build(args):
     logging.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> step2: Preparing input in a format required for BEASTIE model')
     logging.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ')
     #print("alpha is %s"%(args.alpha))
-    beastie_step2.run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,args.prefix,args.read_length,args.min_total_cov,args.min_single_cov,args.alpha,args.model,args.sigma,args.in_path,args.out,args.cutoff,args.SAVE_INT)
+    beastie_step2.run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,args.prefix,args.alpha,args.model,args.sigma,args.in_path,args.out,args.cutoff,args.SAVE_INT)
 
 def main():
     parser = argparse.ArgumentParser(description='Utilities for creating and working with BEASTIE.')
@@ -64,7 +64,7 @@ def main():
     build_parser.add_argument('--alpha', type=float, default=0.5, help='Significance cutoff for ASE. Defaults to 0.5.')
     build_parser.add_argument('--sigma', type=float, default=0.5, help='Significance cutoff for ASE. Defaults to 0.5.')
     build_parser.add_argument('--out', default='output', help='Location to write output files. Defaults to \'output\' inside the sample folder')
-    build_parser.add_argument('--SAVE_INT', default='False', help='Whether to save intermediate output. Defaults to remove \'TEMP\' folder inside \'output\' folder')
+    build_parser.add_argument('--SAVE_INT', default='False', help='Whether to delte TEMP folder where it stores intermediate output. Defaults to keep \'TEMP\' folder inside \'output\' folder')
 
     build_parser.set_defaults(command=_build)
 
