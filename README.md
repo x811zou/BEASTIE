@@ -76,6 +76,33 @@ Preparation-step:
 
 Gene-level pileup read counts generation. We recommend using STAR 2Pass EndtoEnd alignment mode with WASP filtering for RNAseq fastq data alignment to generate BAM files. Extract allele frequency information for each heterozygous variant from 1000 Genome VCF file for corresponding ancestry (We provide AF_1_22.tsv in reference folder for all ancestry data).
 
+Pipeline-step: 
+
+step1: Model input data preparation. 
+* Extract heterozygous sites from gencode reference for samtools mpileup (We provide splited gencode v19 for all 22 chromosome in reference folder, users are free to use their own version of gencode reference and use vcftools tools to split it).  
+* Parse pileup read counts by our faster version python script originally adopting from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star). 
+* Thinning reads by read length. One read only count once. 
+* Annotate AF and LD for bi-allelic het SNPs pairs
+
+step2: Identification of genes with ASE. Parsing BEASTIE model output with customized significance cutoff.
+* Convert data in format for model input
+* Predict phasing error
+* Update model input with phasing error
+* Run BEASTIE model
+* Generate gene list with user-defined cutoff
+
+
+![alt text](image/step.png "steps")
+
+### Summary of workflow
+
+Functionally, these above steps are accomplished by individual Python3 scripts, alongside the prior listed dependencies. This workflow is summarized in the below figure:
+
+![alt text](image/workflow_V4.png "workflow")
+ 
+This workflow is summarized step-by-step below. 
+ 
+Preparation-step: 
 ----------------------------------------
 0. process raw data (optional pre-step with provided commands)
 
@@ -130,26 +157,11 @@ chr1 | 11111
 ```
 * $bam: Star_aligned_sortedByCoord_picard_markdup_filter.bam
 * $prefix: prefix for output
-
 ----------------------------------------
 
 Pipeline-step: 
-
-step1: Model input data preparation. 
-* Extract heterozygous sites from gencode reference for samtools mpileup (We provide splited gencode v19 for all 22 chromosome in reference folder, users are free to use their own version of gencode reference and use vcftools tools to split it).  
-* Parse pileup read counts by our faster version python script originally adopting from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star). 
-* Thinning reads by read length. One read only count once. 
-* Annotate AF and LD for bi-allelic het SNPs pairs
-
-step2: Identification of genes with ASE. Parsing BEASTIE model output with customized significance cutoff.
-* Convert data in format for model input
-* Predict phasing error
-* Update model input with phasing error
-* Run BEASTIE model
-* Generate gene list with user-defined cutoff
-
-
 ----------------------------------------
+
 a. input files required
 * sample.vcf
 * sample.pileup
@@ -161,14 +173,3 @@ The model (BEASTIE.stan) must be run in the $STAN directory.
 python run_config.py
 ```
 ----------------------------------------
-
-![alt text](image/step.png "steps")
-
-### Summary of workflow
-
-Functionally, these above steps are accomplished by individual Python3 scripts, alongside the prior listed dependencies. This workflow is summarized in the below figure:
-
-![alt text](image/workflow_V4.png "workflow")
- 
-This workflow is summarized step-by-step below. 
-  
