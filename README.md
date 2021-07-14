@@ -45,7 +45,7 @@ TBD
 ```bash
 TBD
 ```
-#### Customized installation
+#### Customized installation:
 Git clone our BEASTIE scripts and example data in your working directory ($workdir)
 ```bash
 git clone https://github.com/x811zou/BEASTIE.git
@@ -62,6 +62,10 @@ cd $STAN
 mkdir iBEASTIE2                   
 mv $workdir/iBEASTIE2.stan $STAN/iBEASTIE2/.                 
 make $STAN/iBEASTIE2/iBEASTIE2
+```
+Download reference data and unzip it, and set the environment variable $refdir to the directory where reference folder has been downloaded. 
+```
+https://drive.google.com/file/d/1gwplvg4az1op6ExDjCLYgGKYXQrFDd2T/view?usp=sharing
 ```
 
 ## Workflow
