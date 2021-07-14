@@ -60,7 +60,7 @@ Compiling BEASTIE source code
 ```bash
 cd $STAN
 mkdir iBEASTIE2                   
-mv $workdir/iBEASTIE2.stan $STAN/iBEASTIE2/.                 #move $workdir/BEASTIE.stan into this directory
+mv $workdir/iBEASTIE2.stan $STAN/iBEASTIE2/.                 
 make $STAN/iBEASTIE2/iBEASTIE2
 ```
 
