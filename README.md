@@ -98,7 +98,7 @@ step2: Identification of genes with ASE. Parsing BEASTIE model output with custo
 
 Functionally, these above steps are accomplished by individual Python3 scripts, alongside the prior listed dependencies. This workflow is summarized in the below figure:
 
-![alt text](image/workflow_V4.png "workflow")
+![alt text](image/workflow_0714.png "workflow")
  
 This workflow is summarized step-by-step below. 
  
