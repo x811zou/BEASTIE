@@ -185,7 +185,7 @@ def parse_stan_output(input_file,out1,out2,KEEPER,lambdas_file):
     with open(input_file,"rt") as IN:
         i=0
         for line in IN:
-            print("i : %s"%(i))
+            #print("i : %s"%(i))
             fields=line.rstrip().split()
             ID=fields[0]
             geneID.append(ID)       # read the ith geneID
@@ -197,9 +197,9 @@ def parse_stan_output(input_file,out1,out2,KEEPER,lambdas_file):
             median,left_CI,right_CI = summarize(gene_thetas,0.05)
             max_prob = getMaxProb_RMSE(gene_thetas)
             max_prob_lambda,sum_prob_lambda = getMaxProb_lambda(gene_thetas,lambdas_choice) 
-            print("KEEPER is %s  ,  %s-%s:%s"%(KEEPER,i,j,sum_prob_lambda))
-            i+=1
-            #i=i+int(KEEPER) 
+            #print("KEEPER is %s  ,  %s-%s:%s"%(KEEPER,i,j,sum_prob_lambda))
+            #i+=200
+            i=i+int(KEEPER) 
             #print("i : %s"%(i))
             prob_sum_lambda.append(sum_prob_lambda)
             CI_left.append(left_CI)
