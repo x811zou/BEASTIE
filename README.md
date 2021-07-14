@@ -35,12 +35,15 @@ The following R packages are required to install in your system:
 * ["readr"](https://cran.r-project.org/web/packages/readr/readme/README.html)
 * [glmnetUtils](https://www.rdocumentation.org/packages/glmnetUtils/versions/1.1.8)
 
-Git clone Python scripts from Bill Majoros' github repo, and add it to your python path
+Git clone Python scripts from our former lab member Bill Majoros' github repo, and add it to your python path. 
 ```
 git clone https://github.com/bmajoros/python.git
 ```
-
-Compile iBEASTIE2.stan inside cmdstan directory ($STAN)
+Git clone our BEASTIE scripts and examples in your system 
+```
+git clone 
+```
+Compile iBEASTIE2.stan inside cmdstan directory ($STAN). 
 ```
 mv iBEASTIE2.stan $STAN/examples/iBEASTIE2/.
 cd $STAN
