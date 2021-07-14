@@ -35,31 +35,33 @@ The following R packages are required to install in your system:
 * ["readr"](https://cran.r-project.org/web/packages/readr/readme/README.html)
 * [glmnetUtils](https://www.rdocumentation.org/packages/glmnetUtils/versions/1.1.8)
 
+
+### Installation steps
+
+#### Using a Python 3.8 VirtualEnv:
+```python
+TBD
+```
+#### Using Singularity with Docker Image:
+```
+TBD
+```
+#### Customized installation
 Git clone Python scripts from our former lab member Bill Majoros' github repo, and add it to your python path. 
 ```
 git clone https://github.com/bmajoros/python.git
 ```
 Git clone our BEASTIE scripts and examples in your system 
 ```
-git clone 
+git clone https://github.com/x811zou/BEASTIE.git
 ```
-Compile iBEASTIE2.stan inside cmdstan directory ($STAN). 
+Compile iBEASTIE2.stan inside cmdstan directory ($STAN). iBEASTIE2.stan can be found in BEASTIE folder.
 ```
 mv iBEASTIE2.stan $STAN/examples/iBEASTIE2/.
 cd $STAN
 make examples/iBEASTIE2/iBEASTIE2
 ```
 
-### Installation steps
-
-Using a Python 3.8 VirtualEnv:
-```python
-s = "example code"
-```
-Using Singularity with Docker Image:
-```
-```
-Customized installation
 
 Installing and Compiling BEASTIE source code
 First download BEASTIE, copy its files into your working directory.
