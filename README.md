@@ -72,30 +72,22 @@ https://drive.google.com/file/d/1gwplvg4az1op6ExDjCLYgGKYXQrFDd2T/view?usp=shari
 ### Summary of steps
 Multiple steps are needed to identify gene level ASE. Broadly, these steps are:
 
-* Preparation-step: Gene-level pileup read counts generation. We recommend using STAR 2Pass EndtoEnd alignment mode with WASP filtering for RNAseq fastq data alignment to generate BAM files. Extract allele frequency information for each heterozygous variant from 1000 Genome VCF file for corresponding ancestry (We provide AF_1_22.tsv in reference folder for all ancestry data). 
+1. Preparation-step: Gene-level pileup read counts generation. We recommend using STAR 2Pass EndtoEnd alignment mode with WASP filtering for RNAseq fastq data alignment to generate BAM files. Extract allele frequency information for each heterozygous variant from 1000 Genome VCF file for corresponding ancestry (We provide AF_1_22.tsv in reference folder for all ancestry data). 
 
-* Pipeline-step: 
+2. Pipeline-step: 
+
 step1: model input data preparation. 
-
-(i) Extract heterozygous sites from gencode reference for samtools mpileup (We provide splited gencode v19 for all 22 chromosome in reference folder, users are free to use their own version of gencode reference and use vcftools tools to split it). 
-
-(ii) Parse pileup read counts by our faster version python script originally adopting from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star). 
-
-(iii) Thinning reads by read length. One read only count once. 
-
-(iv) Annotate AF and LD for pair of bi-allelic SNPs
+* Extract heterozygous sites from gencode reference for samtools mpileup (We provide splited gencode v19 for all 22 chromosome in reference folder, users are free to use their own version of gencode reference and use vcftools tools to split it). 
+* Parse pileup read counts by our faster version python script originally adopting from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star). 
+* Thinning reads by read length. One read only count once. 
+* Annotate AF and LD for pair of bi-allelic SNPs
 
 step2: Identification of genes with ASE. Parsing BEASTIE model output with customized significance cutoff.
-
-(i) convert data in format for model input
-
-(ii) predict phasing error
-
-(iii) update model input with phasing error
-
-(iv) run BEASTIE model
-
-(v) generate gene list with user-defined cutoff
+* Convert data in format for model input
+* Predict phasing error
+* Update model input with phasing error
+* Run BEASTIE model
+* Generate gene list with user-defined cutoff
 
 ![alt text](image/step.png "steps")
 
