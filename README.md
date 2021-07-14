@@ -92,8 +92,6 @@ step2: Identification of genes with ASE. Parsing BEASTIE model output with custo
 * Generate gene list with user-defined cutoff
 
 
-![alt text](image/step.png "steps")
-
 ### Summary of workflow
 
 Functionally, these above steps are accomplished by individual Python3 scripts, alongside the prior listed dependencies. This workflow is summarized in the below figure:
