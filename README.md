@@ -78,6 +78,7 @@ Gene-level pileup read counts generation. We recommend using STAR 2Pass EndtoEnd
 
 ----------------------------------------
 0. process raw data (optional pre-step with provided commands)
+
 (a) processes trim raw RNAseq fastq reads
 ```
 java -jar $trimmomatic_path/trimmomatic-0.33.jar PE -threads 16 -phred33 $fastq_R1 $fastq_R2 \
