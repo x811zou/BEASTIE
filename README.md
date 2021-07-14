@@ -63,7 +63,7 @@ mkdir iBEASTIE2
 mv $workdir/iBEASTIE2.stan $STAN/iBEASTIE2/.                 
 make $STAN/iBEASTIE2/iBEASTIE2
 ```
-Download reference data and unzip it, and set the environment variable $refdir to the directory where reference folder has been downloaded. 
+Download reference data and unzip it, and set the environment variable $refdir to the directory where reference folder has been unzipped. 
 ```
 https://drive.google.com/file/d/1gwplvg4az1op6ExDjCLYgGKYXQrFDd2T/view?usp=sharing
 ```
@@ -72,8 +72,30 @@ https://drive.google.com/file/d/1gwplvg4az1op6ExDjCLYgGKYXQrFDd2T/view?usp=shari
 ### Summary of steps
 Multiple steps are needed to identify gene level ASE. Broadly, these steps are:
 
-* Pre-step: Gene-level pileup read counts generation. We recommend using STAR 2Pass EndtoEnd alignment mode with WASP filtering for RNAseq fastq data alignment, and extract heterozygous sites from VCF files for samtools mpile up. Extract allele frequency information for each heterozygous variant, and obtain linkage equlibirum information for each pair of consecutive heterozygous variants. 
-* Pipeline: (i) BEASTIE model input data preparation. Parsing pileup read counts by our faster version python script originally adopting from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star). (ii) Identification of genes with ASE. Parsing BEASTIE model output with customized significance cutoff.
+* Preparation-step: Gene-level pileup read counts generation. We recommend using STAR 2Pass EndtoEnd alignment mode with WASP filtering for RNAseq fastq data alignment to generate BAM files. Extract allele frequency information for each heterozygous variant from 1000 Genome VCF file for corresponding ancestry (We provide AF_1_22.tsv in reference folder for all ancestry data). 
+
+* Pipeline-step: 
+step1: model input data preparation. 
+
+(i) Extract heterozygous sites from gencode reference for samtools mpileup (We provide splited gencode v19 for all 22 chromosome in reference folder, users are free to use their own version of gencode reference and use vcftools tools to split it). 
+
+(ii) Parse pileup read counts by our faster version python script originally adopting from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star). 
+
+(iii) Thinning reads by read length. One read only count once. 
+
+(iv) Annotate AF and LD for pair of bi-allelic SNPs
+
+step2: Identification of genes with ASE. Parsing BEASTIE model output with customized significance cutoff.
+
+(i) convert data in format for model input
+
+(ii) predict phasing error
+
+(iii) update model input with phasing error
+
+(iv) run BEASTIE model
+
+(v) generate gene list with user-defined cutoff
 
 ![alt text](image/step.png "steps")
 
