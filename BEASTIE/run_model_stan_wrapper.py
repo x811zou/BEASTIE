@@ -197,7 +197,7 @@ def parse_stan_output(input_file,out1,out2,KEEPER,lambdas_file):
             median,left_CI,right_CI = summarize(gene_thetas,0.05)
             max_prob = getMaxProb_RMSE(gene_thetas)
             max_prob_lambda,sum_prob_lambda = getMaxProb_lambda(gene_thetas,lambdas_choice) 
-            #print("KEEPER is %s  ,  %s-%s:%s"%(KEEPER,i,j,sum_prob_lambda))
+            print("KEEPER is %s  ,  %s-%s:%s"%(KEEPER,i,j,sum_prob_lambda))
             #i+=200
             i=i+int(KEEPER) 
             #print("i : %s"%(i))
