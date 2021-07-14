@@ -42,16 +42,16 @@ The following R packages are required to install in your system:
 TBD
 ```
 #### Using Singularity with Docker Image:
-```
+```bash
 TBD
 ```
 #### Customized installation
 Git clone our BEASTIE scripts and example data in your working directory ($workdir)
-```
+```bash
 git clone https://github.com/x811zou/BEASTIE.git
 ```
 Git clone Python scripts from our former lab member's github repo, and add it to your python path. 
-```
+```bash
 git clone https://github.com/bmajoros/python.git
 ```
 Installing [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the environment variable $STAN to the directory where CmdStan has been installed. 
