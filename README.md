@@ -9,10 +9,10 @@ BEASTIE has been found to be substantially more accurate than other tests based 
 BEASTIE is free for academic and non-profit use.
 
 ## Installation
-### Prerequisites
+### Software prerequisites
 The following tools are required to install and run BEASTIE directly on your system:
 * BEASTIE has been tested on **Linux**. It may or may not work on other UNIX systems.
-* [CmdStan](https://mc-stan.org/users/interfaces/cmdstan) must be installed.  This is the command-line interface to the STAN statistical programming language. Set the location as $STAN
+* [CmdStan](https://mc-stan.org/users/interfaces/cmdstan) must be installed.  This is the command-line interface to the STAN statistical programming language. Set the location as $STAN. Installing and Compiling BEASTIE source code.
 * [Python 3.6](https://www.python.org/downloads/release/python-360/) version 3.6 or higher is required.
 * [htslib-1.12](http://www.htslib.org/download/)
 * [bedtools2.25](https://bedtools.readthedocs.io/en/latest/content/installation.html)
@@ -36,8 +36,7 @@ The following R packages are required to install in your system:
 * [glmnetUtils](https://www.rdocumentation.org/packages/glmnetUtils/versions/1.1.8)
 
 
-### Installation steps
-
+### Installation options
 #### Using a Python 3.8 VirtualEnv:
 ```python
 TBD
@@ -47,29 +46,22 @@ TBD
 TBD
 ```
 #### Customized installation
-Git clone Python scripts from our former lab member Bill Majoros' github repo, and add it to your python path. 
-```
-git clone https://github.com/bmajoros/python.git
-```
-Git clone our BEASTIE scripts and examples in your system 
+Git clone our BEASTIE scripts and example data in your working directory ($workdir)
 ```
 git clone https://github.com/x811zou/BEASTIE.git
 ```
-Compile iBEASTIE2.stan inside cmdstan directory ($STAN). iBEASTIE2.stan can be found in BEASTIE folder.
+Git clone Python scripts from our former lab member's github repo, and add it to your python path. 
 ```
-mv iBEASTIE2.stan $STAN/examples/iBEASTIE2/.
-cd $STAN
-make examples/iBEASTIE2/iBEASTIE2
+git clone https://github.com/bmajoros/python.git
 ```
-
-
 Installing and Compiling BEASTIE source code
 First download BEASTIE, copy its files into your working directory.
 Then, install [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the environment variable $STAN to the directory where CmdStan has been installed. 
 ```bash
 cd $STAN
-mkdir BEASTIE #download BEASTIE.stan in this directory
-make $STAN/BEASTIE/BEASTIE
+mkdir iBEASTIE2                   
+mv $workdir/iBEASTIE2.stan $STAN/iBEASTIE2/.                 #move $workdir/BEASTIE.stan into this directory
+make $STAN/iBEASTIE2/iBEASTIE2
 ```
 
 ## Workflow
