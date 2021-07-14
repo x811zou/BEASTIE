@@ -44,11 +44,11 @@ def run(prefix,tmp_dir,ancestry,ref_dir,LD_token,chr_start,chr_end,meta_file,het
     else:
         logging.info('..... skip annotating AF for SNPs, file already saved at {0}'.format(out_AF)) 
     if not os.path.isfile(meta_file):
-        print(prefix)
-        print(out_AF)
+        # print(prefix)
+        # print(out_AF)
         tmp_dir=tmp_dir+"/"
-        print(tmp_dir)
-        cmd="Rscript --vanilla annotate_LD_new.R %s %s %s %s %s %d %d"%(prefix,ancestry,out_AF,tmp_dir,LD_token,int(chr_start),int(chr_end))
+        # print(tmp_dir)
+        cmd="Rscript --vanilla annotate_LD_new.R %s %s %s %s %s %d %d %s"%(prefix,ancestry,out_AF,tmp_dir,LD_token,int(chr_start),int(chr_end),meta_file)
         os.system(cmd)
         logging.info('..... finish annotating LD for SNP pairs, file save at {0}'.format(meta_file))
     else:

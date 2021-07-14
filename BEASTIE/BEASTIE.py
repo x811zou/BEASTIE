@@ -32,8 +32,6 @@ def _build(args):
     logging.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ')                
     logging.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> step2: Preparing input in a format required for BEASTIE model')
     logging.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ')
-    logging.info("WARMUP is %s"%(args.WARMUP))
-    logging.info("KEEPER is %s"%(args.KEEPER))
     beastie_step2.run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,args.prefix,args.alpha,args.model,args.sigma,args.in_path,args.out,args.cutoff,args.SAVE_INT,args.WARMUP,args.KEEPER)
 
 def main():

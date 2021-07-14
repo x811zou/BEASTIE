@@ -111,7 +111,6 @@ def getMaxProb_lambda(thetas,Lambda):
     #lambda_prob2 = max(p_less2,p_more2)
     # 3. sum tail
     lambda_sum1 = p_less1 + p_more1
-    #print(lambda_sum1)
     # 4. sum tail  transform thetas, and then calculate proportion
     #lambda_sum2 = p_less2 + p_more2
     return round(lambda_prob1,3),round(lambda_sum1,3)
@@ -168,8 +167,7 @@ def summarize(thetas,alpha):
     CI_left,CI_right=getCredibleInterval(thetas,alpha)
     return median,CI_left,CI_right
 
-def parse_stan_output(input_file,out1,out2,KEEPER,lambdas_file):
-    logging.info("KEEPER is %s"%(KEEPER))
+def parse_stan_output(input_file,out1,KEEPER,lambdas_file):
     thetas = pickle.load(
         open(
             out1,
@@ -184,31 +182,28 @@ def parse_stan_output(input_file,out1,out2,KEEPER,lambdas_file):
     geneID=[]     
     with open(input_file,"rt") as IN:
         i=0
+        print("initial i : %s"%(i))
         for line in IN:
-            #print("i : %s"%(i))
             fields=line.rstrip().split()
             ID=fields[0]
-            geneID.append(ID)       # read the ith geneID
+            geneID.append(ID)         # read the ith geneID
             j=i+int(KEEPER)-1
             gene_thetas=thetas[i:j]
-            # print(gene_thetas)
+            # print(gene_thetas)      # DEBUG
             # print(len(gene_thetas)) # DEBUG
             lambdas_choice=lambdas.loc[lambdas['gene_ID'] == ID].iloc[0,6]
             median,left_CI,right_CI = summarize(gene_thetas,0.05)
             max_prob = getMaxProb_RMSE(gene_thetas)
             max_prob_lambda,sum_prob_lambda = getMaxProb_lambda(gene_thetas,lambdas_choice) 
             print("KEEPER is %s  ,  %s-%s:%s"%(KEEPER,i,j,sum_prob_lambda))
-            #i+=200
             i=i+int(KEEPER) 
-            #print("i : %s"%(i))
+            print("next i : %s"%(i))
             prob_sum_lambda.append(sum_prob_lambda)
             CI_left.append(left_CI)
             CI_right.append(right_CI)  
             model_theta_med.append(median)
-    logging.info('model output file name is {0}'.format(out2))
     df={'gene_ID':geneID,'posterior_median':model_theta_med,'CI_left':CI_left,'CI_right':CI_right,'posterior_mass_support_ALT':prob_sum_lambda}
     df=pd.DataFrame(df)
-    df.to_csv(out2,sep='\t',header=True,index=False)
     return df
 
 
@@ -241,20 +236,13 @@ def run(prefix,inFile,sigma,alpha,models,out,lambdas_file,WARMUP,KEEPER):
     stan_output_file=out_path+outFile
     ###########################################################################################
     outname1=str(outfix)+"_s-"+str(sigma)+".pickle"
-    outname2=str(prefix)+"_parsedModelOutput_alpha-"+str(alpha)+".tsv"
     out_path = out_path+"theta/"
     if not os.path.exists(out_path):os.makedirs(out_path)
     out1 = out_path+outname1
-    out2 = out+"/"+outname2
     if (os.path.isfile(out1)):
         logging.info('.... Already fiinshed running model and saved raw theta at : {0}'.format(out1))
     else:
         logging.info('.... Start running model and save raw theta at : {0}'.format(out1))
         save_raw_theta(out1,models,inFile,tmp_output_file,stan_output_file,init_file,sigma,WARMUP,KEEPER)
-    if (os.path.isfile(out2)):
-        logging.info('.... Already fiinshed parsing model output with predicted lambda at alpha at {0}, data saved at : {1}'.format(alpha,out2))
-        df = pd.read_csv(out2, index_col=False,sep='\t')
-    else:
-        logging.info('.... Start parsing model output with predicted lambda at alpha at {0}, data save at : {1}'.format(alpha,out2))
-        df=parse_stan_output(inFile,out1,out2,KEEPER,lambdas_file)
+    df=parse_stan_output(inFile,out1,KEEPER,lambdas_file)
     return df

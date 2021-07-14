@@ -98,7 +98,7 @@ def check_file_existence(prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,hetS
         if not os.path.isfile(meta_file):
             logging.warning('Alright, meta file {0} doesn\'t exist in {1}. We will generate that for you ...'.format(meta,in_path))
     else:
-            meta_file = '{0}_logisticReg_input.tsv'.format(os.path.join(tmp,prefix))
+            meta_file = '{0}_meta.tsv'.format(os.path.join(tmp,prefix))
             logging.info('We will generate {0} for you ...'.format(meta_file))
     ##### parsed_pileup_file
     if parsed_pileup is not None:

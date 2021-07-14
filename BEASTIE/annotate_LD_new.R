@@ -14,11 +14,9 @@ outpath=args[4]  #"/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_ex
 mytoken=args[5]  #"c313799c13c3"
 chr_start=args[6]#1
 chr_end=args[7]  #22
+meta=args[8]     #"/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_meta.tsv"
 
-outData = paste0(prefix,"_logisticReg_input.tsv",sep="")
-target_data=paste0(outpath,outData,sep="")
-
-if (!file.exists(target_data)){
+if (!file.exists(meta)){
 #================================================ specify input
     df = read.table(infile, header=T, sep = '\t', row.names = 'X')
     batch_size = 1000
@@ -68,9 +66,10 @@ if (!file.exists(target_data)){
 
     data_final_reginput<-data_final_reginput%>%select(geneID,chr,pos,lag_pos,rsid,log10_distance,d,r2,MAF,lag_MAF,min_MAF,diff_MAF)
 
-    outData = paste0(prefix,"_logisticReg_input",sep="")
-    save_file(data_final_reginput,outData,outpath)
-    print(paste0("output saved in ",target_data,sep=""))
+    # outData = paste0(prefix,"_meta",sep="")
+    # save_file(data_final_reginput,outData,outpath)
+    # print(paste0("output saved in ",target_data,sep=""))
+    write.table(data_final_reginput,meta,sep = "\t", row.names = FALSE, col.names = TRUE)
 }else{
     print("file exists!")
 }
