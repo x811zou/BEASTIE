@@ -54,11 +54,9 @@ Git clone Python scripts from our former lab member's github repo, and add it to
 ```
 git clone https://github.com/bmajoros/python.git
 ```
-Installing and Compiling BEASTIE source code
+Installing [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the environment variable $STAN to the directory where CmdStan has been installed. 
 
-First download BEASTIE, copy its files into your working directory.
-
-Then, install [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the environment variable $STAN to the directory where CmdStan has been installed. 
+Compiling BEASTIE source code
 ```bash
 cd $STAN
 mkdir iBEASTIE2                   
