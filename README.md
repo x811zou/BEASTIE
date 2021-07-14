@@ -102,11 +102,10 @@ Functionally, these above steps are accomplished by individual Python3 scripts, 
  
 This workflow is summarized step-by-step below. 
  
-Preparation-step: 
+Preparation-step: process raw data (optional with provided commands)
 ----------------------------------------
-0. process raw data (optional pre-step with provided commands)
 
-(a) processes trim raw RNAseq fastq reads
+a. processes trim raw RNAseq fastq reads
 ```
 java -jar $trimmomatic_path/trimmomatic-0.33.jar PE -threads 16 -phred33 $fastq_R1 $fastq_R2 \
    $trimmed_fastq/${sample}_FWD_paired.fq.gz $trimmed_fastq/${sample}_FWD_unpaired.fq.gz \
@@ -118,7 +117,7 @@ The parameters are:
 * $sample: sample name or prefix for output
 
 
-(b) align reads with STAR<br>
+b. align reads with STAR<br>
 We have done extensive comparison on RNAseq alignes reference allele mapping bias, and found that the best one with high efficiency and minimal bias is splice-aware aligner STAR with 2pass EndtoEnd alignment mode and WASP filtering : https://github.com/alexdobin/STAR. If you prefer to use aligned BAM files, you can directly use that as input. 
 ```
 STAR --twopassMode Basic --runThreadN 24 --genomeDir $star_ind \
@@ -145,7 +144,7 @@ The parameters are:
 * $output_prefix: output path with output prefix for aligned BAM
 
 
-(c) pile up reads for each variant.
+c. pile up reads for each variant.
 ```
 samtools mpileup -d 0 -B -s -f $ref -l $het_sites_for_mpileup $bam > ${prefix}.pileup
 ```
@@ -159,7 +158,7 @@ chr1 | 11111
 * $prefix: prefix for output
 ----------------------------------------
 
-Pipeline-step: 
+Pipeline-step: prepare input and run model (required with example config scripts)
 ----------------------------------------
 
 a. input files required
