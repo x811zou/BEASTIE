@@ -12,29 +12,12 @@ from __future__ import (
     with_statement,
 )
 from builtins import (
-    bytes,
-    dict,
     int,
-    list,
-    object,
     range,
     str,
-    ascii,
-    chr,
-    hex,
-    input,
-    next,
-    oct,
     open,
-    pow,
-    round,
-    super,
-    filter,
-    map,
-    zip,
 )
 import os
-import sys
 import math
 import pickle
 from StanParser import StanParser
@@ -116,7 +99,6 @@ def getMaxProb_RMSE(thetas):
     return max_prob1#, RMSE
 
 def getMaxProb_lambda(thetas,Lambda):
-    #print(thetas)
     # 1. no transformation 
     one_over_Lambda = float(1/float(Lambda))
     p_less1 = len([i for i in thetas if i < one_over_Lambda])/len(thetas)
@@ -129,16 +111,14 @@ def getMaxProb_lambda(thetas,Lambda):
     #lambda_prob2 = max(p_less2,p_more2)
     # 3. sum tail
     lambda_sum1 = p_less1 + p_more1
+    #print(lambda_sum1)
     # 4. sum tail  transform thetas, and then calculate proportion
     #lambda_sum2 = p_less2 + p_more2
-    return lambda_prob1,lambda_sum1
+    return round(lambda_prob1,3),round(lambda_sum1,3)
 
-def runVariant(model,fields,tmp_output_file,stan_output_file,init_file,sigma,lambdas,KEEPER,WARMUP):
+def runModel(model,fields,tmp_output_file,stan_output_file,init_file,sigma,KEEPER=1000,WARMUP=1000):
     if(len(fields)>=4):
-        # if "iBEASTIE" in model:
         writeInputsFile_i(fields,tmp_output_file,sigma)
-        # else:
-        #     writeInputsFile(fields,tmp_output_file,sigma)
         writeInitializationFile(init_file)
         cmd = (
             "%s sample num_samples=%s num_warmup=%s data file=%s init=%s output file=%s refresh=0" 
@@ -147,40 +127,13 @@ def runVariant(model,fields,tmp_output_file,stan_output_file,init_file,sigma,lam
         os.system(cmd)# Parse MCMC output
         parser=StanParser(stan_output_file)
         thetas=parser.getVariable("theta")
-        med,_,_,_,_ = parser.getSummary("theta")
-        max_prob = getMaxProb_RMSE(thetas)
-        max_prob_lambda,sum_prob_lambda = getMaxProb_lambda(thetas,lambdas) 
-        return (
-            thetas,
-            med,
-            max_prob,
-            max_prob_lambda,
-            sum_prob_lambda,
-        )
+        return thetas
     else:
         logging.error('lines with no enough elements')
-
-def runVariant_predictLambda_simulation(model,fields,tmp_output_file,stan_output_file,init_file,sigma,alphas,lambdas_file):
-    if(len(fields)>=4):
-        writeInputsFile(fields,tmp_output_file,sigma)
-        #writeInputsFile(fields,tmp_output_file)
-        writeInitializationFile(init_file)
-        cmd = "%s sample data file=%s init=%s output file=%s" % (model,tmp_output_file,init_file,stan_output_file)
-    #/data/reddylab/scarlett/1000G/software/cmdstan/examples/ase/ase sample data file=/data/reddylab/scarlett/1000G/software/cmdstan/examples/ase/tmp_output.txt init=/data/reddylab/scarlett/1000G/software/cmdstan/examples/ase/initialization_stan.txt output file=/data/reddylab/scarlett/1000G/software/cmdstan/examples/ase/output_theta.txt      
-        #cmd = "%s sample data file=%s output file=%s" % (model,tmp_output_file,stan_output_file)
-        os.system(cmd)# Parse MCMC output
-        parser=StanParser(stan_output_file)
-        thetas=parser.getVariable("theta")
-        #med,_,_,_,_ = parser.getSummary("theta")
-        #max_prob,_ = getMaxProb_RMSE(thetas,true_theta)
-        prob_lambda1,sum_lambda1,prob_lambda2,sum_lambda2,prob_lambda3,sum_lambda3 = parse_lambda_validation(thetas,alphas,lambdas_file,1)
-        prob_lambda11,sum_lambda11,prob_lambda22,sum_lambda22,prob_lambda33,sum_lambda33 = parse_lambda_validation(thetas,alphas,lambdas_file,2)
-        return prob_lambda1,sum_lambda1,prob_lambda2,sum_lambda2,prob_lambda3,sum_lambda3,prob_lambda11,sum_lambda11,prob_lambda22,sum_lambda22,prob_lambda33,sum_lambda33
 
 def parse_lambda_validation_simulation(thetas,alphas,lambdas_file,lm):
     with open(lambdas_file,"rt") as IN:
         for idx,line in enumerate(IN):
-            #print(line)
             if idx == lm-1:
                 fields=line.rstrip().split()
                 print(fields)
@@ -207,47 +160,73 @@ def getCredibleInterval(thetas,alpha):
     rightIndex=n-leftIndex
     left=thetas[leftIndex+1]
     right=thetas[rightIndex-1]
-    return (left,right)
+    return left,right
 
 def summarize(thetas,alpha):
     thetas.sort()
-    n=len(thetas)
     median=getMedian(thetas)
-    (CI_left,CI_right)=getCredibleInterval(thetas,alpha)
-    print(median,CI_left,CI_right,sep="\t")
+    CI_left,CI_right=getCredibleInterval(thetas,alpha)
+    return median,CI_left,CI_right
 
-def parse_stan_output(out1,out2,out3,out_max_lambda,out_sum_lambda,models,input_file,tmp_output_file,stan_output_file,init_file,sigma,out_path,outfix,alphas,lambdas_file,KEEPER=1000,WARMUP=1000):
-    prob_tail_lambda = []
-    prob_sum_lambda = []
+def parse_stan_output(input_file,out1,out2,KEEPER,lambdas_file):
+    logging.info("KEEPER is %s"%(KEEPER))
+    thetas = pickle.load(
+        open(
+            out1,
+            "rb",
+        )
+    )
     lambdas=pd.read_csv(lambdas_file, delimiter='\t', names = ['gene_ID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda'])
-    model_theta = []       # 150
+    prob_sum_lambda = []
     model_theta_med = []   # 150
-    model_med_prob = []    # 150
+    CI_left=[]
+    CI_right=[]
+    geneID=[]     
+    with open(input_file,"rt") as IN:
+        i=0
+        for line in IN:
+            print("i : %s"%(i))
+            fields=line.rstrip().split()
+            ID=fields[0]
+            geneID.append(ID)       # read the ith geneID
+            j=i+int(KEEPER)-1
+            gene_thetas=thetas[i:j]
+            # print(gene_thetas)
+            # print(len(gene_thetas)) # DEBUG
+            lambdas_choice=lambdas.loc[lambdas['gene_ID'] == ID].iloc[0,6]
+            median,left_CI,right_CI = summarize(gene_thetas,0.05)
+            max_prob = getMaxProb_RMSE(gene_thetas)
+            max_prob_lambda,sum_prob_lambda = getMaxProb_lambda(gene_thetas,lambdas_choice) 
+            print("KEEPER is %s  ,  %s-%s:%s"%(KEEPER,i,j,sum_prob_lambda))
+            i+=1
+            #i=i+int(KEEPER) 
+            #print("i : %s"%(i))
+            prob_sum_lambda.append(sum_prob_lambda)
+            CI_left.append(left_CI)
+            CI_right.append(right_CI)  
+            model_theta_med.append(median)
+    logging.info('model output file name is {0}'.format(out2))
+    df={'gene_ID':geneID,'posterior_median':model_theta_med,'CI_left':CI_left,'CI_right':CI_right,'posterior_mass_support_ALT':prob_sum_lambda}
+    df=pd.DataFrame(df)
+    df.to_csv(out2,sep='\t',header=True,index=False)
+    return df
+
+
+def save_raw_theta(out0,models,input_file,tmp_output_file,stan_output_file,init_file,sigma,KEEPER=1000,WARMUP=1000):
+    model_theta = []       # 150
     with open(input_file,"rt") as IN:
         i=0
         for line in IN:
             i+=1
             fields=line.rstrip().split()
-            ID=fields[0]
-            lambdas_choice=lambdas.loc[lambdas['gene_ID'] == ID].iloc[0,6]
-            thetas,med,prob,tail_prob_lambda,sum_prob_lambda =runVariant(models,fields,tmp_output_file,stan_output_file,init_file,sigma,lambdas_choice,KEEPER,WARMUP)
-            prob_tail_lambda.append(tail_prob_lambda)
-            prob_sum_lambda.append(sum_prob_lambda)
+            thetas =runModel(models,fields,tmp_output_file,stan_output_file,init_file,sigma,KEEPER,WARMUP)
             model_theta.extend(thetas)
-            model_theta_med.append(med)
-            model_med_prob.append(prob)        
-    if not os.path.exists(out_path+"model_theta/"):os.makedirs(out_path+"model_theta/")
-    if not os.path.exists(out_path+"model_theta_med/"):os.makedirs(out_path+"model_theta_med/")
-    if not os.path.exists(out_path+"model_prob/"):os.makedirs(out_path+"model_prob/")
-
-    pickle.dump(model_theta,open(out1,'wb'))
-    pickle.dump(model_theta_med,open(out2,'wb'))
-    pickle.dump(model_med_prob,open(out3,'wb'))
-    pickle.dump(prob_sum_lambda,open(out_sum_lambda,'wb'))
-    pickle.dump(prob_tail_lambda,open(out_max_lambda,'wb'))
+    pickle.dump(model_theta,open(out0,'wb'))
 
 
-def run(inFile,sigma,alpha,models,out_path,lambdas_file,WARMUP=1000,KEEPER=1000):
+def run(prefix,inFile,sigma,alpha,models,out,lambdas_file,WARMUP,KEEPER):
+    logging.info("WARMUP is %s"%(WARMUP))
+    logging.info("KEEPER is %s"%(KEEPER))
     if "txt" in inFile:
         outfix=os.path.split(inFile)[1].rsplit(".txt")[0]
     if "tsv" in inFile:
@@ -255,31 +234,27 @@ def run(inFile,sigma,alpha,models,out_path,lambdas_file,WARMUP=1000,KEEPER=1000)
     tmpFile= "tmp_output.txt"
     initFile = "initialization_stan.txt"
     outFile= "stan_output.txt"
-    out_path=out_path+"/output_pkl/"
+    out_path=out+"/output_pkl/"
     if not os.path.exists(out_path):os.makedirs(out_path)
     tmp_output_file=out_path+tmpFile
     init_file=out_path+initFile
     stan_output_file=out_path+outFile
     ###########################################################################################
     outname1=str(outfix)+"_s-"+str(sigma)+".pickle"
-    out1 = out_path+"model_theta/"+outname1
-    out2 = out_path+"model_theta_med/"+outname1
-    out3 = out_path+"model_prob/"+outname1
-
-    outname2=str(outfix)+"_s-"+str(sigma)+"_a-"+str(alpha)+".pickle"
-    out_max = out_path+"model_prob_tail_lambda_predicted/"
-    out_sum = out_path+"model_prob_sum_lambda_predicted/"
-    if not os.path.exists(out_max):os.makedirs(out_max)
-    if not os.path.exists(out_sum):os.makedirs(out_sum)
-    out_max_lambda = out_max+outname2
-    out_sum_lambda = out_sum+outname2
-
-    if (os.path.isfile(out1)) and (os.path.isfile(out2)) and (os.path.isfile(out3)) and (os.path.isfile(out_max_lambda)) and (os.path.isfile(out_sum_lambda)):
-        logging.info('.... Already Processed {0}'.format(out1))
-        logging.info('.... Already Processed {0}'.format(out2))
-        logging.info('.... Already Processed {0}'.format(out3))
-        logging.info('.... Already Processed {0}'.format(out_max_lambda))
-        logging.info('.... Already Processed {0}'.format(out_sum_lambda))
+    outname2=str(prefix)+"_parsedModelOutput_alpha-"+str(alpha)+".tsv"
+    out_path = out_path+"theta/"
+    if not os.path.exists(out_path):os.makedirs(out_path)
+    out1 = out_path+outname1
+    out2 = out+"/"+outname2
+    if (os.path.isfile(out1)):
+        logging.info('.... Already fiinshed running model and saved raw theta at : {0}'.format(out1))
     else:
-        parse_stan_output(out1,out2,out3,out_max_lambda,out_sum_lambda,models,inFile,tmp_output_file,stan_output_file,init_file,sigma,out_path,outfix,alpha,lambdas_file,WARMUP,KEEPER)
-    return out_path,outname1,outname2
+        logging.info('.... Start running model and save raw theta at : {0}'.format(out1))
+        save_raw_theta(out1,models,inFile,tmp_output_file,stan_output_file,init_file,sigma,WARMUP,KEEPER)
+    if (os.path.isfile(out2)):
+        logging.info('.... Already fiinshed parsing model output with predicted lambda at alpha at {0}, data saved at : {1}'.format(alpha,out2))
+        df = pd.read_csv(out2, index_col=False,sep='\t')
+    else:
+        logging.info('.... Start parsing model output with predicted lambda at alpha at {0}, data save at : {1}'.format(alpha,out2))
+        df=parse_stan_output(inFile,out1,out2,KEEPER,lambdas_file)
+    return df

@@ -32,8 +32,9 @@ def _build(args):
     logging.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ')                
     logging.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> step2: Preparing input in a format required for BEASTIE model')
     logging.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ')
-    #print("alpha is %s"%(args.alpha))
-    beastie_step2.run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,args.prefix,args.alpha,args.model,args.sigma,args.in_path,args.out,args.cutoff,args.SAVE_INT)
+    logging.info("WARMUP is %s"%(args.WARMUP))
+    logging.info("KEEPER is %s"%(args.KEEPER))
+    beastie_step2.run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,args.prefix,args.alpha,args.model,args.sigma,args.in_path,args.out,args.cutoff,args.SAVE_INT,args.WARMUP,args.KEEPER)
 
 def main():
     parser = argparse.ArgumentParser(description='Utilities for creating and working with BEASTIE.')
@@ -65,6 +66,8 @@ def main():
     build_parser.add_argument('--sigma', type=float, default=0.5, help='Significance cutoff for ASE. Defaults to 0.5.')
     build_parser.add_argument('--out', default='output', help='Location to write output files. Defaults to \'output\' inside the sample folder')
     build_parser.add_argument('--SAVE_INT', default='False', help='Whether to delte TEMP folder where it stores intermediate output. Defaults to keep \'TEMP\' folder inside \'output\' folder')
+    build_parser.add_argument('--WARMUP', type=int, default=1000, help='Number of wamrup samples in stan model.')
+    build_parser.add_argument('--KEEPER', type=int, default=1000, help='Number of keeped samples in stan model.')
 
     build_parser.set_defaults(command=_build)
 

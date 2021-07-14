@@ -22,7 +22,7 @@ def create_file_name(hetSNP_intersect_unique,meta,out,tmp):
     meta_error = os.path.join(out,'{0}_w_error.tsv'.format(os.path.splitext(base_meta[1])[0]))
     return base_modelin, base_modelin_error,meta_error
 
-def run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,prefix,alpha,model,sigma,in_path,out,cutoff,SAVE_INT):
+def run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,prefix,alpha,model,sigma,in_path,out,cutoff,SAVE_INT,WARMUP,KEEPER):
     out,tmp = create_output_directory(in_path,out)
     base_modelin, base_modelin_error,meta_error = create_file_name(hetSNP_intersect_unique,meta,out,tmp)
 
@@ -47,12 +47,15 @@ def run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetS
     logging.info('>>>>>>>>>>')
     logging.info('>>>>>>>>>> Starting step 2.4 : run model')
     # add debug msg
-    out_path,outname1,outname2 = run_model_stan_wrapper.run(base_modelin_error,sigma,alpha,model,out,hetSNP_intersect_unique_lambdaPredicted_file)
+    #out_path,outname1,outname2 = run_model_stan_wrapper.run(base_modelin_error,sigma,alpha,model,out,hetSNP_intersect_unique_lambdaPredicted_file)
+    logging.info("WARMUP is %s"%(WARMUP))
+    logging.info("KEEPER is %s"%(KEEPER))
+    df = run_model_stan_wrapper.run(prefix,base_modelin_error,sigma,alpha,model,out,hetSNP_intersect_unique_lambdaPredicted_file,WARMUP,KEEPER)
 
     logging.info('>>>>>>>>>>')
     logging.info('>>>>>>>>>> Starting step 2.5 : generate gene list')
     # add debug msg
-    significant_genes(prefix,out,out_path,outname1,outname2,cutoff,hetSNP_intersect_unique_lambdaPredicted_file)
+    significant_genes(df,prefix,out,cutoff,hetSNP_intersect_unique_lambdaPredicted_file)
 
     if SAVE_INT == True:
         os.rmdir(tmp)

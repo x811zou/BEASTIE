@@ -36,6 +36,8 @@ work_dir=inputs['work_dir']
 ref_dir=inputs['ref_dir']
 in_path=inputs['input_dir']
 SAVE_INT=inputs['SAVE_INT']
+WARMUP=inputs['WARMUP']
+KEEPER=inputs['KEEPER']
 
 [outputs]
 out_path=outputs['out_path']
@@ -53,7 +55,7 @@ stdout_file=in_path+str(prefix)+".stdout"
 # BEASTIE
 ###############################################
 
-cmd = f"python BEASTIE.py build --prefix {prefix} --vcf_sample_name {vcf_sample_name} --ref_dir {ref_dir} --vcf {vcf_file} --pileup {pileup_file} --in_path {in_path} --ancestry {ancestry} --chr_start {chr_start} --chr_end {chr_end} --read_length {read_length} --LD_token {LD_token} --model {model}"
+cmd = f"python BEASTIE.py build --prefix {prefix} --vcf_sample_name {vcf_sample_name} --ref_dir {ref_dir} --vcf {vcf_file} --pileup {pileup_file} --in_path {in_path} --ancestry {ancestry} --chr_start {chr_start} --chr_end {chr_end} --read_length {read_length} --LD_token {LD_token} --model {model} --cutoff {cutoff} --alpha {alpha} --WARMUP {WARMUP} --KEEPER {KEEPER}"
 #print(cmd)
 print(stdout_file)
 subprocess.call(cmd,shell=True,stdout=open(stdout_file, 'w'), stderr=open(stdout_file, 'w'))

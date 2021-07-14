@@ -37,6 +37,7 @@ def Intersect_exonicHetSnps(
         df6=df6.drop_duplicates()
         hetSNP_data['contig']=hetSNP_data['contig'].astype(int)
         hetSNP_data['position']=hetSNP_data['position'].astype(int)
+        # take intersection between these two dataframes
         df_overlapped = pd.merge(hetSNP_data,df6,on=['contig','position'], how="inner") 
         df_overlapped=df_overlapped.drop_duplicates()
         df_overlapped.sort_values(['chrN','transcript_pos','geneID','transcriptID'],ascending=[True,True,True,True], inplace=True)
