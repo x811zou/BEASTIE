@@ -10,10 +10,10 @@ BEASTIE is free for academic and non-profit use.
 
 ## Installation
 ### Prerequisites
-The following are required to install and run BEASTIE directly on your system:
+The following tools are required to install and run BEASTIE directly on your system:
 * BEASTIE has been tested on **Linux**. It may or may not work on other UNIX systems.
 * [CmdStan](https://mc-stan.org/users/interfaces/cmdstan) must be installed.  This is the command-line interface to the STAN statistical programming language.
-* [Python](https://www.python.org/downloads/release/python-360/) version 3.6 or higher is required.
+* [Python 3.6](https://www.python.org/downloads/release/python-360/) version 3.6 or higher is required.
 * [htslib-1.12](http://www.htslib.org/download/)
 * [bedtools2.25](https://bedtools.readthedocs.io/en/latest/content/installation.html)
 * [picard](https://broadinstitute.github.io/picard/) - set location as $picard_path
@@ -21,6 +21,31 @@ The following are required to install and run BEASTIE directly on your system:
 * [STAR2.7](https://github.com/alexdobin/STAR)
 * [Trimmomatic](https://github.com/usadellab/Trimmomatic) - set location as $trimmomatic_path
 * [vcftools0.1.15](https://vcftools.github.io/)
+* [R 4.0](https://cran.r-project.org/bin/macosx/)
+
+The following Python packages are required to install in your system:
+* os, sys, configparser, subprocess, pandas, re, pickle, numpy
+
+The following R packages are required to install in your system:
+* ["LDlinkR"](https://github.com/CBIIT/LDlinkR)
+* [reshape2](install.packages(“reshape2”))
+* [data.table](https://github.com/Rdatatable/data.table)
+* ["dplyr"](https://www.r-project.org/nosvn/pandoc/dplyr.html)
+* ["pasilla”](https://bioconductor.org/packages/release/data/experiment/html/pasilla.html)
+* ["readr"](https://cran.r-project.org/web/packages/readr/readme/README.html)
+* [glmnetUtils](https://www.rdocumentation.org/packages/glmnetUtils/versions/1.1.8)
+
+Git clone Python scripts from Bill Majoros' github repo, and add it to your python path
+```
+git clone https://github.com/bmajoros/python.git
+```
+
+Compile iBEASTIE2.stan inside cmdstan directory ($STAN)
+```
+mv iBEASTIE2.stan $STAN/examples/iBEASTIE2/.
+cd $STAN
+make examples/iBEASTIE2/iBEASTIE2
+```
 
 ### Installation steps
 
