@@ -82,7 +82,7 @@ step1: Model input data preparation.
 * Extract heterozygous sites from gencode reference for samtools mpileup (We provide splited gencode v19 for all 22 chromosome in reference folder, users are free to use their own version of gencode reference and use vcftools tools to split it). 
 * Parse pileup read counts by our faster version python script originally adopting from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star). 
 * Thinning reads by read length. One read only count once. 
-* Annotate AF and LD for pair of bi-allelic SNPs
+* Annotate AF and LD for bi-allelic het SNPs pairs
 
 step2: Identification of genes with ASE. Parsing BEASTIE model output with customized significance cutoff.
 * Convert data in format for model input
@@ -169,7 +169,6 @@ chr | pos | rsid | min_EUR_AF | diff_min_AF | log10_distance | r2 | d |
 
 * sample.remove_chr.content.SNPs.hets.header.vcf
 * sample.pileup
-* sample_logisticRegression_input.tsv
 
 ----------------------------------------
 2. run BEASTIE pipeline
