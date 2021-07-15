@@ -45,14 +45,13 @@ def count_all_het_sites(sample,vcfFilename,file_dir,outputFilename,chr_start,chr
                     #tabix /data/allenlab/scarlett/data/VCF/GSD/DNA_vcf/125249.vcf.recode.vcf.gz 1:10042358-10045556
                     output=Pipe.run(cmd)
                     if(len(output)==0):continue
-                    #if(len(output)<=9):continue
                     lines=output.split("\n")
                     for line in lines:
                         fields=line.split("\t")
                         if(fields[6]!="PASS"): continue
                         pos=fields[1]                         # column 9
                         rs = fields[2]                        # column 10
-                        genotype = fields[9].split(':')[0] # for HG00097
+                        genotype = fields[9].split(':')[0] 
                         if(not isHeterozygous(str(genotype))):continue # go back to the begining of the loop
                         transcriptCoord=transcript.mapToTranscript(int(pos))#    
                         total_biSNP += 1 
