@@ -32,29 +32,30 @@ def run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetS
         generate_modelCount(hetSNP_intersect_unique)
         logging.info('.... output file save to {0}'.format(hetSNP_intersect_unique))
     else:
-        logging.info('.... data exists at {0}'.format(hetSNP_intersect_unique))
+        logging.info('.... data exists, overwrites and saves at {0}'.format(hetSNP_intersect_unique))
+    generate_modelCount(hetSNP_intersect_unique)
     ##########################
     logging.info('>>>>>>>>>>')
     logging.info('>>>>>>>>>> Starting step 2.2 : predict phasing error')
-    if (os.path.isfile(meta_error)) or (os.path.isfile(hetSNP_intersect_unique_lambdaPredicted_file)):
-        cmd="Rscript --vanilla predict_lambda_phasingError.R %s %s %s %s %s %s %s %s %s"%(
-            alpha,tmp,prefix,model,hetSNP_intersect_unique,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,meta,meta_error
-        )
-        os.system(cmd)
+    if (os.path.isfile(meta_error)) and (os.path.isfile(hetSNP_intersect_unique_lambdaPredicted_file)):
         logging.info('.... output file save to {0}'.format(hetSNP_intersect_unique_lambdaPredicted_file))
         logging.info('.... output file save to {0}'.format(meta_error))
     else:
-        logging.info('.... data exists at {0}'.format(hetSNP_intersect_unique_lambdaPredicted_file))
-        logging.info('.... data exists at {0}'.format(meta_error))
+        logging.info('.... data exists, overwrites and saves at {0}'.format(hetSNP_intersect_unique_lambdaPredicted_file))
+        logging.info('.... data exists, overwrites and saves at {0}'.format(meta_error))
+    cmd="Rscript --vanilla predict_lambda_phasingError.R %s %s %s %s %s %s %s %s %s"%(
+            alpha,tmp,prefix,model,hetSNP_intersect_unique,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,meta,meta_error
+        )
+    os.system(cmd)
     ##########################
     logging.info('>>>>>>>>>>')
     logging.info('>>>>>>>>>> Starting step 2.3 : update model input with phasing')
     # print(base_modelin)
     if (os.path.isfile(base_modelin_error)):
-        update_model_input_lambda_phasing('pred_error_GIAB',base_modelin,base_modelin_error,meta_error)
         logging.info('.... output file save to {0}'.format(base_modelin_error))
     else:
-        logging.info('.... data exists at : {0}'.format(base_modelin_error))
+        logging.info('.... data exists, overwrites and saves at : {0}'.format(base_modelin_error))
+    update_model_input_lambda_phasing('pred_error_GIAB',base_modelin,base_modelin_error,meta_error)
     ##########################
     logging.info('>>>>>>>>>>')
     logging.info('>>>>>>>>>> Starting step 2.4 : run model')
@@ -67,12 +68,12 @@ def run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetS
     outfilename=out+"/"+prefix+"_ASE_all.tsv"
     outfilename_ase=out+"/"+prefix+"_ASE_cutoff_"+str(cutoff)+"_filtered.tsv"
     if (os.path.isfile(outfilename)) and (os.path.isfile(outfilename_ase)):
-        logging.info('.... data exists at {0}'.format(outfilename))
-        logging.info('.... data exists at {0}'.format(outfilename_ase))
+        logging.info('.... data exists, overwrites and saves at {0}'.format(outfilename))
+        logging.info('.... data exists, overwrites and saves at {0}'.format(outfilename_ase))
     else:
-        significant_genes(df,outfilename,outfilename_ase,cutoff,hetSNP_intersect_unique_lambdaPredicted_file)
         logging.info('.... output file save to {0}'.format(outfilename))
         logging.info('.... output file save to {0}'.format(outfilename_ase))
-
+    significant_genes(df,outfilename,outfilename_ase,cutoff,hetSNP_intersect_unique_lambdaPredicted_file)
     if SAVE_INT == True:
         os.rmdir(tmp)
+    logging.info('Yep! You are done!')
