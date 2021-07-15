@@ -60,7 +60,8 @@ def run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetS
     logging.info('>>>>>>>>>> Starting step 2.4 : run model')
     # add debug msg
     #out_path,outname1,outname2 = run_model_stan_wrapper.run(base_modelin_error,sigma,alpha,model,out,hetSNP_intersect_unique_lambdaPredicted_file)
-    df = run_model_stan_wrapper.run(prefix,base_modelin_error,sigma,alpha,model,out,hetSNP_intersect_unique_lambdaPredicted_file,WARMUP,KEEPER)
+    logging.info('DEBUG: BEASTIE step2 step 2.4, KEEPER is {0}'.format(KEEPER))
+    df = run_model_stan_wrapper.run(base_modelin_error,sigma,alpha,model,out,hetSNP_intersect_unique_lambdaPredicted_file,WARMUP,KEEPER)
     ##########################
     logging.info('>>>>>>>>>>')
     logging.info('>>>>>>>>>> Starting step 2.5 : generate gene list')

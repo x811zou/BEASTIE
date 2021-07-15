@@ -115,7 +115,7 @@ def getMaxProb_lambda(thetas,Lambda):
     #lambda_sum2 = p_less2 + p_more2
     return round(lambda_prob1,3),round(lambda_sum1,3)
 
-def runModel(model,fields,tmp_output_file,stan_output_file,init_file,sigma,KEEPER=1000,WARMUP=1000):
+def runModel(model,fields,tmp_output_file,stan_output_file,init_file,sigma,WARMUP,KEEPER):
     if(len(fields)>=4):
         writeInputsFile_i(fields,tmp_output_file,sigma)
         writeInitializationFile(init_file)
@@ -174,15 +174,19 @@ def parse_stan_output(input_file,out1,KEEPER,lambdas_file):
             "rb",
         )
     )
+    logging.info('DEBUG: size of thetas : {0}'.format(len(thetas)))
     lambdas=pd.read_csv(lambdas_file, delimiter='\t', names = ['gene_ID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda'])
     prob_sum_lambda = []
     model_theta_med = []   # 150
     CI_left=[]
     CI_right=[]
+    print("DEBUG: parse_stan_output function, KEEPER is %s"%(KEEPER))
+    logging.info('DEBUG: parse_stan_output function, KEEPER is {0}'.format(KEEPER))
     geneID=[]     
     with open(input_file,"rt") as IN:
         i=0
-        print("initial i : %s"%(i))
+        print("DEBUG: initial i : %s"%(i)) ######
+        logging.info('DEBUG: parse_stan_output function, initial i : {0}'.format(i))
         for line in IN:
             fields=line.rstrip().split()
             ID=fields[0]
@@ -195,31 +199,36 @@ def parse_stan_output(input_file,out1,KEEPER,lambdas_file):
             median,left_CI,right_CI = summarize(gene_thetas,0.05)
             max_prob = getMaxProb_RMSE(gene_thetas)
             max_prob_lambda,sum_prob_lambda = getMaxProb_lambda(gene_thetas,lambdas_choice) 
-            print("KEEPER is %s  ,  %s-%s:%s"%(KEEPER,i,j,sum_prob_lambda))
+            print("DEBUG: KEEPER is %d  ,  %d-%d:%f"%(KEEPER,i,j,sum_prob_lambda))
+            logging.info('DEBUG: KEEPER is {0}, {1}-{2}: {3}'.format(KEEPER,i,j,sum_prob_lambda))
             i=i+int(KEEPER) 
-            print("next i : %s"%(i))
+            logging.info('DEBUG: next i : {0}'.format(i))
+            print("DEBUG: next i : %s"%(i))
             prob_sum_lambda.append(sum_prob_lambda)
             CI_left.append(left_CI)
             CI_right.append(right_CI)  
             model_theta_med.append(median)
+    print("DEBUG: size of output list %s"%(len(prob_sum_lambda)))
+    logging.info('DEBUG: size of output list :{0}'.format(len(prob_sum_lambda)))
     df={'gene_ID':geneID,'posterior_median':model_theta_med,'CI_left':CI_left,'CI_right':CI_right,'posterior_mass_support_ALT':prob_sum_lambda}
     df=pd.DataFrame(df)
     return df
 
 
-def save_raw_theta(out0,models,input_file,tmp_output_file,stan_output_file,init_file,sigma,KEEPER=1000,WARMUP=1000):
+def save_raw_theta(out0,models,input_file,tmp_output_file,stan_output_file,init_file,sigma,WARMUP,KEEPER):
     model_theta = []       # 150
     with open(input_file,"rt") as IN:
         i=0
         for line in IN:
             i+=1
             fields=line.rstrip().split()
-            thetas =runModel(models,fields,tmp_output_file,stan_output_file,init_file,sigma,KEEPER,WARMUP)
+            thetas =runModel(models,fields,tmp_output_file,stan_output_file,init_file,sigma,WARMUP,KEEPER)
             model_theta.extend(thetas)
+    logging.info('.... Number of genes : {0}, and length of thetas: {1}'.format(i,len(model_theta)))
     pickle.dump(model_theta,open(out0,'wb'))
 
 
-def run(prefix,inFile,sigma,alpha,models,out,lambdas_file,WARMUP,KEEPER):
+def run(inFile,sigma,alpha,models,out,lambdas_file,WARMUP,KEEPER):
     logging.info("WARMUP is %s"%(WARMUP))
     logging.info("KEEPER is %s"%(KEEPER))
     if "txt" in inFile:
@@ -235,14 +244,15 @@ def run(prefix,inFile,sigma,alpha,models,out,lambdas_file,WARMUP,KEEPER):
     init_file=out_path+initFile
     stan_output_file=out_path+outFile
     ###########################################################################################
-    outname1=str(outfix)+"_s-"+str(sigma)+".pickle"
+    outname1=str(outfix)+"_s-"+str(sigma)+"_a-"+str(alpha)+"_W"+str(WARMUP)+"K"+str(KEEPER)+".pickle"
     out_path = out_path+"theta/"
     if not os.path.exists(out_path):os.makedirs(out_path)
     out1 = out_path+outname1
     if (os.path.isfile(out1)):
         logging.info('.... Already fiinshed running model and saved raw theta at : {0}'.format(out1))
     else:
-        logging.info('.... Start running model and save raw theta at : {0}'.format(out1))
         save_raw_theta(out1,models,inFile,tmp_output_file,stan_output_file,init_file,sigma,WARMUP,KEEPER)
+        logging.info('.... Finish running model and save raw theta at : {0}'.format(out1))
+    logging.info('DEBUG: run_model_stan_warpper.run, KEEPER is {0}'.format(KEEPER))
     df=parse_stan_output(inFile,out1,KEEPER,lambdas_file)
     return df
