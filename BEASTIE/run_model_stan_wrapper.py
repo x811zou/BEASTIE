@@ -174,7 +174,6 @@ def parse_stan_output(input_file,out1,KEEPER,lambdas_file):
             "rb",
         )
     )
-    logging.debug('DEBUG: size of thetas : {0}, size of output list :{1}'.format(len(thetas),len(prob_sum_lambda)))
     lambdas=pd.read_csv(lambdas_file, delimiter='\t', names = ['gene_ID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda'])
     prob_sum_lambda = []
     model_theta_med = []   # 150
@@ -198,6 +197,7 @@ def parse_stan_output(input_file,out1,KEEPER,lambdas_file):
             CI_left.append(left_CI)
             CI_right.append(right_CI)  
             model_theta_med.append(median)
+    logging.debug('DEBUG: size of thetas : {0}, size of output list :{1}'.format(len(thetas),len(prob_sum_lambda)))
     df={'gene_ID':geneID,'posterior_median':model_theta_med,'CI_left':CI_left,'CI_right':CI_right,'posterior_mass_support_ALT':prob_sum_lambda}
     df=pd.DataFrame(df)
     return df
