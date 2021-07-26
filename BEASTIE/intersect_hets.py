@@ -8,24 +8,23 @@ import logging
 
 def Intersect_exonicHetSnps(
     parsed_mpileup_file,
-    hetSNP,
+    hetSNP_AF,
     read_length,
     min_totalcounts,
     min_singlecounts,
     hetSNP_intersect_unique,
     hetSNP_intersect_unique_forlambda_file,
 ):
-
     df = pd.read_csv(parsed_mpileup_file, index_col=False,sep='\t')
     df_sub=df.drop(['refAllele','altAllele','lowMAPQDepth', 'lowBaseQDepth', 'rawDepth','otherCount'],axis=1)
 
-    hetSNP_data = pd.read_csv(hetSNP, index_col=False,sep='\t')
+    hetSNP_data = pd.read_csv(hetSNP_AF, index_col=False,sep='\t')
     hetSNP_data['contig'] = hetSNP_data['chrN'] 
     hetSNP_data['position']=hetSNP_data['pos']
 
     out_base=os.path.splitext(hetSNP_intersect_unique)[0]
-    out1='{0}_beforeThinning.tsv'.format(out_base)
-    out2='{0}_beforeDropTrans.tsv'.format(out_base)
+    out1='{0}_filtered_beforeThinning.TEMP.tsv'.format(out_base)
+    out2='{0}_filtered_afterThinning_beforeDropTrans.TEMP.tsv'.format(out_base)
     if len(df_sub): 
         df2 = df_sub[df_sub['refCount'] >= int(min_singlecounts)]
         df3 = df2[df2['altCount'] >= int(min_singlecounts)]

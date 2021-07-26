@@ -59,7 +59,7 @@ Get_LD <- function(snp,lag_snp,mytoken,pop,r2d){
 }
 
 loop_chr <-function(outpath,data,ancestry,batch_size,mytoken,chr_start,chr_end){
-  final_df_filename=paste0(outpath,prefix,"_chr_",chr_start,"_",chr_end,"_LD.tsv",sep="")
+  final_df_filename=paste0(outpath,"/",prefix,"_chr",chr_start,"-",chr_end,"_LD.TEMP.tsv",sep="")
   if (!file.exists(final_df_filename)) {
     counter=0
     first_counter=0
@@ -80,23 +80,18 @@ loop_chr <-function(outpath,data,ancestry,batch_size,mytoken,chr_start,chr_end){
         }
         print(paste0(">>>>>>>>>> finish chr",j,"!"))
       }else{
-        print(paste0(">>>>>>>>>> no content on chr",j,"!")) 
-        break
+        print(paste0(">>>>>>>>>> no content on chr",j," on hetSNP file!")) 
+        opt <- options(show.error.messages=TRUE)
+        on.exit(options(opt))
+        stop()
       }   
       print(paste0("chr",j," done!",sep=""))
     }
-    tmp_df_filename=paste0(outpath,prefix,"_chr_",first_counter,"_",last_counter,"_LD.tsv",sep="")
+    tmp_df_filename=paste0(outpath,"/",prefix,"_chr",first_counter,"-",last_counter,"_LD.TEMP.tsv",sep="")
     write.table(df_LD, tmp_df_filename, row.names = FALSE,quote=FALSE, sep='\t')
     df_LD=read.table(file = tmp_df_filename, sep = '\t', header = TRUE)
     if((dim(df_LD)[1]>1)&&(first_counter==chr_start)&&(last_counter==chr_end)){
-      print(paste0("file save to ",final_df_filename,sep=""))
-      for(file in list.files(path = outpath)){
-        if(grepl("temp_chr", file)){
-          file.remove(paste0(outpath,file,sep=""))
-      }else{
-        print(paste0("saved ",tmp_df_filename,"not matching to ",final_df_filename," PLEASE CHECK!",sep=""))
-      }
-    }
+      print(paste0("saved ",tmp_df_filename," not matching to ",final_df_filename," PLEASE CHECK!",sep=""))
     }
   }else{
     print(paste0("(file exists!) ",final_df_filename,sep=""))
@@ -118,7 +113,7 @@ calculate_LD_V2 <- function(df,pop,r2d,mytoken){
   }
 
 generate_LD <- function(chr,data,ancestry,batch_size,mytoken,outpath){
-  final_df_filename=paste0(outpath,"/temp_chr",chr,"_LD.tsv",sep="")
+  final_df_filename=paste0(outpath,"/TEMP_chr",chr,"_LD.tsv",sep="")
   if (file.exists(final_df_filename)) {
     final_df=read.table(file = final_df_filename, sep = '\t', header = TRUE)
   }else{
@@ -132,7 +127,7 @@ generate_LD <- function(chr,data,ancestry,batch_size,mytoken,outpath){
       x <- for (i in seq(1, nrow(data), batch_size)){
         start = i
         end = min(i+batch_size-1, nrow(data))
-        temp_d_i_name=paste0(outpath,"/temp_chr",chr,"_d_",count,".tsv",sep="")
+        temp_d_i_name=paste0(outpath,"/TEMP_chr",chr,"_d_",count,".tsv",sep="")
         if(!file.exists(temp_d_i_name)){
           if(dim(data[start:end,])[1]<2){
             temp_d_i = data[start:end,]
@@ -160,7 +155,7 @@ generate_LD <- function(chr,data,ancestry,batch_size,mytoken,outpath){
       x <- for (i in seq(1, nrow(data), batch_size)){
         start = i
         end = min(i+batch_size-1, nrow(data))
-        temp_r2_i_name=paste0(outpath,"/temp_chr",chr,"_r2_",count,".tsv",sep="")
+        temp_r2_i_name=paste0(outpath,"/TEMP_chr",chr,"_r2_",count,".tsv",sep="")
         if(!file.exists(temp_r2_i_name)){
           if(dim(data[start:end,])[1]<2){
             temp_r2_i = data[start:end,]
@@ -189,14 +184,14 @@ generate_LD <- function(chr,data,ancestry,batch_size,mytoken,outpath){
     print(paste0("output complete data size: ",dim(final_df)[1],sep=""))
     write.table(final_df, final_df_filename, row.names = FALSE,quote=FALSE, sep='\t')
     print(paste0(final_df_filename," saved!",sep=""))
-    tmp_r2=paste0("temp_chr",chr,"_r2_",sep="")
-    tmp_d=paste0("temp_chr",chr,"_d_",sep="")
+    tmp_r2=paste0("TEMP_chr",chr,"_r2_",sep="")
+    tmp_d=paste0("TEMP_chr",chr,"_d_",sep="")
     for(file in list.files(path = outpath)){
       if(grepl(tmp_r2, file)){
-        file.remove(paste0(outpath,file,sep=""))
+        file.remove(paste0(outpath,"/",file,sep=""))
       }
       if(grepl(tmp_d, file)){
-        file.remove(paste0(outpath,file,sep=""))
+        file.remove(paste0(outpath,"/",file,sep=""))
       }
     }
 }

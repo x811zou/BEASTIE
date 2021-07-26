@@ -5,6 +5,8 @@ usage: python run_config_HG_chr20.py
 """
 import configparser
 import subprocess
+from datetime import date
+today = date.today()
 
 # If you do not change names of parameters config file, you do not need to modify this run_config.py
 #====================================================
@@ -49,7 +51,7 @@ tmp_dir=out_dir+"TEMP/"
 vcf_file=in_path+vcf_file_name
 pileup_file=in_path+pileup_file_name
 model = STAN+str(modelName)+"/"+str(modelName)
-stdout_file=in_path+str(prefix)+".stdout"
+stdout_file=in_path+"output/"+str(prefix)+"-"+str(today.strftime("%b-%d-%Y"))+".stdout"
 
 ###############################################
 # BEASTIE

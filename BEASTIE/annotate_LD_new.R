@@ -7,18 +7,27 @@ library("LDlinkR")
 source("Get_LD.R")
 
 args = commandArgs(trailingOnly=TRUE)
-prefix=args[1]   #"HG00097"
-ancestry=args[2] #"EUR"
-infile=args[3]   #"/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_hetSNP_intersect_unique_AF.tsv"
-outpath=args[4]  #"/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/"
-mytoken=args[5]  #"c313799c13c3"
-chr_start=args[6]#1
-chr_end=args[7]  #22
-meta=args[8]     #"/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_meta.tsv"
+prefix=args[1]   
+ancestry=args[2] 
+infile=args[3]   
+outpath=args[4]  
+mytoken=args[5]  
+chr_start=args[6]
+chr_end=args[7]  
+meta=args[8]     
+
+prefix="HG00096_chr21"
+ancestry="EUR"
+infile="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_chr21_hetSNP_intersected_filtered.TEMP.tsv"
+outpath="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/"
+mytoken="c313799c13c3"
+chr_start=1
+chr_end=22
+meta="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_chr21_meta.TEMP.tsv"
 
 if (!file.exists(meta)){
 #================================================ specify input
-    df = read.table(infile, header=T, sep = '\t', row.names = 'X')
+    df = read.table(infile, header=T, sep = '\t')
     batch_size = 1000
     in_data=df
 
@@ -66,9 +75,6 @@ if (!file.exists(meta)){
 
     data_final_reginput<-data_final_reginput%>%select(geneID,chr,pos,lag_pos,rsid,log10_distance,d,r2,MAF,lag_MAF,min_MAF,diff_MAF)
 
-    # outData = paste0(prefix,"_meta",sep="")
-    # save_file(data_final_reginput,outData,outpath)
-    # print(paste0("output saved in ",target_data,sep=""))
     write.table(data_final_reginput,meta,sep = "\t", row.names = FALSE, col.names = TRUE)
 }else{
     print("file exists!")

@@ -101,8 +101,12 @@ def getMaxProb_RMSE(thetas):
 def getMaxProb_lambda(thetas,Lambda):
     # 1. no transformation 
     one_over_Lambda = float(1/float(Lambda))
-    p_less1 = len([i for i in thetas if i < one_over_Lambda])/len(thetas)
-    p_more1 = len([i for i in thetas if i > Lambda])/len(thetas)
+    # changes maded in 07/22
+    min_l = min(Lambda,one_over_Lambda)
+    max_l = max(Lambda,one_over_Lambda)
+    # 
+    p_less1 = len([i for i in thetas if i < min_l])/len(thetas)
+    p_more1 = len([i for i in thetas if i > max_l])/len(thetas)
     lambda_prob1 = max(p_less1,p_more1)
     # 2. transform thetas, and then calculate proportion
     #thetas_log2 = [math.log2(x) for x in thetas]
@@ -194,10 +198,10 @@ def parse_stan_output(input_file,out1,KEEPER,lambdas_file):
             max_prob_lambda,sum_prob_lambda = getMaxProb_lambda(gene_thetas,lambdas_choice) 
             i=i+int(KEEPER) 
             prob_sum_lambda.append(sum_prob_lambda)
-            CI_left.append(left_CI)
-            CI_right.append(right_CI)  
-            model_theta_med.append(median)
-    logging.debug('DEBUG: size of thetas : {0}, size of output list :{1}'.format(len(thetas),len(prob_sum_lambda)))
+            CI_left.append(round(left_CI,3))
+            CI_right.append(round(right_CI,3))  
+            model_theta_med.append(round(median,3))
+    logging.debug('size of thetas : {0}, size of output list :{1}'.format(len(thetas),len(prob_sum_lambda)))
     df={'gene_ID':geneID,'posterior_median':model_theta_med,'CI_left':CI_left,'CI_right':CI_right,'posterior_mass_support_ALT':prob_sum_lambda}
     df=pd.DataFrame(df)
     return df
@@ -216,29 +220,32 @@ def save_raw_theta(out0,models,input_file,tmp_output_file,stan_output_file,init_
     pickle.dump(model_theta,open(out0,'wb'))
 
 
-def run(inFile,sigma,alpha,models,out,lambdas_file,WARMUP,KEEPER):
+def run(prefix,inFile,sigma,alpha,models,out,lambdas_file,WARMUP,KEEPER,either_cov,total_cov):
     logging.debug("Number of WARMUP samples is {0}, Number of posterior estimates is {1}".format(WARMUP,KEEPER))
     if "txt" in inFile:
-        outfix=os.path.split(inFile)[1].rsplit(".txt")[0]
+        outfix=os.path.split(inFile)[1].rsplit("_hetSNP_intersected_filtered.TEMP.txt")[0]
     if "tsv" in inFile:
-        outfix=os.path.split(inFile)[1].rsplit(".tsv")[0]
+        outfix=os.path.split(inFile)[1].rsplit("_hetSNP_intersected_filtered.TEMP.tsv")[0]
     tmpFile= "tmp_output.txt"
     initFile = "initialization_stan.txt"
     outFile= "stan_output.txt"
-    out_path=out+"/output_pkl/"
+    out=out+"/output_pkl"
+    out_path=out+"/beastie/"
+    if not os.path.exists(out):os.makedirs(out)
     if not os.path.exists(out_path):os.makedirs(out_path)
     tmp_output_file=out_path+tmpFile
     init_file=out_path+initFile
     stan_output_file=out_path+outFile
     ###########################################################################################
-    outname1=str(outfix)+"_s-"+str(sigma)+"_a-"+str(alpha)+"_W"+str(WARMUP)+"K"+str(KEEPER)+".pickle"
+    outname1=str(prefix)+"_a-"+str(alpha)+"_W"+str(WARMUP)+"K"+str(KEEPER)+"_s"+str(either_cov)+"t"+str(total_cov)+"_s-"+str(sigma)+".pickle"
     out_path = out_path+"theta/"
     if not os.path.exists(out_path):os.makedirs(out_path)
     out1 = out_path+outname1
     if (os.path.isfile(out1)):
-        logging.info('.... Already fiinshed running model and saved raw theta at : {0}'.format(out1))
+        logging.info('.... Already fiinshed running model and saved raw theta at : {0}'.format(out1))  
     else:
         save_raw_theta(out1,models,inFile,tmp_output_file,stan_output_file,init_file,sigma,WARMUP,KEEPER)
         logging.info('.... Finish running model and save raw theta at : {0}'.format(out1))
     df=parse_stan_output(inFile,out1,KEEPER,lambdas_file)
-    return df
+    outname2=str(prefix)+"_a-"+str(alpha)+"_W"+str(WARMUP)+"K"+str(KEEPER)+"_s"+str(either_cov)+"t"+str(total_cov)+".pickle"
+    return df,outname2

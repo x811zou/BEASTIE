@@ -31,22 +31,35 @@ library(glmnetUtils)
 #suppressMessages(library(parallel))
 #### read in self-defined functions
 #### read in parameters
-alpha=as.numeric(args[1])                          #alpha=0.05
-tmp=paste0(args[2],"/",sep="")                     #tmp="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr20/output/TEMP/"
-sample=args[3]                                     #sample="HG00096_chr20"
-model=args[4]                                      #model="iBEASTIE2"
-hetSNP_intersect_unique=args[5]                    #hetSNP_intersect_unique="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE/BEASTIE_example/HG00096_chr20/output/TEMP/HG00096_chr20_hetSNP_intersect_unique.tsv"
-hetSNP_intersect_unique_forlambda_file=args[6]     #hetSNP_intersect_unique_forlambda_file="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr20/output/TEMP/HG00096_chr20_hetSNP_intersect_unique_forLambda.tsv"
-hetSNP_intersect_unique_lambdaPredicted_file=args[7]#hetSNP_intersect_unique_lambdaPredicted_file="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr20/output/TEMP/HG00096_chr20_hetSNP_intersect_unique_lambdaPredicted.tsv"
-meta=args[8]                                       #meta="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr20/output/TEMP/HG00096_chr20_logisticReg_input.tsv"
-meta_error=args[9]                                 #meta_error="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr20/output/HG00096_chr20_logisticReg_input_w_error.tsv"
+
+alpha=args[1]
+tmp=paste0(args[2],"/",sep="")                     
+sample=args[3]                                     
+model=args[4]                                      
+hetSNP_intersect_unique=args[5]                    
+hetSNP_intersect_unique_forlambda_file=args[6]     
+hetSNP_intersect_unique_lambdaPredicted_file=args[7]
+meta=args[8]                                       
+meta_error=args[9]                                 
+
+# alpha=0.05 #FWE
+# sample="HG00096_chr21"
+# model="iBEASTIE2"
+# tmp="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/"
+# hetSNP_intersect_unique="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_hetSNP_intersect_unique.tsv"
+# hetSNP_intersect_unique_forlambda_file="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_hetSNP_intersect_unique_forLambda.tsv"
+# hetSNP_intersect_unique_lambdaPredicted_file="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_hetSNP_intersect_unique_lambdaPredicted.tsv"
+# meta="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_meta.tsv"
+# meta_error="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/HG00096_chr21_meta_w_error.tsv"
 
 source("Get_phasing_error_rate.R")
 source("Get_LD.R")
 
 predict_lambda_realdata <- function(alpha,in_data,out_data){
   #colnames(in_data)<-c("gene_ID","total_reads","num_hets")
-  data<-in_data%>%dplyr::mutate(predicted_lambda=(log(alpha/(1-alpha)) -(as.numeric(lambda.fit.simulation$coefficients[1])+as.numeric(lambda.fit.simulation$coefficients[3])*as.integer(totalCount)))/as.numeric(lambda.fit.simulation$coefficients[2]))
+  data<-in_data%>%
+    dplyr::mutate(predicted_lambda=(log(alpha/(1-alpha)) -(as.numeric(lambda.fit.simulation$coefficients[1])+as.numeric(lambda.fit.simulation$coefficients[3])*as.integer(totalCount)))/as.numeric(lambda.fit.simulation$coefficients[2]))
+    #%>%mutate(predicted_lambda=ifelse(predicted_lambda<1,1,predicted_lambda))
   #data<-in_data%>%mutate(predicted_lambda=(log(alpha/(1-alpha)) -(15.587909+-0.006483*total_reads))/-13.248682)
   write.table(data,file = out_data,row.names=FALSE,col.names = FALSE,sep="\t")
   print(paste0("model input with predicted lambda saved to ",out_data,sep=""))
@@ -61,9 +74,11 @@ if(grepl("iBEASTIE", model, fixed=TRUE)){
 }
 
 in_data<-read.delim(file.path(hetSNP_intersect_unique_forlambda_file),header=TRUE,sep="\t") 
+size=dim(in_data)[1]
 out_data<-hetSNP_intersect_unique_lambdaPredicted_file
+adjusted_alpha=as.numeric(alpha)/as.numeric(size)
 if (!file.exists(out_data)) {
-  predicted_df=predict_lambda_realdata(alpha,in_data,out_data)
+  predicted_df=predict_lambda_realdata(adjusted_alpha,in_data,out_data)
 }else{
   print("lambda prediction file exists!")
 }

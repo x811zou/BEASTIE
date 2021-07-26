@@ -10,9 +10,12 @@ import os
 import logging
 
 def generate_modelCount(filename): 
-    base_out=os.path.splitext(filename)[0]
-    out_modelinput='{0}_modelinput.tsv'.format(base_out)
+    logging.info('filename: {0}'.format(filename))
     gene_df=pd.read_csv(filename,sep="\t",header=0,index_col=False)
+    base_out=os.path.splitext(filename)[0]
+    out_modelinput='{0}.modelinput.tsv'.format(base_out)
+    logging.info('out_modelinput: {0}'.format(out_modelinput))
+    #gene_df=pd.read_csv(filename,sep="\t",header=0,index_col=False)
     if not os.path.isfile(out_modelinput):
         unique_gene = gene_df['geneID'].unique()
         rst = ""
@@ -78,7 +81,7 @@ def update_model_input_lambda_phasing(pred_prob_column,base_modelin,base_modelin
     file1.write(updated_line)
     file1.close()
 
-def significant_genes(df,outfilename,outfilename_ase,cutoff,hetSNP_intersect_unique_lambdaPredicted_file):
+def significant_genes(df_beastie,df_binomial,df_adm,outfilename,outfilename_ase,cutoff,hetSNP_intersect_unique_lambdaPredicted_file):
     data_modeloutput = pd.read_csv(hetSNP_intersect_unique_lambdaPredicted_file,sep="\t") #data_modeloutput = pd.read_csv("/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr20/output/TEMP/HG00096_chr20_hetSNP_intersect_unique_alpha0.05_lambdaPredicted.tsv",sep="\t")
     data_modeloutput.columns = [
         "gene_ID",
@@ -89,17 +92,17 @@ def significant_genes(df,outfilename,outfilename_ase,cutoff,hetSNP_intersect_uni
         "total_reads",
         "predicted_lambda",
     ]
-    logging.info('size of model output is {0}'.format(len(df)))
-    logging.info('size of hetSNP_intersect_unique_lambdaPredicted_file is {0}'.format(len(data_modeloutput)))
-    df_output = pd.merge(data_modeloutput,df,on=['gene_ID'], how="inner") 
-    logging.info('intersection size is {0}'.format(len(df_output)))
-    logging.info('ASE gene cut off is {0}'.format(cutoff))
+    df_output = pd.merge(data_modeloutput,df_beastie,on=['gene_ID'], how="inner") 
+    logging.debug('size of model output is {0} ; size of hetSNP_intersect_unique_lambdaPredicted_file is {1}; intersection size is {2}'.format(len(df_beastie),len(data_modeloutput),len(df_output)))
     ncount = df_output[df_output["posterior_mass_support_ALT"] > cutoff].count()[8]
-    logging.info('{} genes with ASE out of total genes {} at @ {} > {}'.format(ncount,len(data_modeloutput),"posterior_mass_support_ALT",cutoff))
+    logging.info('{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}'.format(ncount,len(data_modeloutput),round((ncount/len(data_modeloutput))*100,3),"posterior_mass_support_ALT",cutoff))
     df_output["ASE"] = df_output["posterior_mass_support_ALT"]
     df_output = df_output.assign(
         ASE = lambda dataframe: dataframe['posterior_mass_support_ALT'].map(lambda posterior_mass_support_ALT: "Y" if posterior_mass_support_ALT > cutoff else "N")
     )
+    df_output_bi = pd.merge(df_output,df_binomial,on=['gene_ID'], how="inner") 
+    df_output_bi_adm = pd.merge(df_output_bi,df_adm,on=['gene_ID'], how="inner") 
+    df_output = df_output_bi_adm.drop(['FirstSite_esti','NaiveSum_esti','Pseudo_esti','MajorSite_esti', 'ADM_esti'], axis=1)
     df_output.to_csv(outfilename,sep="\t",header=True)
     df_output_ase=df_output[df_output["ASE"]=='Y']
     df_output_ase.to_csv(outfilename_ase,sep="\t",header=True)
