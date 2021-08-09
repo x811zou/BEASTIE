@@ -9,8 +9,8 @@ from numpy.core.numeric import outer
 import logging
 import argparse
 import pandas as pd
-from GffTranscriptReader import GffTranscriptReader
-from Pipe import Pipe
+from misc_tools.GffTranscriptReader import GffTranscriptReader
+from misc_tools.Pipe import Pipe
 import beastie_step1
 import beastie_step2
 from datetime import date
@@ -29,8 +29,8 @@ def _build(args):
     logging.info('========================================')
     logging.info('======================================== step1: Processing raw data & annotating LD and AF information')
     logging.info('======================================== ')
-    hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file = beastie_step1.run(args.sigma,args.alpha,args.WARMUP,args.KEEPER,args.prefix, args.vcf_sample_name, args.in_path,args.out,args.model,args.vcf,args.ref_dir, args.ancestry, args.chr_start, args.chr_end, args.min_total_cov,args.min_single_cov,args.read_length,args.LD_token,args.pileup,args.hetSNP,args.parsed_pileup)          
-    logging.info('======================================== ')                
+    hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file = beastie_step1.run(args.sigma,args.alpha,args.WARMUP,args.KEEPER,args.prefix, args.vcf_sample_name, args.in_path,args.out,args.model,args.vcf,args.ref_dir, args.ancestry, args.chr_start, args.chr_end, args.min_total_cov,args.min_single_cov,args.read_length,args.LD_token,args.pileup,args.hetSNP,args.parsed_pileup)
+    logging.info('======================================== ')
     logging.info('======================================== step2: Preparing input in a format required for BEASTIE model')
     logging.info('======================================== ')
     beastie_step2.run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,args.prefix,args.alpha,args.model,args.sigma,args.in_path,args.out,args.cutoff,args.SAVE_INT,args.WARMUP,args.KEEPER,args.min_total_cov,args.min_single_cov)

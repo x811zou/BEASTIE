@@ -3,8 +3,8 @@
 # 2021 Xue Zou (xue.zou@duke.edu)
 #=========================================================================
 
-from GffTranscriptReader import GffTranscriptReader
-from Pipe import Pipe
+from misc_tools.GffTranscriptReader import GffTranscriptReader
+from misc_tools.Pipe import Pipe
 import time
 import logging
 import pandas as pd
@@ -46,7 +46,7 @@ def count_all_het_sites(tmp,sample,vcfFilename,file_dir,outputFilename,chr_start
                     for exon in rawExons:
                         begin=exon.getBegin()    # column 7
                         end=exon.getEnd()      # column 8
-                        cmd = "tabix " + vcfFilename + " "+chromN+":"+str(begin)+"-"+str(end)#         
+                        cmd = "tabix " + vcfFilename + " "+chromN+":"+str(begin)+"-"+str(end)#
                         #tabix /data/allenlab/scarlett/data/VCF/GSD/DNA_vcf/125249.vcf.recode.vcf.gz 1:10042358-10045556
                         output=Pipe.run(cmd)
                         if(len(output)==0):continue
@@ -56,14 +56,14 @@ def count_all_het_sites(tmp,sample,vcfFilename,file_dir,outputFilename,chr_start
                             if(fields[6]!="PASS"): continue
                             pos=fields[1]                         # column 9
                             rs = fields[2]                        # column 10
-                            genotype = fields[9].split(':')[0] 
+                            genotype = fields[9].split(':')[0]
                             if(not isHeterozygous(str(genotype))):continue # go back to the begining of the loop
-                            transcriptCoord=transcript.mapToTranscript(int(pos))#    
-                            total_biSNP += 1 
+                            transcriptCoord=transcript.mapToTranscript(int(pos))#
+                            total_biSNP += 1
                             chr_pos=chromN+"_"+pos
                             byGene[geneID].add(chr_pos)
                             out_stream.write("\t".join([str(chrom),str(chromN),str(geneID),str(pos),str(transID),str(transcriptCoord),str(rs),str(genotype),"\n"]))
-            # write up the basic information 
+            # write up the basic information
             # all_set_list = []
             # non_empty_count = 0
             # non_empty_count_len = 0
