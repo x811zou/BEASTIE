@@ -39,10 +39,33 @@ The following R packages are required to install in your system:
 
 
 ### Installation options
-#### Using Singularity with Docker Image:
+#### Using Docker Image:
+Docker does not allow the container any access to the host system by default. To allow the BEASTIE container to access necessary
+files on the host system you need use the `-v` flag to "mount" a host directory at a particular mount point inside the container.
+
+If all your data and outputs exist under the current directory, the following template should work for running BEASTIE. Just replace "<BEASTIE_IMAGE>" with the docker image and "<config_file>" with the path to your BEASTIE configuration file.
+
 ```bash
-TBD
+% docker run -v "`pwd`":"`pwd`" <BEASTIE_IMAGE> -c <config_file>
 ```
+
+#### Using Singularity:
+We don't build a singularity image directly, but you can build one using the docker image.
+
+```bash
+% sudo singularity build beastie.sif docker://x811zou/beastie
+```
+
+This will create a singularity image, `beastie.sif` that can potentially be run like
+```bash
+% ./beastie.sif -c <config_file>
+```
+
+If you have files that exist in directories outside your current one, you'll need to use the more verbose method:
+```bash
+% singularity run --bind <directory> beastie.sif -c <config_file>
+```
+
 #### Customized installation:
 Git clone our BEASTIE scripts and example data in your working directory ($workdir)
 ```bash
@@ -114,11 +137,11 @@ Preparation-step: process raw data (optional with provided commands)
 ----------------------------------------
 
 a. processes trim raw RNAseq fastq reads
-```
-java -jar $trimmomatic_path/trimmomatic-0.33.jar PE -threads 16 -phred33 $fastq_R1 $fastq_R2 \
-   $trimmed_fastq/${sample}_FWD_paired.fq.gz $trimmed_fastq/${sample}_FWD_unpaired.fq.gz \
-   $trimmed_fastq/${sample}_REV_paired.fq.gz $trimmed_fastq/${sample}_REV_unpaired.fq.gz \
-   ILLUMINACLIP:$trimmomatic_reference/trimmomatic_MHPS.fa:2:30:10:8:TRUE LEADING:30 TRAILING:30 SLIDINGWINDOW:4:15 MINLEN:36
+```bash
+% java -jar $trimmomatic_path/trimmomatic-0.33.jar PE -threads 16 -phred33 $fastq_R1 $fastq_R2 \
+     $trimmed_fastq/${sample}_FWD_paired.fq.gz $trimmed_fastq/${sample}_FWD_unpaired.fq.gz \
+     $trimmed_fastq/${sample}_REV_paired.fq.gz $trimmed_fastq/${sample}_REV_unpaired.fq.gz \
+     ILLUMINACLIP:$trimmomatic_reference/trimmomatic_MHPS.fa:2:30:10:8:TRUE LEADING:30 TRAILING:30 SLIDINGWINDOW:4:15 MINLEN:36
 ```
 The parameters are:
 * $trimmed_fastq: saving trimmed fastq output path
@@ -127,22 +150,22 @@ The parameters are:
 
 b. align reads with STAR<br>
 We have done extensive comparison on RNAseq alignes reference allele mapping bias, and found that the best one with high efficiency and minimal bias is splice-aware aligner STAR with 2pass EndtoEnd alignment mode and WASP filtering : https://github.com/alexdobin/STAR. If you prefer to use aligned BAM files, you can directly use that as input.
-```
-STAR --twopassMode Basic --runThreadN 24 --genomeDir $star_ind \
-    --readFilesIn $fastqDir/${sample}_FWD_paired.fq.gz $fastqDir/${sample}_REV_paired.fq.gz \
-    --alignEndsType EndToEnd \
-    --waspOutputMode SAMtag \
-    --varVCFfile $VCF \
-    --outFilterMismatchNmax 10 \
-    --outSAMtype BAM SortedByCoordinate \
-    --outReadsUnmapped Fastx \
-    --outSAMattributes NH HI NM MD AS nM jM jI XS vA vG vW \
-    --readFilesCommand "gunzip -c" \
-    --outFileNamePrefix $output_prefix
+```bash
+% STAR --twopassMode Basic --runThreadN 24 --genomeDir $star_ind \
+      --readFilesIn $fastqDir/${sample}_FWD_paired.fq.gz $fastqDir/${sample}_REV_paired.fq.gz \
+      --alignEndsType EndToEnd \
+      --waspOutputMode SAMtag \
+      --varVCFfile $VCF \
+      --outFilterMismatchNmax 10 \
+      --outSAMtype BAM SortedByCoordinate \
+      --outReadsUnmapped Fastx \
+      --outSAMattributes NH HI NM MD AS nM jM jI XS vA vG vW \
+      --readFilesCommand "gunzip -c" \
+      --outFileNamePrefix $output_prefix
 
-java -jar $picardDir/picard.jar MarkDuplicates \
-   I=$output_prefix/Aligned.sortedByCoord.out.bam \
-   O=$output_prefix/Aligned.sortedByCoord.out.picard_markdup.bam
+% java -jar $picardDir/picard.jar MarkDuplicates \
+     I=$output_prefix/Aligned.sortedByCoord.out.bam \
+     O=$output_prefix/Aligned.sortedByCoord.out.picard_markdup.bam
 ```
 The parameters are:
 * $fastqDir: input path for trimmed fastq
@@ -153,8 +176,8 @@ The parameters are:
 
 
 c. pile up reads for each variant.
-```
-samtools mpileup -d 0 -B -s -f $ref -l $het_sites_for_mpileup $bam > ${prefix}.pileup
+```bash
+% samtools mpileup -d 0 -B -s -f $ref -l $het_sites_for_mpileup $bam > ${prefix}.pileup
 ```
 The parameters are:
 * $ref: annotation reference file
@@ -176,7 +199,7 @@ a. input files required
 b. run BEASTIE pipeline
 Parameters can be specificed in parameters.cfg files.
 The model (BEASTIE.stan) must be run in the $STAN directory.
-```
-python run_config.py
+```bash
+% beastie -c <config_file>
 ```
 ----------------------------------------

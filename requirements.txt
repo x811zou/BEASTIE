@@ -1,4 +1,4 @@
 pandas == 1.3.0
 numpy == 1.21.0
-Cython
-cyvcf2
+Cython == 0.29.24
+cyvcf2 == 0.30.11
