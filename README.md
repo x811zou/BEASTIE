@@ -2,14 +2,14 @@
 BEASTIE (Bayesian Estimation of Allele Specific Transcription Integrating across Exons) is a software suite for identifying allele-specific-expression (ASE) from regulatory variants from RNA-seq and WGS data.
 BEASTIE uses a Bayesian hierarchical model to integrate prior information with read count data and genetic data. Using MCMC (Markov Chain Monte Carlo), BEASTIE efficiently performs posterior inference to estimate effect sizes of ASE. <br>
 
-The BEASTIE workflow is currently set up for gene-level ASE estimation. This method has been tested in Europeran individual NA12878, and African individual NA19247 from 1000 Genome Project. 
+The BEASTIE workflow is currently set up for gene-level ASE estimation. This method has been tested in Europeran individual NA12878, and African individual NA19247 from 1000 Genome Project.
 
 BEASTIE has been found to be substantially more accurate than other tests based on the binomial distribution.
 
 BEASTIE is free for academic and non-profit use.
 
 ## Installation
-### Software prerequisites 
+### Software prerequisites
 Only if you want to use our recommended pipeline to align RNAseq reads):
 * [bedtools2.25](https://bedtools.readthedocs.io/en/latest/content/installation.html)
 * [picard](https://broadinstitute.github.io/picard/) - set location as $picard_path
@@ -29,20 +29,16 @@ The following Python packages are required to install in your system:
 * os, sys, configparser, subprocess, pandas, re, pickle, numpy
 
 The following R packages are required to install in your system:
-* ["LDlinkR"](https://github.com/CBIIT/LDlinkR)
-* [reshape2](install.packages(“reshape2”))
+* [LDlinkR](https://github.com/CBIIT/LDlinkR)
+* [reshape2](https://github.com/hadley/reshape)
 * [data.table](https://github.com/Rdatatable/data.table)
-* ["dplyr"](https://www.r-project.org/nosvn/pandoc/dplyr.html)
-* ["pasilla”](https://bioconductor.org/packages/release/data/experiment/html/pasilla.html)
-* ["readr"](https://cran.r-project.org/web/packages/readr/readme/README.html)
+* [dplyr](https://www.r-project.org/nosvn/pandoc/dplyr.html)
+* [pasilla](https://bioconductor.org/packages/release/data/experiment/html/pasilla.html)
+* [readr](https://cran.r-project.org/web/packages/readr/readme/README.html)
 * [glmnetUtils](https://www.rdocumentation.org/packages/glmnetUtils/versions/1.1.8)
 
 
 ### Installation options
-#### Using a Python 3.8 VirtualEnv:
-```python
-TBD
-```
 #### Using Singularity with Docker Image:
 ```bash
 TBD
@@ -50,40 +46,52 @@ TBD
 #### Customized installation:
 Git clone our BEASTIE scripts and example data in your working directory ($workdir)
 ```bash
-git clone https://github.com/x811zou/BEASTIE.git
+% git clone --recurse-submodules https://github.com/x811zou/BEASTIE.git
 ```
-Git clone Python scripts from our former lab member's github repo, and add it to your python path. 
-```bash
-git clone https://github.com/bmajoros/python.git
-```
-Installing [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the environment variable $STAN to the directory where CmdStan has been installed. 
+Installing [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the environment variable $STAN to the directory where CmdStan has been installed.
 
-Compiling BEASTIE source code
+Compiling BEASTIE stan model
 ```bash
-cd $STAN
-mkdir iBEASTIE2                   
-mv $workdir/iBEASTIE2.stan $STAN/iBEASTIE2/.                 
-make $STAN/iBEASTIE2/iBEASTIE2
+% cd $STAN
+% mkdir iBEASTIE2
+% mv $workdir/BEASTIE/BEASTIE/iBEASTIE2.stan $STAN/iBEASTIE2/.
+% make /iBEASTIE2/iBEASTIE2
+% cp /iBEASTIE2/iBEASTIE2 /usr/local/bin # or some other directory in your PATH
 ```
-Download reference data and unzip it, and set the environment variable $refdir to the directory where reference folder has been unzipped. 
+
+Download reference data and unzip it, and set the environment variable $refdir to the directory where reference folder has been unzipped.
 ```
 https://drive.google.com/file/d/1gwplvg4az1op6ExDjCLYgGKYXQrFDd2T/view?usp=sharing
+```
+
+Then either install BEASTIE:
+```bash
+% cd $workdir/BEASTIE
+% make install
+```
+
+or install BEASTIE into a python virtual environment:
+```bash
+% cd $workdir/BEASTIE
+% virtualenv -p python3 venv # create a new virtual environment with at least python 3.8
+% ./venv/bin/activate
+% make install
 ```
 
 ## Workflow
 ### Summary of steps
 Multiple steps are needed to identify gene level ASE. Broadly, these steps are:
 
-Preparation-step: 
+Preparation-step:
 
 Gene-level pileup read counts generation. We recommend using STAR 2Pass EndtoEnd alignment mode with WASP filtering for RNAseq fastq data alignment to generate BAM files. Extract allele frequency information for each heterozygous variant from 1000 Genome VCF file for corresponding ancestry (We provide AF_1_22.tsv in reference folder for all ancestry data).
 
-Pipeline-step: 
+Pipeline-step:
 
-step1: Model input data preparation. 
-* Extract heterozygous sites from gencode reference for samtools mpileup (We provide splited gencode v19 for all 22 chromosome in reference folder, users are free to use their own version of gencode reference and use vcftools tools to split it).  
-* Parse pileup read counts by our faster version python script originally adopting from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star). 
-* Thinning reads by read length. One read only count once. 
+step1: Model input data preparation.
+* Extract heterozygous sites from gencode reference for samtools mpileup (We provide pre-split gencode v19 for all 22 chromosome in reference folder, users are free to use their own version of gencode reference and use vcftools tools to split it).
+* Parse pileup read counts by our faster version python script originally adopting from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star).
+* Thinning reads by read length. One read only count once.
 * Annotate AF and LD for bi-allelic het SNPs pairs
 
 step2: Identification of genes with ASE. Parsing BEASTIE model output with customized significance cutoff.
@@ -99,9 +107,9 @@ step2: Identification of genes with ASE. Parsing BEASTIE model output with custo
 Functionally, these above steps are accomplished by individual Python3 scripts, alongside the prior listed dependencies. This workflow is summarized in the below figure:
 
 ![alt text](image/workflow_0714.png "workflow")
- 
-This workflow is summarized step-by-step below. 
- 
+
+This workflow is summarized step-by-step below.
+
 Preparation-step: process raw data (optional with provided commands)
 ----------------------------------------
 
@@ -118,7 +126,7 @@ The parameters are:
 
 
 b. align reads with STAR<br>
-We have done extensive comparison on RNAseq alignes reference allele mapping bias, and found that the best one with high efficiency and minimal bias is splice-aware aligner STAR with 2pass EndtoEnd alignment mode and WASP filtering : https://github.com/alexdobin/STAR. If you prefer to use aligned BAM files, you can directly use that as input. 
+We have done extensive comparison on RNAseq alignes reference allele mapping bias, and found that the best one with high efficiency and minimal bias is splice-aware aligner STAR with 2pass EndtoEnd alignment mode and WASP filtering : https://github.com/alexdobin/STAR. If you prefer to use aligned BAM files, you can directly use that as input.
 ```
 STAR --twopassMode Basic --runThreadN 24 --genomeDir $star_ind \
     --readFilesIn $fastqDir/${sample}_FWD_paired.fq.gz $fastqDir/${sample}_REV_paired.fq.gz \
@@ -131,7 +139,7 @@ STAR --twopassMode Basic --runThreadN 24 --genomeDir $star_ind \
     --outSAMattributes NH HI NM MD AS nM jM jI XS vA vG vW \
     --readFilesCommand "gunzip -c" \
     --outFileNamePrefix $output_prefix
-    
+
 java -jar $picardDir/picard.jar MarkDuplicates \
    I=$output_prefix/Aligned.sortedByCoord.out.bam \
    O=$output_prefix/Aligned.sortedByCoord.out.picard_markdup.bam

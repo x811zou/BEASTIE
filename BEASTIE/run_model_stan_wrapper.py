@@ -20,12 +20,12 @@ from builtins import (
 import os
 import math
 import pickle
-from StanParser import StanParser
+from misc_tools.StanParser import StanParser
 import statistics
 import pandas as pd
 import math
 import os.path
-import TempFilename
+import misc_tools.TempFilename
 import logging
 
 def writeInitializationFile(filename):
@@ -99,12 +99,12 @@ def getMaxProb_RMSE(thetas):
     return max_prob1#, RMSE
 
 def getMaxProb_lambda(thetas,Lambda):
-    # 1. no transformation 
+    # 1. no transformation
     one_over_Lambda = float(1/float(Lambda))
     # changes maded in 07/22
     min_l = min(Lambda,one_over_Lambda)
     max_l = max(Lambda,one_over_Lambda)
-    # 
+    #
     p_less1 = len([i for i in thetas if i < min_l])/len(thetas)
     p_more1 = len([i for i in thetas if i > max_l])/len(thetas)
     lambda_prob1 = max(p_less1,p_more1)
@@ -124,7 +124,7 @@ def runModel(model,fields,tmp_output_file,stan_output_file,init_file,sigma,WARMU
         writeInputsFile_i(fields,tmp_output_file,sigma)
         writeInitializationFile(init_file)
         cmd = (
-            "%s sample num_samples=%s num_warmup=%s data file=%s init=%s output file=%s refresh=0" 
+            "%s sample num_samples=%s num_warmup=%s data file=%s init=%s output file=%s refresh=0"
             % (model,KEEPER,WARMUP,tmp_output_file,init_file,stan_output_file)
         )
         os.system(cmd)# Parse MCMC output
@@ -183,7 +183,7 @@ def parse_stan_output(input_file,out1,KEEPER,lambdas_file):
     model_theta_med = []   # 150
     CI_left=[]
     CI_right=[]
-    geneID=[]     
+    geneID=[]
     with open(input_file,"rt") as IN:
         i=0
         for line in IN:
@@ -195,11 +195,11 @@ def parse_stan_output(input_file,out1,KEEPER,lambdas_file):
             lambdas_choice=lambdas.loc[lambdas['gene_ID'] == ID].iloc[0,6]
             median,left_CI,right_CI = summarize(gene_thetas,0.05)
             max_prob = getMaxProb_RMSE(gene_thetas)
-            max_prob_lambda,sum_prob_lambda = getMaxProb_lambda(gene_thetas,lambdas_choice) 
-            i=i+int(KEEPER) 
+            max_prob_lambda,sum_prob_lambda = getMaxProb_lambda(gene_thetas,lambdas_choice)
+            i=i+int(KEEPER)
             prob_sum_lambda.append(sum_prob_lambda)
             CI_left.append(round(left_CI,3))
-            CI_right.append(round(right_CI,3))  
+            CI_right.append(round(right_CI,3))
             model_theta_med.append(round(median,3))
     logging.debug('size of thetas : {0}, size of output list :{1}'.format(len(thetas),len(prob_sum_lambda)))
     df={'gene_ID':geneID,'posterior_median':model_theta_med,'CI_left':CI_left,'CI_right':CI_right,'posterior_mass_support_ALT':prob_sum_lambda}
@@ -242,7 +242,7 @@ def run(prefix,inFile,sigma,alpha,models,out,lambdas_file,WARMUP,KEEPER,either_c
     if not os.path.exists(out_path):os.makedirs(out_path)
     out1 = out_path+outname1
     if (os.path.isfile(out1)):
-        logging.info('.... Already fiinshed running model and saved raw theta at : {0}'.format(out1))  
+        logging.info('.... Already fiinshed running model and saved raw theta at : {0}'.format(out1))
     else:
         save_raw_theta(out1,models,inFile,tmp_output_file,stan_output_file,init_file,sigma,WARMUP,KEEPER)
         logging.info('.... Finish running model and save raw theta at : {0}'.format(out1))

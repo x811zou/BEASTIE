@@ -6,8 +6,8 @@ import os
 import logging
 import sys
 import pandas as pd
-from GffTranscriptReader import GffTranscriptReader
-from Pipe import Pipe
+from misc_tools.GffTranscriptReader import GffTranscriptReader
+from misc_tools.Pipe import Pipe
 from extractHets import count_all_het_sites
 from parse_mpileup import Parse_mpileup_allChr
 from intersect_hets import Intersect_exonicHetSnps
@@ -135,7 +135,7 @@ def run(sigma,alpha,WARMUP,KEEPER,prefix,vcf_sample_name,in_path,out,model,vcf,r
     if data11.shape[0]<2:
         os.remove(hetSNP)
         logging.error('..... existed hetSNP file is empty, please try again!')
-        sys.exit(1)    
+        sys.exit(1)
     else:
         logging.info('..... generated heterozygous bi-allelic SNPs data extracted from VCF can be found at {0}'.format(hetSNP))
 
@@ -152,9 +152,9 @@ def run(sigma,alpha,WARMUP,KEEPER,prefix,vcf_sample_name,in_path,out,model,vcf,r
     if data12.shape[1]<2:
         os.remove(parsed_pileup)
         logging.error('..... existed parsed pileup file is empty, please try again!')
-        sys.exit(1)  
+        sys.exit(1)
     else:
-        logging.info('..... generated parsed pileup file can be found at {0}'.format(parsed_pileup))  
+        logging.info('..... generated parsed pileup file can be found at {0}'.format(parsed_pileup))
 
    ##### 1.3 Annotation: AF
     hetSNP_AF = '{0}_AF.tsv'.format(os.path.splitext(hetSNP)[0])
@@ -173,7 +173,7 @@ def run(sigma,alpha,WARMUP,KEEPER,prefix,vcf_sample_name,in_path,out,model,vcf,r
         logging.error('..... existed annotated hetSNP with AF is empty, please try again!')
         sys.exit(1)
     else:
-        logging.info('..... generated annotated hetSNP with AF file can be found at {0}'.format(hetSNP_AF)) 
+        logging.info('..... generated annotated hetSNP with AF file can be found at {0}'.format(hetSNP_AF))
 
     ##### 1.4 Thinning reads: one reads only count once
     if (not os.path.exists(hetSNP_intersect_unique)) or (not os.path.exists(hetSNP_intersect_unique_forlambda_file)):
@@ -214,7 +214,7 @@ def run(sigma,alpha,WARMUP,KEEPER,prefix,vcf_sample_name,in_path,out,model,vcf,r
         logging.error('..... existed meta file with filtered sites file is empty, please try again!')
         sys.exit(1)
     else:
-        logging.info('..... generated annotated meta file can be found at {0}'.format(meta)) 
+        logging.info('..... generated annotated meta file can be found at {0}'.format(meta))
 
     logging.info('================= finish step1! ')
     return hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file
