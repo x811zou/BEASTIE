@@ -136,9 +136,9 @@ This workflow is summarized step-by-step below.
 Preparation-step: process raw data (optional with provided commands)
 ----------------------------------------
 
-a. processes trim raw RNAseq fastq reads
+a. trim raw RNAseq fastq reads using [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
 ```bash
-# install [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) at $trimmomatic_path
+# install at $trimmomatic_path
 wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.39.zip
 
 % java -jar $trimmomatic_path/trimmomatic-0.33.jar PE -threads 16 -phred33 $fastq_R1 $fastq_R2 \
