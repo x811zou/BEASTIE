@@ -138,7 +138,7 @@ Preparation-step: process raw data (optional with provided commands)
 
 a. processes trim raw RNAseq fastq reads
 ```bash
-# install Trimmomatic at $trimmomatic_path
+# install [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) at $trimmomatic_path
 wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.39.zip
 
 % java -jar $trimmomatic_path/trimmomatic-0.33.jar PE -threads 16 -phred33 $fastq_R1 $fastq_R2 \
