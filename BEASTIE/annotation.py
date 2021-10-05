@@ -2,9 +2,11 @@
 #=========================================================================
 # 2021 Xue Zou (xue.zou@duke.edu)
 #=========================================================================
-import os
-import pandas as pd
 import logging
+import os
+
+import pandas as pd
+
 
 def annotateAF(ancestry,hetSNP,out_AF,ref_dir):
     AF_file = os.path.join(ref_dir,"AF_1_22.tsv")

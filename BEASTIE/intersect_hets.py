@@ -1,9 +1,10 @@
-import statistics
-import pandas as pd
-import numpy as np
+import logging
 import os
 import os.path
-import logging
+import statistics
+
+import numpy as np
+import pandas as pd
 
 
 def Intersect_exonicHetSnps(

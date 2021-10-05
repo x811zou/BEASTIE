@@ -2,17 +2,18 @@
 #=========================================================================
 # 2021 Xue Zou (xue.zou@duke.edu)
 #=========================================================================
-import os
 import logging
+import os
 import sys
+
 import pandas as pd
-from misc_tools.GffTranscriptReader import GffTranscriptReader
-from misc_tools.Pipe import Pipe
-from extractHets import count_all_het_sites
-from parse_mpileup import Parse_mpileup_allChr
-from intersect_hets import Intersect_exonicHetSnps
-import annotation
-import shutil
+
+import BEASTIE.annotation as annotation
+
+from .extractHets import count_all_het_sites
+from .intersect_hets import Intersect_exonicHetSnps
+from .parse_mpileup import Parse_mpileup_allChr
+
 
 def check_file_existence(prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,parsed_pileup,sigma,alpha,WARMUP,KEEPER,min_single_cov,min_total_cov,chr_start,chr_end):
     out,common = create_output_directory(in_path,out,sigma,alpha,WARMUP,KEEPER,min_single_cov,min_total_cov)

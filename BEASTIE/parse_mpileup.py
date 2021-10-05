@@ -2,9 +2,10 @@
 #=========================================================================
 # 2021 Xue Zou (xue.zou@duke.edu)
 #=========================================================================
-from cyvcf2 import VCF 
-import pandas as pd
 import logging
+
+from cyvcf2 import VCF
+
 
 def if_alt(read,ref,allele):
     if read.lower() in allele.get(ref) or read.upper() in allele.get(ref):
@@ -37,7 +38,7 @@ def GATK_ParseMpileup(record,hets,indels,snp,counter,bi,i,pipeup_dict,min_cov,ei
     columns = str(record).strip("\n").split("\t")  # parse it because cyvcf2 does not support extracting the genotype]
     ref = ""
     alt = ""
-    rsid = "."                                      # read in the dict of pileup result because it is relatively small file 
+    rsid = "."                                      # read in the dict of pileup result because it is relatively small file
     vcf_key = str(record.CHROM)+"-"+str(record.start+1)
     pipeup_line = pipeup_dict.get(vcf_key).strip("\n").split("\t")
     alleles = ref_alt_dict(record.REF,record.ALT)
@@ -82,7 +83,7 @@ def GATK_ParseMpileup(record,hets,indels,snp,counter,bi,i,pipeup_dict,min_cov,ei
         for read,baseq,mapq in zip(reads,baseqs,mapqs):
             if read != "<" and read != ">": # D-68; E-69,F-70; H-72; J-74
                 basequal = ord(baseq)-33
-                mapqual = ord(mapq)-33 
+                mapqual = ord(mapq)-33
                 if basequal >= 0 and mapqual >= 0: #min_mapq=93    # count this base
                     if read == "." or read == ",":   #print("ref: "+str(read))
                         ref_count += 1
@@ -114,7 +115,7 @@ def GATK_ParseMpileup(record,hets,indels,snp,counter,bi,i,pipeup_dict,min_cov,ei
                 if_Indel="Y"
                 indels+=1
             else:
-                if_Indel="N"                
+                if_Indel="N"
             if record.is_sv:
                 if_sv="Y"
             else:
@@ -124,7 +125,7 @@ def GATK_ParseMpileup(record,hets,indels,snp,counter,bi,i,pipeup_dict,min_cov,ei
                 snp+=1
             else:
                 if_snp="N"
-        return(columns[0],columns[1],rsid,str(ref),str(ref_count),str(alt),str(alt_count),str(totalCount),str(ratio),if_Indel,if_sv,if_snp,if_biallelic,str(low_mapq),str(low_baseq),str(raw_depth),str(other_count),hets,counter)  
+        return(columns[0],columns[1],rsid,str(ref),str(ref_count),str(alt),str(alt_count),str(totalCount),str(ratio),if_Indel,if_sv,if_snp,if_biallelic,str(low_mapq),str(low_baseq),str(raw_depth),str(other_count),hets,counter)
     raise ValueError("Empty content")
 
 
@@ -141,7 +142,7 @@ def Parse_mpileup_allChr(vcfFile_sample,inputGZ,pileup_file,min_cov,either_cov,o
         for i, line in enumerate(stream_in):  # start reading in my pileup results line by line
             chr_info = line.split("\t")[0].strip("chr")
             start_info= line.split("\t")[1]
-            key_info = chr_info+"-"+start_info   
+            key_info = chr_info+"-"+start_info
             pipeup_dict[key_info] = line                  # save key: [1] value: line
         counter = 0
         hets = 0
@@ -158,7 +159,7 @@ def Parse_mpileup_allChr(vcfFile_sample,inputGZ,pileup_file,min_cov,either_cov,o
             vcf_key = str(record.CHROM)+"-"+str(record.start+1)
             pipeup_line = pipeup_dict.get(vcf_key)
             if not pipeup_line:
-                continue  
+                continue
             if not isHeterozygous(columns[-1]):
                 continue
             chrNum,start,rsid,ref,ref_count,alt,alt_count,total_count,ratio,if_Indel,if_SV,if_SNP,if_biallelic,low_mapg,low_baseq,raw_depth,other_count,hets,counter=GATK_ParseMpileup(record, hets, indels, snp, counter, bi, i, pipeup_dict, min_cov,either_cov)
