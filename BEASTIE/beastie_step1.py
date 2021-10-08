@@ -158,23 +158,24 @@ def run(sigma,alpha,WARMUP,KEEPER,prefix,vcf_sample_name,in_path,out,model,vcf,r
         logging.info('..... generated parsed pileup file can be found at {0}'.format(parsed_pileup))
 
    ##### 1.3 Annotation: AF
-    hetSNP_AF = '{0}_AF.tsv'.format(os.path.splitext(hetSNP)[0])
+    hetSNP_AF = f"{os.path.splitext(hetSNP)[0]}_AF.tsv"
     print(hetSNP_AF)
-    if not os.path.isfile(hetSNP_AF):
+    if os.path.isfile(hetSNP_AF):
+        logging.info('=================')
+        logging.info('================= Skipping common step 1.3')
+        data13 = pd.read_csv(hetSNP_AF, sep="\t", header=0, index_col=False)
+
+        if data13.shape[0] < 2:
+            os.remove(hetSNP_AF)
+            logging.error('..... existing annotated hetSNP with AF is empty, please try again!')
+            sys.exit(1)
+    else:
         logging.info('=================')
         logging.info('================= Starting common step 1.3')
         logging.info('..... start annotating AF and LD information')
-        annotation.annotateAF(ancestry,hetSNP,hetSNP_AF,ref_dir)
-    else:
-        logging.info('=================')
-        logging.info('================= Skipping common step 1.3')
-        data13=pd.read_csv(hetSNP_AF,sep="\t",header=0,index_col=False)
-    if data13.shape[0]<2:
-        os.remove(hetSNP_AF)
-        logging.error('..... existed annotated hetSNP with AF is empty, please try again!')
-        sys.exit(1)
-    else:
-        logging.info('..... generated annotated hetSNP with AF file can be found at {0}'.format(hetSNP_AF))
+        annotation.annotateAF(ancestry, hetSNP, hetSNP_AF, ref_dir)
+
+    logging.info(f"..... annotated hetSNP with AF file can be found at {hetSNP_AF}")
 
     ##### 1.4 Thinning reads: one reads only count once
     if (not os.path.exists(hetSNP_intersect_unique)) or (not os.path.exists(hetSNP_intersect_unique_forlambda_file)):
@@ -209,8 +210,8 @@ def run(sigma,alpha,WARMUP,KEEPER,prefix,vcf_sample_name,in_path,out,model,vcf,r
     else:
         logging.info('=================')
         logging.info('================= Skipping specific step 1.5')
-    data14=pd.read_csv(meta,sep="\t",header=0,index_col=False)
-    if data14.shape[0]<2:
+    data15=pd.read_csv(meta,sep="\t",header=0,index_col=False)
+    if data15.shape[0]<2:
         os.remove(meta)
         logging.error('..... existed meta file with filtered sites file is empty, please try again!')
         sys.exit(1)
