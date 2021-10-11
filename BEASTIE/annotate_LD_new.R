@@ -7,23 +7,14 @@ library("LDlinkR")
 source("Get_LD.R")
 
 args = commandArgs(trailingOnly=TRUE)
-prefix=args[1]   
-ancestry=args[2] 
-infile=args[3]   
-outpath=args[4]  
-mytoken=args[5]  
+prefix=args[1]
+ancestry=args[2]
+infile=args[3]
+outpath=args[4]
+mytoken=args[5]
 chr_start=args[6]
-chr_end=args[7]  
-meta=args[8]     
-
-prefix="HG00096_chr21"
-ancestry="EUR"
-infile="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_chr21_hetSNP_intersected_filtered.TEMP.tsv"
-outpath="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/"
-mytoken="c313799c13c3"
-chr_start=1
-chr_end=22
-meta="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_chr21_meta.TEMP.tsv"
+chr_end=args[7]
+meta=args[8]
 
 if (!file.exists(meta)){
 #================================================ specify input
