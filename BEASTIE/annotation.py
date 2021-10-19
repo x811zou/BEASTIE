@@ -7,6 +7,7 @@ import os
 
 import pandas as pd
 
+from pkg_resources import resource_filename
 
 def annotateAF(ancestry, hetSNP, out_AF, ref_dir):
     AF_file = os.path.join(ref_dir, "AF_1_22.tsv")
@@ -38,9 +39,11 @@ def annotateAF(ancestry, hetSNP, out_AF, ref_dir):
         logging.info('..... skip annotating AF for SNPs, file already saved at {0}'.format(out_AF))
 
 def annotateLD(prefix,ancestry,hetSNP_intersect_unique,out,LD_token,chr_start,chr_end,meta):
+    annotate_ld_new = resource_filename('BEASTIE', 'annotate_LD_new.R')
+
     if not os.path.isfile(meta):
-        cmd="Rscript --vanilla annotate_LD_new.R %s %s %s %s %s %d %d %s"%(prefix,ancestry,hetSNP_intersect_unique,out,LD_token,int(chr_start),int(chr_end),meta)
+        cmd = f"Rscript --vanilla {annotate_ld_new} {prefix} {ancestry} {hetSNP_intersect_unique} {out} {LD_token} {chr_start} {chr_end} {meta}"
         os.system(cmd)
-        logging.info('..... finish annotating LD for SNP pairs, file save at {0}'.format(meta))
+        logging.info(f"..... finish annotating LD for SNP pairs, file save at {meta}")
     else:
-        logging.info('..... skip annotating LD for SNP pairs, file already saved at {0}'.format(meta))
+        logging.info(f"..... skip annotating LD for SNP pairs, file already saved at {meta}")
