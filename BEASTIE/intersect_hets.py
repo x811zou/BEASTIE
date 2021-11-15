@@ -1,11 +1,8 @@
-import logging
 import os
-import os.path
+import logging
 import statistics
-
 import numpy as np
 import pandas as pd
-
 
 def Intersect_exonicHetSnps(
     parsed_mpileup_file,
@@ -58,12 +55,12 @@ def Intersect_exonicHetSnps(
             df_overlapped_uni.groupby(['geneID'])
             .agg({"altRatio":'median'}).
             reset_index().
-            rename(columns={'altRatio': 'median altRatio'})
+            rename(columns={'altRatio': 'median.altRatio'})
         )
         df6_nhets = (
             df_overlapped_uni.groupby(by='geneID')
             .agg({'position':pd.Series.nunique})
-            .rename(columns={'position': 'number of hets'})
+            .rename(columns={'position': 'number.of.hets'})
         )
         df6_totalref = (
             df_overlapped_uni.groupby(by='geneID')
@@ -94,21 +91,21 @@ def summary_statistics(data, title):
         print(
             "  #: {:-2} \n  Max: {:-2} \n  Min: {:-2} \n  Mean: {:-2} \n  Median: {:-2} \n  Variance: {:-2} \n  Std: {:-2} \n  25% quantile: {:-2} \n  75% quantile: {:-2}  \n  75% quantile + IQR*1.5: {:-2} \n  90% quantile: {:-2}  \n  91% quantile: {:-2}  \n  95% quantile: {:-2} \n  98% quantile: {:-2} \n  99% quantile: {:-2}".format(
                 len(data),
-                max(data),
-                min(data),
-                statistics.mean(data),
-                statistics.median(data),
-                statistics.variance(data),
-                statistics.stdev(data),
-                np.quantile(data, 0.25),
-                np.quantile(data, 0.75),
-                np.quantile(data, 0.75)
-                + (np.quantile(data, 0.75) - np.quantile(data, 0.25)) * 1.5,
-                np.quantile(data, 0.90),
-                np.quantile(data, 0.91),
-                np.quantile(data, 0.95),
-                np.quantile(data, 0.98),
-                np.quantile(data, 0.99),
+                round(max(data),3),
+                round(min(data),3),
+                round(statistics.mean(data),3),
+                round(statistics.median(data),3),
+                round(statistics.variance(data),3),
+                round(statistics.stdev(data),3),
+                round(np.quantile(data, 0.25),3),
+                round(np.quantile(data, 0.75),3),
+                round(np.quantile(data, 0.75)
+                + (np.quantile(data, 0.75) - np.quantile(data, 0.25)) * 1.5,3),
+                round(np.quantile(data, 0.90),3),
+                round(np.quantile(data, 0.91),3),
+                round(np.quantile(data, 0.95),3),
+                round(np.quantile(data, 0.98),3),
+                round(np.quantile(data, 0.99),3),
             )
         )
     else:

@@ -66,7 +66,7 @@ loop_chr <-function(outpath,data,ancestry,batch_size,mytoken,chr_start,chr_end){
     for(j in c(chr_start:chr_end)){
       print(paste0(">>>>>>>>>> start chr",j,"!"))
       data_chr <- data%>%filter(chrN==j)
-      if(dim(data_chr)[1]>0){
+      if(dim(data_chr)[1]>1){
         counter=counter+1
         df_LD_chr <- generate_LD(j,data_chr,ancestry,batch_size,mytoken,outpath)
         if(counter==1){
@@ -80,12 +80,15 @@ loop_chr <-function(outpath,data,ancestry,batch_size,mytoken,chr_start,chr_end){
         }
         print(paste0(">>>>>>>>>> finish chr",j,"!"))
       }else{
-        print(paste0(">>>>>>>>>> no content on chr",j," on hetSNP file!")) 
-        opt <- options(show.error.messages=TRUE)
-        on.exit(options(opt))
-        stop()
+        print(paste0("!!!!! only 1 site or no content on chr",j," on hetSNP file!")) 
+        counter=counter+1
+        ff=last_counter+1
+        last_counter=ff
+        #opt <- options(show.error.messages=TRUE)
+        #on.exit(options(opt))
+        #stop()
+        print(paste0("########### chr",j," skipped!",sep=""))
       }   
-      print(paste0("chr",j," done!",sep=""))
     }
     tmp_df_filename=paste0(outpath,"/",prefix,"_chr",first_counter,"-",last_counter,"_LD.TEMP.tsv",sep="")
     write.table(df_LD, tmp_df_filename, row.names = FALSE,quote=FALSE, sep='\t')

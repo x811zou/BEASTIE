@@ -8,8 +8,8 @@ import configparser
 import logging
 import os.path
 from collections import namedtuple
+from pathlib import Path
 from datetime import date
-
 from . import beastie_step1, beastie_step2
 
 ConfigurationData = namedtuple("ConfigurationData", [
@@ -32,8 +32,6 @@ def load_configuration(config_file):
     #==================================================== Nothing has to be changed below this line
     inputs = config['inputs']
     outputs = config['outputs']
-
-
     config = ConfigurationData(
         prefix=inputs['prefix'],
         vcf_file_name=inputs['vcf_file_name'],
@@ -70,18 +68,36 @@ def load_configuration(config_file):
 
 def run(config):
     in_path = os.path.join(config.input_dir, config.prefix)
+    out_dir=os.path.join(config.output_dir,config.prefix)
     vcf_file = os.path.join(in_path, config.vcf_file_name)
     pileup_file = os.path.join(in_path, config.pileup_file_name)
-    model = os.path.join(config.STAN, config.modelName)
+    model = os.path.join(config.STAN, config.modelName,config.modelName)
     today = date.today()
 
-    logname = os.path.join(in_path, "output", f"{config.prefix}-{today.strftime('%b-%d-%Y')}.log")
+    specification="s"+str(config.sigma)+"_a"+str(config.alpha)+"_sinCov"+str(config.min_single_cov)+"_totCov"+str(config.min_total_cov)+"_W"+str(config.WARMUP)+"K"+str(config.KEEPER)
+    output_path=os.path.join(str(out_dir),"output")
+    specification_path=os.path.join(output_path,str(specification))
+    log_path=os.path.join(specification_path,"log")
+    tmp_path=os.path.join(specification_path,"tmp")
+    result_path=os.path.join(specification_path,"result")
+
+    Path(output_path).mkdir(parents=True,exist_ok=True)
+    Path(specification_path).mkdir(parents=True,exist_ok=True)
+    Path(log_path).mkdir(parents=True,exist_ok=True)
+    Path(tmp_path).mkdir(parents=True,exist_ok=True)
+    Path(result_path).mkdir(parents=True,exist_ok=True)
+
+    logname = os.path.join(config.input_dir,config.prefix,"output",specification,"log",f"{config.prefix}-{today.strftime('%b-%d-%Y')}.log")
     if os.path.isfile(logname):
         os.remove(logname)
     logging.basicConfig(filename=logname,
                             filemode='a',
                             format='%(asctime)-15s [%(levelname)s] %(message)s',
                             level=logging.DEBUG)
+    #stderr_file=os.path.join(config.input_dir,config.output_folder,config.specification,"/log/",config.prefix+"-"+str(today.strftime("%b-%d-%Y"))+".stderr")
+    # cmd = f"python BEASTIE.py build --prefix {prefix} --vcf_sample_name {vcf_sample_name} --ref_dir {ref_dir} --vcf {vcf_file} --pileup {pileup_file} --in_path {in_path} --out {output_folder} --ancestry {ancestry} --chr_start {chr_start} --chr_end {chr_end} --read_length {read_length} --WARMUP {WARMUP} --KEEPER {KEEPER} --LD_token {LD_token} --model {model} '--SAVE_INT' {SAVE_INT}"
+    # subprocess.call(cmd,shell=True,stdout=open(stderr_file, 'w'), stderr=open(stderr_file, 'w'))
+
 
     logging.info(">> Starting running BEASTIE")
 
@@ -89,10 +105,11 @@ def run(config):
     logging.info('======================================== step1: Processing raw data & annotating LD and AF information')
     logging.info('======================================== ')
     hetSNP_intersect_unique, meta, hetSNP_intersect_unique_forlambda_file, hetSNP_intersect_unique_lambdaPredicted_file = beastie_step1.run(
-        0.5,  # sigma
-        config.alpha,
-        config.WARMUP,
-        config.KEEPER,
+        specification,
+        config.sigma,      # sigma
+        config.alpha,     # alpha
+        config.WARMUP,     # WARMUP
+        config.KEEPER,     # KEEPER
         config.prefix,
         config.vcf_sample_name,
         in_path,
@@ -103,37 +120,36 @@ def run(config):
         config.ancestry,
         config.chr_start,
         config.chr_end,
-        1,  # min_total_cov
-        0,  # min_single_cov
+        config.min_total_cov,        # min_total_cov
+        config.min_single_cov,        # min_single_cov
         config.read_length,
         config.LD_token,
         pileup_file,
-        None,  # hetSNP
-        None  # parsed_pileup
+        None,     # hetSNP
+        None      # parsed_pileup
     )
-
     logging.info('======================================== ')
     logging.info('======================================== step2: Preparing input in a format required for BEASTIE model')
     logging.info('======================================== ')
     beastie_step2.run(
+        specification,
         hetSNP_intersect_unique,
         meta,
         hetSNP_intersect_unique_forlambda_file,
         hetSNP_intersect_unique_lambdaPredicted_file,
         config.prefix,
-        config.alpha,
+        config.alpha,      # alpha
         model,
-        0.5,  # sigma
+        config.sigma,       # sigma
         in_path,
         "output",  # out
-        config.cutoff,
-        "False",  # SAVE_INT
-        config.WARMUP,
-        config.KEEPER,
-        1,  # min_total_cov
-        0,  # min_single_cov
+        0.5,
+        config.SAVE_INT,     # SAVE_INT
+        config.WARMUP,      # WARMUP
+        config.KEEPER,      # KEEPER
+        config.min_total_cov,         # min_total_cov
+        config.min_single_cov,         # min_single_cov
     )
-
 if __name__ == "__main__":
     args = check_arguments()
     config = load_configuration(args.config)

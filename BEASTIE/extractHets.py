@@ -24,7 +24,11 @@ def count_all_het_sites(tmp,sample,vcfFilename,file_dir,outputFilename,chr_start
     count=0
     for Num in range(chr_start,chr_end+1):
         outputFile=filename+".chr"+str(Num)+".TEMP.tsv"
-        if not os.path.isfile(outputFile):
+        outputFile_tmp=filename+".chr"+str(Num+1)+".TEMP.tsv"
+        if ((not os.path.isfile(outputFile)) or (os.path.isfile(outputFile) and (not os.path.isfile(outputFile_tmp)) and (Num+1<=chr_end))):
+            if ((os.path.isfile(outputFile) and (not os.path.isfile(outputFile_tmp)))):
+                logging.info('..... re-generates existed chr{0}'.format(Num))
+                os.remove(outputFile)
             out_stream = open(outputFile, "w")
             out_stream.write("chr\tchrN\tgeneID\tpos\ttranscriptID\ttranscript_pos\tSNP_id\tgenotype\n")
             reader=GffTranscriptReader()
@@ -88,6 +92,7 @@ def count_all_het_sites(tmp,sample,vcfFilename,file_dir,outputFilename,chr_start
     data0.to_csv(outputFilename,sep="\t",header=True,index = False)
     for files in os.listdir(tmp):
         if "TEMP" in files:
+            logging.info('..... remove created TEMP files: {0}'.format(files))
             os.remove(tmp+"/"+files)
 
 

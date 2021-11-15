@@ -48,7 +48,7 @@ beastie_wd=args[10]
 # model="iBEASTIE2"
 # tmp="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/"
 # hetSNP_intersect_unique="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_hetSNP_intersect_unique.tsv"
-# hetSNP_intersect_unique_forlambda_file="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_hetSNP_intersect_unique_forLambda.tsv"
+# hetSNP_intersect_unique_forlambda_file="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/other_example/HG00096/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_hetSNP_intersected_filtered_forLambda.TEMP.tsv"
 # hetSNP_intersect_unique_lambdaPredicted_file="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_hetSNP_intersect_unique_lambdaPredicted.tsv"
 # meta="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_meta.tsv"
 # meta_error="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/HG00096_chr21_meta_w_error.tsv"
@@ -56,13 +56,15 @@ beastie_wd=args[10]
 source(file.path(beastie_wd, "Get_phasing_error_rate.R"))
 source(file.path(beastie_wd, "Get_LD.R"))
 
-predict_lambda_realdata <- function(alpha,in_data,out_data){
+predict_lambda_realdata <- function(alpha,in_data,out_data,model){
   #colnames(in_data)<-c("gene_ID","total_reads","num_hets")
   data<-in_data%>%
-    dplyr::mutate(predicted_lambda=(log(alpha/(1-alpha)) -(as.numeric(lambda.fit.simulation$coefficients[1])+as.numeric(lambda.fit.simulation$coefficients[3])*as.integer(totalCount)))/as.numeric(lambda.fit.simulation$coefficients[2]))
+    dplyr::mutate(log_lambda_1=(log(alpha/(1-alpha)) -(as.numeric(model$coefficients[1])+as.numeric(model$coefficients[3])*as.integer(totalCount)))/as.numeric(model$coefficients[2]))%>%
+    mutate(predicted_lambda_1 = exp(log_lambda_1))%>%
+    mutate(predicted_lambda = predicted_lambda_1+1)
     #%>%mutate(predicted_lambda=ifelse(predicted_lambda<1,1,predicted_lambda))
   #data<-in_data%>%mutate(predicted_lambda=(log(alpha/(1-alpha)) -(15.587909+-0.006483*total_reads))/-13.248682)
-  write.table(data,file = out_data,row.names=FALSE,col.names = FALSE,sep="\t")
+  write.table(data,file = out_data,row.names=FALSE,col.names = TRUE,sep="\t")
   print(paste0("model input with predicted lambda saved to ",out_data,sep=""))
   return(data)
 }
@@ -80,8 +82,7 @@ size=dim(in_data)[1]
 out_data<-hetSNP_intersect_unique_lambdaPredicted_file
 adjusted_alpha=as.numeric(alpha)/as.numeric(size)
 if (!file.exists(out_data)) {
-  print("lambda prediction file not exists!")
-  predicted_df=predict_lambda_realdata(adjusted_alpha,in_data,out_data)
+  predicted_df=predict_lambda_realdata(adjusted_alpha,in_data,out_data,lambda.fit.simulation)
 }else{
   print("lambda prediction file exists!")
 }
