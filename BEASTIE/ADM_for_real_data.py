@@ -1,14 +1,14 @@
 #!/usr/bin/env python
-from scipy.stats import binom
+import logging
 import os
+import os.path
 import pickle
 import statistics
+
 import numpy as np
-from scipy.stats import percentileofscore
-import os.path
-import logging
 import pandas as pd
-import numpy as np
+from scipy.stats import percentileofscore
+
 
 def AA_estimate(A,R):
     AA = abs(A-R)/(A+R)
@@ -22,9 +22,9 @@ def fixed_simulator(D,M,N,estimate):
             A = np.random.binomial(D[i], 0.5)
             R = D[i] - A
             AR.append(AA_estimate(A,R))
-            
+
         esti.append(statistics.mean(AR))
-    # find the tail 
+    # find the tail
     pval = 1- percentileofscore(esti,estimate)/100
     #print("pvalue: "+str(pval))
     return pval
@@ -42,7 +42,7 @@ def getAA(fields):
             estimate = abs(R-A)/(A+R)
             esti.append(estimate)
             total_counts=A+R
-            depth.append(int(total_counts))          
+            depth.append(int(total_counts))
         avg_esti = statistics.mean(esti)
         hets = Mreps
         pval = fixed_simulator(depth,hets,1000,avg_esti)
@@ -60,7 +60,7 @@ def run(prefix,inFile,out,picklename):
     gene=[]
     filename=os.path.basename(inFile)
     out1 = out_path_theta + picklename
-    out2 = out_path_pval + picklename 
+    out2 = out_path_pval + picklename
 
     with open(inFile,"rt") as IN:
         for line in IN:
@@ -72,7 +72,7 @@ def run(prefix,inFile,out,picklename):
             avg_esti,pval = getAA(fields)
             esti_list.append(avg_esti)
             pval_list.append(pval)
-    ADM_df = pd.DataFrame(np.column_stack([gene, esti_list, pval_list]), 
+    ADM_df = pd.DataFrame(np.column_stack([gene, esti_list, pval_list]),
                                columns=['geneID', 'ADM_esti', 'ADM_pval'])
     ADM_df.to_csv(out+"/"+prefix+"_ASE_ADM.tsv",sep="\t",header=True,index=False)
     logging.info('..... ADM estimates size {0}'.format(len(esti_list)))

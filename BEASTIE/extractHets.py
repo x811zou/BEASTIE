@@ -3,12 +3,13 @@
 # 2021 Xue Zou (xue.zou@duke.edu)
 #=========================================================================
 
-from misc_tools.GffTranscriptReader import GffTranscriptReader
-from misc_tools.Pipe import Pipe
-import time
 import logging
-import pandas as pd
 import os
+
+import pandas as pd
+
+from BEASTIE.misc_tools.GffTranscriptReader import GffTranscriptReader
+from BEASTIE.misc_tools.Pipe import Pipe
 
 """ Check if a genotype is heterozygous by testing whether them match with the 6 types of homozygous options
 """

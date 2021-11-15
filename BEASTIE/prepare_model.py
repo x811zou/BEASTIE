@@ -2,14 +2,15 @@
 #=========================================================================
 # 2021 Xue Zou (xue.zou@duke.edu)
 #=========================================================================
-import pandas as pd
-import re
-import pickle
-import numpy as np
-import os
 import logging
+import os
+import re
 
-def generate_modelCount(filename): 
+import numpy as np
+import pandas as pd
+
+
+def generate_modelCount(filename):
     logging.info('filename: {0}'.format(filename))
     gene_df=pd.read_csv(filename,sep="\t",header=0,index_col=False)
     base_out=os.path.splitext(filename)[0]
@@ -92,7 +93,7 @@ def significant_genes(df_beastie,df_binomial,df_adm,outfilename,outfilename_ase,
         "total_reads",
         "predicted_lambda",
     ]
-    df_output = pd.merge(data_modeloutput,df_beastie,on=['gene_ID'], how="inner") 
+    df_output = pd.merge(data_modeloutput,df_beastie,on=['gene_ID'], how="inner")
     logging.debug('size of model output is {0} ; size of hetSNP_intersect_unique_lambdaPredicted_file is {1}; intersection size is {2}'.format(len(df_beastie),len(data_modeloutput),len(df_output)))
     ncount = df_output[df_output["posterior_mass_support_ALT"] > cutoff].count()[8]
     logging.info('{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}'.format(ncount,len(data_modeloutput),round((ncount/len(data_modeloutput))*100,3),"posterior_mass_support_ALT",cutoff))
@@ -100,8 +101,8 @@ def significant_genes(df_beastie,df_binomial,df_adm,outfilename,outfilename_ase,
     df_output = df_output.assign(
         ASE = lambda dataframe: dataframe['posterior_mass_support_ALT'].map(lambda posterior_mass_support_ALT: "Y" if posterior_mass_support_ALT > cutoff else "N")
     )
-    df_output_bi = pd.merge(df_output,df_binomial,on=['gene_ID'], how="inner") 
-    df_output_bi_adm = pd.merge(df_output_bi,df_adm,on=['gene_ID'], how="inner") 
+    df_output_bi = pd.merge(df_output,df_binomial,on=['gene_ID'], how="inner")
+    df_output_bi_adm = pd.merge(df_output_bi,df_adm,on=['gene_ID'], how="inner")
     df_output = df_output_bi_adm.drop(['FirstSite_esti','NaiveSum_esti','Pseudo_esti','MajorSite_esti', 'ADM_esti'], axis=1)
     df_output.to_csv(outfilename,sep="\t",header=True)
     df_output_ase=df_output[df_output["ASE"]=='Y']

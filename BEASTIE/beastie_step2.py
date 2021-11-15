@@ -2,20 +2,20 @@
 #=========================================================================
 # 2021 Xue Zou (xue.zou@duke.edu)
 #=========================================================================
-import sys
-import os
 import logging
+import os
+import sys
+
 import pandas as pd
-from prepare_model import (
-    update_model_input_lambda_phasing,
-    significant_genes,
-    generate_modelCount,
-)
-from beastie_step1 import create_output_directory
-import run_model_stan_wrapper
-import binomial_for_real_data 
-import ADM_for_real_data
-import re
+
+import BEASTIE.ADM_for_real_data as ADM_for_real_data
+import BEASTIE.binomial_for_real_data as binomial_for_real_data
+import BEASTIE.run_model_stan_wrapper as run_model_stan_wrapper
+
+from .beastie_step1 import create_output_directory
+from .prepare_model import (generate_modelCount, significant_genes,
+                            update_model_input_lambda_phasing)
+
 
 def create_file_name(hetSNP_intersect_unique,meta,out,common):
     base = os.path.split(hetSNP_intersect_unique)

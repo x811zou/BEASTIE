@@ -38,6 +38,9 @@ The following R packages are required to install in your system:
 * [readr](https://cran.r-project.org/web/packages/readr/readme/README.html)
 * [glmnetUtils](https://www.rdocumentation.org/packages/glmnetUtils/versions/1.1.8)
 
+Most of these pakages can be installed from CRAN using the `install.packages` R function. However, "pasilla" is a Bioconductor package and must be installed using the
+[Bioconductor Manager](https://cran.r-project.org/web/packages/BiocManager/index.html) package. Once BiocManager is installed run `BiocManager::install("pasilla")` to install it.
+
 
 ### Installation options
 #### Using Docker Image:

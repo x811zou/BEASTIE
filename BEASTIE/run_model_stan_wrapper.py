@@ -2,31 +2,17 @@
 #=========================================================================
 # 2021 Xue Zou (xue.zou@duke.edu)
 #=========================================================================
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-    generators,
-    nested_scopes,
-    with_statement,
-)
-from builtins import (
-    int,
-    range,
-    str,
-    open,
-)
-import os
-import math
-import pickle
-from misc_tools.StanParser import StanParser
-import statistics
-import pandas as pd
-import math
-import os.path
-import misc_tools.TempFilename
 import logging
+import math
+import os
+import os.path
+import pickle
+import statistics
+
+import pandas as pd
+
+from BEASTIE.misc_tools.StanParser import StanParser
+
 
 def writeInitializationFile(filename):
     OUT=open(filename,"wt")

@@ -5,12 +5,12 @@ usage: python run_config.py config_file.cfg
 """
 import argparse
 import configparser
+import logging
 import os.path
-import subprocess
-import sys
-
 from collections import namedtuple
 from datetime import date
+
+from . import beastie_step1, beastie_step2
 
 ConfigurationData = namedtuple("ConfigurationData", [
     "prefix", "vcf_file_name", "vcf_sample_name", "pileup_file_name", "ancestry", "min_total_cov", "min_single_cov", "sigma", "cutoff", "alpha", "chr_start", "chr_end", "read_length", "LD_token", "modelName", "STAN", "work_dir", "ref_dir", "input_dir", "SAVE_INT", "WARMUP", "KEEPER", "output_dir"
@@ -73,10 +73,66 @@ def run(config):
     vcf_file = os.path.join(in_path, config.vcf_file_name)
     pileup_file = os.path.join(in_path, config.pileup_file_name)
     model = os.path.join(f"{config.STAN}{config.modelName}", config.modelName)
-    stdout_file = os.path.join(in_path, "output", f"{config.prefix}-{date.today().strftime('%b-%d-%Y')}.stdout")
+    today = date.today()
 
-    cmd = f"python BEASTIE.py build --prefix {config.prefix} --vcf_sample_name {config.vcf_sample_name} --ref_dir {config.ref_dir} --vcf {vcf_file} --pileup {pileup_file} --in_path {in_path} --ancestry {config.ancestry} --chr_start {config.chr_start} --chr_end {config.chr_end} --read_length {config.read_length} --LD_token {config.LD_token} --model {model} --cutoff {config.cutoff} --alpha {config.alpha} --WARMUP {config.WARMUP} --KEEPER {config.KEEPER}"
-    subprocess.call(cmd, shell=True, stdout=open(stdout_file, 'w'), stderr=open(stdout_file, 'w'))
+    logname = os.path.join(in_path, "output", f"{config.prefix}-{today.strftime('%b-%d-%Y')}.log")
+    if os.path.isfile(logname):
+        os.remove(logname)
+    logging.basicConfig(filename=logname,
+                            filemode='a',
+                            format='%(asctime)-15s [%(levelname)s] %(message)s',
+                            level=logging.DEBUG)
+
+    logging.info(">> Starting running BEASTIE")
+
+    logging.info('========================================')
+    logging.info('======================================== step1: Processing raw data & annotating LD and AF information')
+    logging.info('======================================== ')
+    hetSNP_intersect_unique, meta, hetSNP_intersect_unique_forlambda_file, hetSNP_intersect_unique_lambdaPredicted_file = beastie_step1.run(
+        0.5,  # sigma
+        config.alpha,
+        config.WARMUP,
+        config.KEEPER,
+        config.prefix,
+        config.vcf_sample_name,
+        in_path,
+        "output",  # out
+        model,
+        vcf_file,
+        config.ref_dir,
+        config.ancestry,
+        config.chr_start,
+        config.chr_end,
+        1,  # min_total_cov
+        0,  # min_single_cov
+        config.read_length,
+        config.LD_token,
+        pileup_file,
+        None,  # hetSNP
+        None  # parsed_pileup
+    )
+
+    logging.info('======================================== ')
+    logging.info('======================================== step2: Preparing input in a format required for BEASTIE model')
+    logging.info('======================================== ')
+    beastie_step2.run(
+        hetSNP_intersect_unique,
+        meta,
+        hetSNP_intersect_unique_forlambda_file,
+        hetSNP_intersect_unique_lambdaPredicted_file,
+        config.prefix,
+        config.alpha,
+        model,
+        0.5,  # sigma
+        in_path,
+        "output",  # out
+        config.cutoff,
+        "False",  # SAVE_INT
+        config.WARMUP,
+        config.KEEPER,
+        1,  # min_total_cov
+        0,  # min_single_cov
+    )
 
 if __name__ == "__main__":
     args = check_arguments()

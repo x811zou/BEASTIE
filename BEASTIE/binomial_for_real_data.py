@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-from scipy.stats import binom
+import logging
 import os
-from scipy import stats
 import os.path
 import pickle
-import logging
-import pandas as pd
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from scipy import stats
 
 # def create_binomial_library(depth):
 #     count_p = {}
@@ -18,7 +18,7 @@ from pathlib import Path
 def getBaseline(fields,depth):
     if(len(fields)>=4):
 	############
-        #count_p = create_binomial_library(depth)	
+        #count_p = create_binomial_library(depth)
         Mreps=int(fields[1])
         total_AR = 0
         for rep in range(Mreps):
@@ -38,7 +38,7 @@ def getBaseline(fields,depth):
             if str(rep) == "0":
                 SS_AAR = A/(A+R)
                 if SS_AAR == 1 :
-                   SS_AAR = SS_AAR - 0.001 
+                   SS_AAR = SS_AAR - 0.001
                 SS_esti = SS_AAR/(1-SS_AAR)
                 # logging.info('... SS_esti - {}'.format(SS_esti))
                 SS_prob = stats.binom_test(A, A+R, p=0.5, alternative='two-sided')
@@ -49,15 +49,15 @@ def getBaseline(fields,depth):
             diff_AR = float(abs(0.5-max_AR/(A+R)))
         MS_AAR = max_A/(max_A+max_R)
         if MS_AAR == 1 :
-            MS_AAR = MS_AAR - 0.001 
+            MS_AAR = MS_AAR - 0.001
         MS_esti = MS_AAR/(1-MS_AAR)
-        # logging.info('... MS_esti - {}'.format(MS_esti)) 
+        # logging.info('... MS_esti - {}'.format(MS_esti))
         MS_prob = stats.binom_test(max_A, max_A+max_R, p=0.5, alternative='two-sided')
         # logging.info('... MS_prob - {}'.format(MS_prob))
         return round(SS_esti,3),round(SS_prob,3),round(MS_esti,3),round(MS_prob,3)
     else:
         return (None,None,None,None)
- 
+
 def getBaseline_pooled(fields,depth,hets):
     if(len(fields)>=4):
         base_thetas=[]
@@ -140,7 +140,7 @@ def run(prefix,inFile,out,picklename):
     gene=[]
     if (os.path.isfile(out7)) and (os.path.isfile(out8)) and (os.path.isfile(out3)) and (os.path.isfile(out4)):
         logging.info('... binomial Already Processed {0}'.format(str(outfix)))
-    else: 
+    else:
         counter=0
         with open(inFile,"rt") as IN:
             #logging.info('... read}')
@@ -150,7 +150,7 @@ def run(prefix,inFile,out,picklename):
                 # print(counter)
                 # print(line)
                 #logging.info('{0}'.format(line))
-                fields=line.rstrip().split()   
+                fields=line.rstrip().split()
                 geneID=fields[0]
                 gene.append(geneID)
                 #logging.info('... gene {0}'.format(geneID))
@@ -169,7 +169,7 @@ def run(prefix,inFile,out,picklename):
                 MS_esti_list.append(MS_esti)
                 MS_p_list.append(MS_prob)
 
-    binomial_df = pd.DataFrame(np.column_stack([gene, SS_esti_list, SS_p_list,NS_esti_list,NS_p_list,pseudo_esti_list,pseudo_p_list,MS_esti_list,MS_p_list]), 
+    binomial_df = pd.DataFrame(np.column_stack([gene, SS_esti_list, SS_p_list,NS_esti_list,NS_p_list,pseudo_esti_list,pseudo_p_list,MS_esti_list,MS_p_list]),
                                 columns=['geneID', 'FirstSite_esti', 'FirstSite_pval','NaiveSum_esti', 'NaiveSum_pval','Pseudo_esti', 'Pseudo_pval','MajorSite_esti', 'MajorSite_pval'])
     binomial_df.to_csv(out+"/"+prefix+"_ASE_binomial.tsv",sep="\t",header=True,index=False)
     logging.info('..... NS_p_list size {0}'.format(len(NS_p_list)))
