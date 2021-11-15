@@ -1,7 +1,7 @@
-FROM gcc:11 AS CMDSTAN
+FROM ubuntu:20.10 AS CMDSTAN
 
 WORKDIR /
-RUN apt-get update; apt-get install --no-install-recommends -qq wget ca-certificates
+RUN apt-get update; apt-get install --no-install-recommends -qq wget ca-certificates make gcc g++
 
 RUN wget https://github.com/stan-dev/cmdstan/releases/download/v2.27.0/cmdstan-2.27.0.tar.gz
 RUN tar -zxpf cmdstan-2.27.0.tar.gz
