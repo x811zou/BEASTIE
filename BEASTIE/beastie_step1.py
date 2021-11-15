@@ -8,11 +8,11 @@ import sys
 
 import pandas as pd
 
-import BEASTIE.annotation as annotation
-
-from .extractHets import count_all_het_sites
-from .intersect_hets import Intersect_exonicHetSnps
-from .parse_mpileup import Parse_mpileup_allChr
+#import BEASTIE.annotation as annotation
+import annotation
+from extractHets import count_all_het_sites
+from intersect_hets import Intersect_exonicHetSnps
+from parse_mpileup import Parse_mpileup_allChr
 
 
 def check_file_existence(prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,parsed_pileup,sigma,alpha,WARMUP,KEEPER,min_single_cov,min_total_cov,chr_start,chr_end):

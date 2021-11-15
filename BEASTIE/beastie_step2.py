@@ -8,12 +8,12 @@ import sys
 
 import pandas as pd
 
-import BEASTIE.ADM_for_real_data as ADM_for_real_data
-import BEASTIE.binomial_for_real_data as binomial_for_real_data
-import BEASTIE.run_model_stan_wrapper as run_model_stan_wrapper
+import ADM_for_real_data as ADM_for_real_data
+import binomial_for_real_data as binomial_for_real_data
+import run_model_stan_wrapper as run_model_stan_wrapper
 
-from .beastie_step1 import create_output_directory
-from .prepare_model import (generate_modelCount, significant_genes,
+from beastie_step1 import create_output_directory
+from prepare_model import (generate_modelCount, significant_genes,
                             update_model_input_lambda_phasing)
 
 
