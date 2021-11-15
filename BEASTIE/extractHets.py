@@ -8,8 +8,8 @@ import os
 
 import pandas as pd
 
-from GffTranscriptReader import GffTranscriptReader
-from Pipe import Pipe
+from BEASTIE.misc_tools.GffTranscriptReader import GffTranscriptReader
+from BEASTIE.misc_tools.Pipe import Pipe
 
 """ Check if a genotype is heterozygous by testing whether them match with the 6 types of homozygous options
 """

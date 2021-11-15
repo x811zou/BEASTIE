@@ -9,7 +9,8 @@ import logging
 import os.path
 from collections import namedtuple
 from datetime import date
-import beastie_step1, beastie_step2
+
+from . import beastie_step1, beastie_step2
 
 ConfigurationData = namedtuple("ConfigurationData", [
     "prefix", "vcf_file_name", "vcf_sample_name", "pileup_file_name", "ancestry", "min_total_cov", "min_single_cov", "sigma", "cutoff", "alpha", "chr_start", "chr_end", "read_length", "LD_token", "modelName", "STAN", "work_dir", "ref_dir", "input_dir", "SAVE_INT", "WARMUP", "KEEPER", "output_dir"

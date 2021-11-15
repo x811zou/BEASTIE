@@ -11,7 +11,7 @@ import statistics
 
 import pandas as pd
 
-from StanParser import StanParser
+from BEASTIE.misc_tools.StanParser import StanParser
 
 
 def writeInitializationFile(filename):
