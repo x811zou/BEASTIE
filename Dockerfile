@@ -1,7 +1,7 @@
-FROM gcc:11 AS CMDSTAN
+FROM ubuntu:20.10 AS CMDSTAN
 
 WORKDIR /
-RUN apt-get update; apt-get install --no-install-recommends -qq wget ca-certificates
+RUN apt-get update; apt-get install --no-install-recommends -qq wget ca-certificates make gcc g++
 
 RUN wget https://github.com/stan-dev/cmdstan/releases/download/v2.27.0/cmdstan-2.27.0.tar.gz
 RUN tar -zxpf cmdstan-2.27.0.tar.gz
@@ -20,7 +20,7 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV CYTHONIZE 1
 RUN apt-get update \
   && apt-get install -y --no-install-recommends make gcc g++ \
-  && apt-get install -y --no-install-recommends r-base-core r-base-dev libicu67 libstdc++6 openssl libxml2 libcurl4 zlib1g libbz2-1.0 lzma libhts3 vcftools samtools pipenv python3.8-venv \
+  && apt-get install -y --no-install-recommends r-base-core r-base-dev libicu67 libstdc++6 openssl libxml2 libcurl4 zlib1g libbz2-1.0 lzma libhts3 vcftools samtools pipenv python3.8-venv tabix libtbb2 \
   && apt-get install -y --no-install-recommends libicu-dev libxml2-dev git autoconf zlib1g-dev libbz2-dev libssl-dev libcurl4-openssl-dev
 
 # RUN apk -v update \

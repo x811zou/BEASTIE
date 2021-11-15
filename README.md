@@ -18,6 +18,7 @@ Only if you want to use our recommended pipeline to align RNAseq reads):
 * [STAR2.7](https://github.com/alexdobin/STAR)  - set location as $STAR
 * [Trimmomatic](https://github.com/usadellab/Trimmomatic) - set location as $trimmomatic_path
 * [vcftools0.1.15](https://vcftools.github.io/)
+* [tabix](https://github.com/samtools/htslib)
 
 The following tools are required to install and run BEASTIE directly on your system:
 * BEASTIE has been tested on **Linux**. It may or may not work on other UNIX systems.
