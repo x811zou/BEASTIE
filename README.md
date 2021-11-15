@@ -73,6 +73,8 @@ Git clone our BEASTIE scripts and example data in your working directory ($workd
 ```
 Installing [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the environment variable $STAN to the directory where CmdStan has been installed.
 
+Register [LD token](https://ldlink.nci.nih.gov/?tab=apiaccess)
+
 Compiling BEASTIE stan model
 ```bash
 % cd $STAN
