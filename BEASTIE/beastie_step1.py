@@ -86,7 +86,7 @@ def check_file_existence(prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,pars
     ##### TEMP output generation: hetSNP_file
     hetSNP_intersect_unique_file = '{0}_hetSNP_intersected_filtered.TEMP.tsv'.format(os.path.join(out,prefix))
     hetSNP_intersect_unique_forlambda_file = '{0}_hetSNP_intersected_filtered_forLambda.TEMP.tsv'.format(os.path.join(out,prefix))
-    hetSNP_intersect_unique_lambdaPredicted_file= '{0}_hetSNP_intersected_filtered_alphaPredicted.TEMP.tsv'.format(os.path.join(out,prefix))
+    hetSNP_intersect_unique_lambdaPredicted_file= '{0}_hetSNP_intersected_filtered_lambdaPredicted.TEMP.tsv'.format(os.path.join(out,prefix))
     logging.info('We will generate intermediate file {0} ...'.format(hetSNP_intersect_unique_file))
     logging.info('We will generate intermediate file {0} ...'.format(hetSNP_intersect_unique_forlambda_file))
     logging.info('We will generate intermediate file {0} ...'.format(hetSNP_intersect_unique_lambdaPredicted_file))

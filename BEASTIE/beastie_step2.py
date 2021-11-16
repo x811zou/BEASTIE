@@ -51,7 +51,7 @@ def run(hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forlambda_file,hetS
     predict_lambda_phasing_error = resource_filename('BEASTIE', 'predict_lambda_phasingError.R')
     cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {common} {prefix} {model} {hetSNP_intersect_unique} {hetSNP_intersect_unique_forlambda_file} {hetSNP_intersect_unique_lambdaPredicted_file} {meta} {meta_error}"
     os.system(cmd)
-    data22=pd.read_csv(hetSNP_intersect_unique_lambdaPredicted_file,sep="\t",header=0,index_col=False)
+    data22=pd.read_csv(hetSNP_intersect_unique_lambdaPredicted_file,sep="\t",header=None,index_col=False) # check whether this data is generated, debugging purpose
     logging.info('..... For type 1 error model, input alpha (family wise error rate) is {0}, adjusted after size of input {1} : {2}'.format(alpha,data22.shape[0],alpha/data22.shape[0]))
     #########################
     logging.info('=================')

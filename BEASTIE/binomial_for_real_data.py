@@ -147,7 +147,7 @@ def run(prefix,inFile,out,picklename):
             #inFile="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_chr21_hetSNP_intersected_filtered.TEMP.modelinput.tsv"
             for line in IN:
                 counter+=1
-                # print(counter)
+                #print(counter)
                 # print(line)
                 #logging.info('{0}'.format(line))
                 fields=line.rstrip().split()
@@ -171,6 +171,7 @@ def run(prefix,inFile,out,picklename):
 
     binomial_df = pd.DataFrame(np.column_stack([gene, SS_esti_list, SS_p_list,NS_esti_list,NS_p_list,pseudo_esti_list,pseudo_p_list,MS_esti_list,MS_p_list]),
                                 columns=['geneID', 'FirstSite_esti', 'FirstSite_pval','NaiveSum_esti', 'NaiveSum_pval','Pseudo_esti', 'Pseudo_pval','MajorSite_esti', 'MajorSite_pval'])
+    #logging.info('binomial_df {}'.format(binomial_df.head(5)))
     binomial_df.to_csv(out+"/"+prefix+"_ASE_binomial.tsv",sep="\t",header=True,index=False)
     logging.info('..... NS_p_list size {0}'.format(len(NS_p_list)))
     logging.info('..... SS_p_list size {0}'.format(len(SS_p_list)))

@@ -164,7 +164,9 @@ def parse_stan_output(input_file,out1,KEEPER,lambdas_file):
             "rb",
         )
     )
-    lambdas=pd.read_csv(lambdas_file, delimiter='\t', names = ['gene_ID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda'])
+    lambdas=pd.read_csv(lambdas_file, delimiter='\t', header=None,names = ['geneID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda'])
+    #logging.info('lambdas {}'.format(lambdas.head(5)))
+
     prob_sum_lambda = []
     model_theta_med = []   # 150
     CI_left=[]
@@ -178,7 +180,7 @@ def parse_stan_output(input_file,out1,KEEPER,lambdas_file):
             geneID.append(ID)         # read the ith geneID
             j=i+int(KEEPER)-1
             gene_thetas=thetas[i:j]
-            lambdas_choice=lambdas.loc[lambdas['gene_ID'] == ID].iloc[0,6]
+            lambdas_choice=lambdas.loc[lambdas['geneID'] == ID].iloc[0,6]
             median,left_CI,right_CI = summarize(gene_thetas,0.05)
             max_prob = getMaxProb_RMSE(gene_thetas)
             max_prob_lambda,sum_prob_lambda = getMaxProb_lambda(gene_thetas,lambdas_choice)
@@ -188,7 +190,7 @@ def parse_stan_output(input_file,out1,KEEPER,lambdas_file):
             CI_right.append(round(right_CI,3))
             model_theta_med.append(round(median,3))
     logging.debug('size of thetas : {0}, size of output list :{1}'.format(len(thetas),len(prob_sum_lambda)))
-    df={'gene_ID':geneID,'posterior_median':model_theta_med,'CI_left':CI_left,'CI_right':CI_right,'posterior_mass_support_ALT':prob_sum_lambda}
+    df={'geneID':geneID,'posterior_median':model_theta_med,'CI_left':CI_left,'CI_right':CI_right,'posterior_mass_support_ALT':prob_sum_lambda}
     df=pd.DataFrame(df)
     return df
 

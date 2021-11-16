@@ -74,10 +74,12 @@ if(grepl("iBEASTIE", model, fixed=TRUE)){
 }
 
 in_data<-read.delim(file.path(hetSNP_intersect_unique_forlambda_file),header=TRUE,sep="\t") 
+
 size=dim(in_data)[1]
 out_data<-hetSNP_intersect_unique_lambdaPredicted_file
 adjusted_alpha=as.numeric(alpha)/as.numeric(size)
 if (!file.exists(out_data)) {
+  print("lambda prediction file not exists!")
   predicted_df=predict_lambda_realdata(adjusted_alpha,in_data,out_data)
 }else{
   print("lambda prediction file exists!")
@@ -85,8 +87,9 @@ if (!file.exists(out_data)) {
 
 ################################################ 2.1 predict phasing error ###################################
 if (!file.exists(meta_error)) {
+  print("meta file with phasing error not exists, has to run logistic reg!")
   sample_info<-read.delim(file.path(meta),header=TRUE,sep="\t")
-  cv.glmnet.fit.GIAB<- readRDS("LogisticReg_GIAB_fitted_phasing_error.rds")
+  cv.glmnet.fit.GIAB<- readRDS("./BEASTIE/LogisticReg_GIAB_fitted_phasing_error.rds")
   x.test<-as.matrix(sample_info%>%dplyr::select(min_MAF,diff_MAF,log10_distance,r2,d)%>%
                       dplyr::mutate(min_MAF_diff_MAF=min_MAF*diff_MAF)%>%
                       mutate(min_MAF_log10_distance=log10_distance*min_MAF)%>%
