@@ -17,20 +17,9 @@ from .parse_mpileup import Parse_mpileup_allChr
 
 def check_file_existence(prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,parsed_pileup,sigma,alpha,WARMUP,KEEPER,min_single_cov,min_total_cov,chr_start,chr_end):
     out,common = create_output_directory(in_path,out,sigma,alpha,WARMUP,KEEPER,min_single_cov,min_total_cov)
-    split=os.path.split(model)
-    STAN=split[0]
-    modelName=split[1]
     ##### STAN model
-    stan_model = False
-    if os.path.exists(STAN):
-        for filename in os.listdir(STAN):
-            if '.stan' in filename:
-                stan_model = True
-    else:
-        logging.error('Oops! STAN path {0} doesn\'t exist. Please try again ...'.format(STAN))
-        sys.exit(1)
-    if stan_model is False:
-        logging.error('Oops! STAN model {0} doesn\'t exist in {1}. Please try again ...'.format(modelName,STAN))
+    if not os.path.exists(model):
+        logging.error('Oops! STAN model {0} doesn\'t exist. Please try again ...'.format(model))
         sys.exit(1)
     ##### vcf & vcfgz
     vcfgz = '{0}.gz'.format(vcf)
