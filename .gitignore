@@ -3,3 +3,4 @@ __pycache__
 dist
 *.egg-info
 BEASTIE/reference
+BEASTIE_example/**/output

@@ -40,11 +40,11 @@ def load_configuration(config_file):
         vcf_sample_name=inputs['vcf_sample_name'],
         pileup_file_name=inputs['pileup_file_name'],
         ancestry=inputs['ancestry'],
-        min_total_cov=inputs['min_total_cov'],
-        min_single_cov=inputs['min_single_cov'],
-        sigma=inputs['sigma'],
-        cutoff=float(inputs['cutoff']),
-        alpha=float(inputs['alpha']),
+        min_total_cov=int(inputs.get('min_total_cov', 0)),
+        min_single_cov=int(inputs.get('min_single_cov', 1)),
+        sigma=float(inputs.get('sigma', 0.5)),
+        cutoff=float(inputs.get('cutoff', 0.5)),
+        alpha=float(inputs.get('alpha', 0.05)),
         chr_start=inputs['chr_start'],
         chr_end=inputs['chr_end'],
         read_length=inputs['read_length'],
@@ -54,9 +54,9 @@ def load_configuration(config_file):
         work_dir=inputs['work_dir'],
         ref_dir=inputs['ref_dir'],
         input_dir=inputs['input_dir'],
-        SAVE_INT=inputs['SAVE_INT'],
-        WARMUP=inputs['WARMUP'],
-        KEEPER=inputs['KEEPER'],
+        SAVE_INT=bool(inputs.get('SAVE_INT', False)),
+        WARMUP=int(inputs.get('WARMUP', 1000)),
+        KEEPER=int(inputs.get('KEEPER', 1000)),
         output_dir=outputs['out_path'],
     )
 
@@ -72,7 +72,7 @@ def run(config):
     in_path = os.path.join(config.input_dir, config.prefix)
     vcf_file = os.path.join(in_path, config.vcf_file_name)
     pileup_file = os.path.join(in_path, config.pileup_file_name)
-    model = os.path.join(f"{config.STAN}{config.modelName}", config.modelName)
+    model = os.path.join(config.STAN, config.modelName)
     today = date.today()
 
     logname = os.path.join(in_path, "output", f"{config.prefix}-{today.strftime('%b-%d-%Y')}.log")
