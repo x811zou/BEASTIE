@@ -72,7 +72,7 @@ def run(config):
     in_path = os.path.join(config.input_dir, config.prefix)
     vcf_file = os.path.join(in_path, config.vcf_file_name)
     pileup_file = os.path.join(in_path, config.pileup_file_name)
-    model = os.path.join(f"{config.STAN}{config.modelName}", config.modelName)
+    model = os.path.join(config.STAN, config.modelName)
     today = date.today()
 
     logname = os.path.join(in_path, "output", f"{config.prefix}-{today.strftime('%b-%d-%Y')}.log")
