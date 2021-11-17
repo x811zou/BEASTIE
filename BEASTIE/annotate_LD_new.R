@@ -4,7 +4,7 @@ suppressMessages(library(data.table))
 suppressMessages(library(foreach))
 suppressMessages(library("dplyr"))
 library("LDlinkR")
-source("Get_LD.R")
+source("./BEASTIE/Get_LD.R")
 
 args = commandArgs(trailingOnly=TRUE)
 prefix=args[1]
