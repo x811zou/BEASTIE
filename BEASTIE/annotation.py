@@ -40,9 +40,10 @@ def annotateAF(ancestry, hetSNP, out_AF, ref_dir):
 
 def annotateLD(prefix,ancestry,hetSNP_intersect_unique,out,LD_token,chr_start,chr_end,meta):
     annotate_ld_new = resource_filename('BEASTIE', 'annotate_LD_new.R')
+    beastie_wd = resource_filename('BEASTIE', '.')
 
     if not os.path.isfile(meta):
-        cmd = f"Rscript --vanilla {annotate_ld_new} {prefix} {ancestry} {hetSNP_intersect_unique} {out} {LD_token} {chr_start} {chr_end} {meta}"
+        cmd = f"Rscript --vanilla {annotate_ld_new} {prefix} {ancestry} {hetSNP_intersect_unique} {out} {LD_token} {chr_start} {chr_end} {meta} {beastie_wd}"
         os.system(cmd)
         logging.info(f"..... finish annotating LD for SNP pairs, file save at {meta}")
     else:

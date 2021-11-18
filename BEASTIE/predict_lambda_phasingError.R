@@ -33,14 +33,15 @@ library(glmnetUtils)
 #### read in parameters
 
 alpha=args[1]
-tmp=paste0(args[2],"/",sep="")                     
-sample=args[3]                                     
-model=args[4]                                      
-hetSNP_intersect_unique=args[5]                    
-hetSNP_intersect_unique_forlambda_file=args[6]     
+tmp=paste0(args[2],"/",sep="")
+sample=args[3]
+model=args[4]
+hetSNP_intersect_unique=args[5]
+hetSNP_intersect_unique_forlambda_file=args[6]
 hetSNP_intersect_unique_lambdaPredicted_file=args[7]
-meta=args[8]                                       
-meta_error=args[9]                                 
+meta=args[8]
+meta_error=args[9]
+beastie_wd=args[10]
 
 # alpha=0.05 #FWE
 # sample="HG00096_chr21"
@@ -52,8 +53,8 @@ meta_error=args[9]
 # meta="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_meta.tsv"
 # meta_error="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/HG00096_chr21_meta_w_error.tsv"
 
-source("Get_phasing_error_rate.R")
-source("Get_LD.R")
+source(file.path(beastie_wd, "Get_phasing_error_rate.R"))
+source(file.path(beastie_wd, "Get_LD.R"))
 
 predict_lambda_realdata <- function(alpha,in_data,out_data){
   #colnames(in_data)<-c("gene_ID","total_reads","num_hets")
@@ -68,12 +69,12 @@ predict_lambda_realdata <- function(alpha,in_data,out_data){
 
 ############################################## 1. predict lambda #####################################################
 if(grepl("iBEASTIE", model, fixed=TRUE)){
-  lambda.fit.simulation<- readRDS("LinearReg_iBEASTIE_fitted_model_lambda.rds")
+  lambda.fit.simulation<- readRDS(file.path(beastie_wd, "LinearReg_iBEASTIE_fitted_model_lambda.rds"))
 }else{
-  lambda.fit.simulation<- readRDS("LinearReg_BEASTIE_fitted_model_lambda.rds")
+  lambda.fit.simulation<- readRDS(file.path(beastie_wd, "LinearReg_BEASTIE_fitted_model_lambda.rds"))
 }
 
-in_data<-read.delim(file.path(hetSNP_intersect_unique_forlambda_file),header=TRUE,sep="\t") 
+in_data<-read.delim(file.path(hetSNP_intersect_unique_forlambda_file),header=TRUE,sep="\t")
 
 size=dim(in_data)[1]
 out_data<-hetSNP_intersect_unique_lambdaPredicted_file

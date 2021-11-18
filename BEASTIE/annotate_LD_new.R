@@ -4,7 +4,6 @@ suppressMessages(library(data.table))
 suppressMessages(library(foreach))
 suppressMessages(library("dplyr"))
 library("LDlinkR")
-source("Get_LD.R")
 
 args = commandArgs(trailingOnly=TRUE)
 prefix=args[1]
@@ -15,6 +14,9 @@ mytoken=args[5]
 chr_start=args[6]
 chr_end=args[7]
 meta=args[8]
+beastie_wd=args[9]
+
+source(file.path(beastie_wd, "Get_LD.R"))
 
 if (!file.exists(meta)){
 #================================================ specify input
