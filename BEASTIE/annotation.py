@@ -10,10 +10,10 @@ import pandas as pd
 from pkg_resources import resource_filename
 
 def annotateAF(ancestry, hetSNP, out_AF, ref_dir):
-    AF_file = os.path.join(ref_dir, "AF_1_22.tsv")
+    AF_file = os.path.join(ref_dir,"AF_1_22_trimmed2.csv")
     if not os.path.isfile(out_AF):
         logging.info('..... start reading 1000 Genome AF annotation file')
-        AF=pd.read_csv(AF_file, header=0,sep='\t')
+        AF=pd.read_csv(AF_file, header=0, sep=',', engine='c', na_filter=False)
         logging.info('..... finish reading 1000 Genome AF annotation file')
         data=pd.read_csv(hetSNP,sep="\t",header=0,index_col=False)
         if ancestry == "EUR":

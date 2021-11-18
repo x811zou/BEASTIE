@@ -43,7 +43,7 @@ def check_file_existence(prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,pars
     AF_file = False
     if os.path.exists(ref_dir):
         for filename in os.listdir(ref_dir):
-            if 'AF_1_22.tsv' in filename:
+            if 'AF_1_22_trimmed2.csv' in filename:
                 AF_file = True
                 AF_file_name=filename
             if 'gencode' in filename:
