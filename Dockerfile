@@ -13,14 +13,26 @@ RUN make build
 COPY BEASTIE/iBEASTIE2.stan .
 RUN make iBEASTIE2
 
-# FROM python:3.9-alpine
+
+FROM ubuntu:20.10 AS tabix
+
+WORKDIR /
+RUN apt-get update; apt-get install --no-install-recommends -qq wget ca-certificates make gcc g++ libbz2-1.0 libbz2-dev lbzip2 zlib1g-dev liblzma-dev
+RUN wget https://github.com/samtools/htslib/releases/download/1.14/htslib-1.14.tar.bz2
+RUN tar -xf htslib-1.14.tar.bz2
+
+RUN mv htslib-1.14 htslib
+WORKDIR /htslib
+RUN ./configure && make
+
+
 FROM ubuntu:20.10
 WORKDIR /BEASTIE
 ENV DEBIAN_FRONTEND noninteractive
 ENV CYTHONIZE 1
 RUN apt-get update \
   && apt-get install -y --no-install-recommends make gcc g++ \
-  && apt-get install -y --no-install-recommends r-base-core r-base-dev libicu67 libstdc++6 openssl libxml2 libcurl4 zlib1g libbz2-1.0 lzma libhts3 vcftools samtools pipenv python3.8-venv tabix libtbb2 \
+  && apt-get install -y --no-install-recommends r-base-core r-base-dev libicu67 libstdc++6 openssl libxml2 libcurl4 zlib1g libbz2-1.0 lzma libhts3 vcftools samtools pipenv python3.8-venv libtbb2 \
   && apt-get install -y --no-install-recommends libicu-dev libxml2-dev git autoconf zlib1g-dev libbz2-dev libssl-dev libcurl4-openssl-dev
 
 # RUN apk -v update \
@@ -39,6 +51,7 @@ RUN R -e 'install.packages("LDlinkR", dependencies=T, repos="http://cran.us.r-pr
   R -e 'if (!requireNamespace("BiocManager", quietly=T)) install.packages("BiocManager", dependencies=T, repos="http://cran.us.r-project.org"); BiocManager::install("pasilla"); if (!library(pasilla, logical.return=T)) quit(status=10)'
 
 COPY --from=CMDSTAN /cmdstan/iBEASTIE2 /usr/local/bin
+COPY --from=tabix /htslib/tabix /usr/local/bin
 
 COPY . .
 RUN make install
