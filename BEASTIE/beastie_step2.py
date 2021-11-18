@@ -94,7 +94,7 @@ def run(specification,hetSNP_intersect_unique,meta,hetSNP_intersect_unique_forla
         logging.info('..... output file save to {0}'.format(outfilename_ase))
     significant_genes(df_ibeastie,df_binomial,df_adm,outfilename,outfilename_ase,cutoff,hetSNP_intersect_unique_lambdaPredicted_file)
     logging.info('..... done with significant_gene')
-    if str(SAVE_INT) == "False":
+    if not SAVE_INT:
         shutil.rmtree(temp) 
         logging.info('..... remove TEMP folder {0}'.format(temp))
     logging.info('=================')
