@@ -3,7 +3,6 @@
 # 2021 Xue Zou (xue.zou@duke.edu)
 #=========================================================================
 
-from datetime import datetime
 import logging
 import os
 
@@ -17,11 +16,11 @@ def chunk_iter(iter, n):
     res = []
     try:
         while True:
-            res = []
             while len(res) < n:
                 v = next(iter)
                 res.append(v)
             yield res
+            res = []
     except StopIteration:
         if len(res) > 0:
             yield res
@@ -39,11 +38,9 @@ def count_all_het_sites(tmp,sample,vcfFilename,file_dir,outputFilename,chr_start
     for Num in range(chr_start,chr_end+1):
         outputFile=filename+".chr"+str(Num)+".TEMP.tsv"
         if not os.path.isfile(outputFile):
-            print(f"{datetime.now()} start chr {Num}")
             reader = GffTranscriptReader()
             geneFile = os.path.join(file_dir, f"chr{Num}")
             geneList = reader.loadGenes(geneFile)
-            print(f"{datetime.now()} read {len(geneList)} genes from {geneFile}")
             logging.info('..... Working on chr {0} with {1} genes'.format(Num,len(geneList)))
             byGene={}
             total_biSNP = 0
@@ -70,7 +67,6 @@ def count_all_het_sites(tmp,sample,vcfFilename,file_dir,outputFilename,chr_start
                         #         print(f"existing transcript @ {region_str} {existing.getTranscriptId()} != {transcript.getTranscriptId()}")
                         region_str_to_transcripts[region_str].append(transcript)
             
-            print(f"{datetime.now()} found {len(region_str_to_transcripts)} regions to process")
             CHUNK_SIZE = 1000
             outputs = []
             for x in chunk_iter(iter(region_str_to_transcripts.keys()), CHUNK_SIZE):
@@ -80,8 +76,6 @@ def count_all_het_sites(tmp,sample,vcfFilename,file_dir,outputFilename,chr_start
                 if len(output) > 0:
                     outputs.append(output)
 
-            print(f"{datetime.now()} got {len(outputs)} tabix call outputs")
-
             out_stream = open(outputFile, "w")
             out_stream.write("chr\tchrN\tgeneID\tpos\ttranscriptID\ttranscript_pos\tSNP_id\tgenotype\n")
             for output in outputs:
@@ -90,28 +84,28 @@ def count_all_het_sites(tmp,sample,vcfFilename,file_dir,outputFilename,chr_start
                 for line in lines:
                     if line.startswith('#'):
                         region_str = line[1:]
-                        if region_str not in region_str_to_transcripts:
-                            print(f"region_str not found! {region_str}")
+                        assert region_str in region_str_to_transcripts
                         transcripts = region_str_to_transcripts[region_str]
                         continue
 
                     assert transcripts is not None
 
                     fields = line.split("\t")
-                    if len(fields) < 10:
-                        print(f"bad line! {line}")
+                    assert len(fields) >= 10
 
                     if fields[6] != "PASS":
                         continue
-                    pos = int(fields[1])
-                    rs = fields[2]
+
                     genotype = fields[9].split(':')[0]
 
                     if not isHeterozygous(genotype):
                         continue
+
+                    pos = int(fields[1])
+                    rs = fields[2]
                     
                     for transcript in transcripts:
-                        transcriptCoord = transcript.mapToTranscript(int(pos))
+                        transcriptCoord = transcript.mapToTranscript(pos)
                         chrom = transcript.getSubstrate()
                         chromN = chrom.strip("chr")
                         total_biSNP += 1
@@ -129,8 +123,6 @@ def count_all_het_sites(tmp,sample,vcfFilename,file_dir,outputFilename,chr_start
                         out_stream.write("\n")
 
             out_stream.close()
-
-            print(f"{datetime.now()} wrote output file")
         else:
             logging.info('..... chr{0} existed'.format(Num))
         count+=1
@@ -140,7 +132,6 @@ def count_all_het_sites(tmp,sample,vcfFilename,file_dir,outputFilename,chr_start
         else:
             data=pd.read_csv(outputFile,sep="\t",header=0,index_col=False)
             data0=pd.concat([data0, data])
-        print(f"{datetime.now()} finished data computation")
 
     data0.drop_duplicates()
     data0.to_csv(outputFilename,sep="\t",header=True,index = False)
