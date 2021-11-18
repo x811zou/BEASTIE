@@ -7,7 +7,7 @@ import os
 
 import pandas as pd
 
-from pkg_resources import resource_filename, resource_dir
+from pkg_resources import resource_filename
 
 def annotateAF(ancestry, hetSNP, out_AF, ref_dir):
     AF_file = os.path.join(ref_dir, "AF_1_22.tsv")
