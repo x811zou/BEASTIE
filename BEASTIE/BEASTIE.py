@@ -14,7 +14,7 @@ today = date.today()
 
 def _build(args):
     specification = f"s{args.sigma}_a{args.alpha}_sinCov{args.min_single_cov}_totCov{args.min_total_cov}_W{args.WARMUP}K{args.KEEPER}"
-    logname = os.path.join(args.in_path,args.out,"/",specification,"/log/",f"{args.prefix}-{today.strftime('%b-%d-%Y')}.log")
+    logname = os.path.join(args.in_path, args.out, specification, "log", f"{args.prefix}-{today.strftime('%b-%d-%Y')}.log")
     if os.path.isfile(logname):
         os.remove(logname)
     logging.basicConfig(filename=logname,
