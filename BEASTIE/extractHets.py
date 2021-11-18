@@ -13,7 +13,7 @@ from BEASTIE.misc_tools.GffTranscriptReader import GffTranscriptReader
 from BEASTIE.misc_tools.Pipe import Pipe
 
 def chunk_iter(iter, n):
-    """Yield successive n-sized chunks from lst."""
+    """Yield successive n-sized chunks from iter."""
     res = []
     try:
         while True:
@@ -95,7 +95,7 @@ def count_all_het_sites(tmp,sample,vcfFilename,file_dir,outputFilename,chr_start
                         transcripts = region_str_to_transcripts[region_str]
                         continue
 
-                    assert transcript is not None
+                    assert transcripts is not None
 
                     fields = line.split("\t")
                     if len(fields) < 10:
