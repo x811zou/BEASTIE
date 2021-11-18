@@ -124,7 +124,7 @@ def parse_lambda_validation_simulation(thetas,alphas,lambdas_file,lm):
         for idx,line in enumerate(IN):
             if idx == lm-1:
                 fields=line.rstrip().split()
-                print(fields)
+                #print(fields)
                 print("model %s - alpha %s - lambda: %s"%(lm,alphas[0],fields[0]))
                 prob_lambda1,_,sum_lambda1,_ = getMaxProb_lambda(thetas,float(fields[0]))
                 print("model %s - alpha %s - lambda: %s"%(lm,alphas[1],fields[1]))
