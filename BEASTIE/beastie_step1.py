@@ -362,8 +362,9 @@ def run(
 
     ##### 1.3 Annotation: AF
     hetSNP_AF = f"{os.path.splitext(hetSNP)[0]}_AF.tsv"
-    # print(hetSNP_AF)
-    if os.path.isfile(hetSNP_AF):
+    # @nocommit
+    # if os.path.isfile(hetSNP_AF):
+    if False:
         logging.info("=================")
         logging.info("================= Skipping common step 1.3")
         data13 = pd.read_csv(hetSNP_AF, sep="\t", header=0, index_col=False)
