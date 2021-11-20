@@ -71,7 +71,7 @@ def run(config):
     out_dir=os.path.join(config.output_dir,config.prefix)
     vcf_file = os.path.join(in_path, config.vcf_file_name)
     pileup_file = os.path.join(in_path, config.pileup_file_name)
-    model = os.path.join(config.STAN, config.modelName,config.modelName)
+    model = os.path.join(config.STAN, config.modelName)
     today = date.today()
 
     specification="s"+str(config.sigma)+"_a"+str(config.alpha)+"_sinCov"+str(config.min_single_cov)+"_totCov"+str(config.min_total_cov)+"_W"+str(config.WARMUP)+"K"+str(config.KEEPER)
@@ -87,7 +87,7 @@ def run(config):
     Path(tmp_path).mkdir(parents=True,exist_ok=True)
     Path(result_path).mkdir(parents=True,exist_ok=True)
 
-    logname = os.path.join(config.input_dir,config.prefix,"output",specification,"log",f"{config.prefix}-{today.strftime('%b-%d-%Y')}.log")
+    logname = os.path.join(config.output_dir,config.prefix,"output",specification,"log",f"{config.prefix}-{today.strftime('%b-%d-%Y')}.log")
     if os.path.isfile(logname):
         os.remove(logname)
     logging.basicConfig(filename=logname,
