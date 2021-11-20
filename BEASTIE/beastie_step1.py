@@ -27,7 +27,7 @@ def check_file_existence(specification,prefix,in_path,out,model,vcf,ref_dir,pile
     if (not os.path.isfile(vcf) and not os.path.isfile(vcfgz)) :
         logging.error('Oops! vcf file {0} or vcf.gz file {1} doesn\'t exist. Please try again ...'.format(vcf,vcfgz))
         exit(1)
-    elif (os.path.isfile(vcf) and (not os.path.isfile(vcfgz)) and (not os.path.isfile(vcfgztbi))):
+    elif (os.path.isfile(vcf) and (not os.path.isfile(vcfgz))):
         logging.warning('We will generate vcfgz for you ...'.format(vcfgz))
         cmd="bgzip -c %s > %s"%(vcf,vcfgz)
         os.system(cmd)
