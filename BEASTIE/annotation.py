@@ -25,6 +25,8 @@ def annotateAF(ancestry, hetSNP, out_AF, ref_dir):
         annotateAFPandas(ancestry, hetSNP, out_AF, AF_file)
 
     logging.info("..... finish annotating AF for SNPs, file save at {0}".format(out_AF))
+    # @nocommit
+    exit(0)
 
 
 def annotateAFPandas(ancestry, hetSNP, out_AF, AF_file):
