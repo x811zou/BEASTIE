@@ -71,9 +71,9 @@ predict_lambda_realdata <- function(alpha,in_data,out_data,model){
 
 ############################################## 1. predict lambda #####################################################
 if(grepl("iBEASTIE", model, fixed=TRUE)){
-  lambda.fit.simulation<- readRDS(file.path(beastie_wd, "LinearReg_iBEASTIE_fitted_model_lambda_loglambda_version2.rds")
+  lambda.fit.simulation<- readRDS(file.path(beastie_wd, "LinearReg_iBEASTIE_fitted_model_lambda_loglambda_version2.rds"))
 }else{
-  lambda.fit.simulation<- readRDS(file.path(beastie_wd, "LinearReg_BEASTIE_fitted_model_lambda_version2.rds")
+  lambda.fit.simulation<- readRDS(file.path(beastie_wd, "LinearReg_BEASTIE_fitted_model_lambda_version2.rds"))
 }
 
 in_data<-read.delim(file.path(hetSNP_intersect_unique_forlambda_file),header=TRUE,sep="\t")

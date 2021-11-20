@@ -24,20 +24,20 @@ def check_file_existence(specification,prefix,in_path,out,model,vcf,ref_dir,pile
     ##### vcf & vcfgz
     vcfgz = '{0}.gz'.format(vcf)
     vcfgztbi = '{0}.tbi'.format(vcfgz)
-    if (not os.path.isfile(vcf)) :
-        logging.error('Oops! vcf file {0} doesn\'t exist. Please try again ...'.format(vcf,vcfgz))
+    if (not os.path.isfile(vcf) and not os.path.isfile(vcfgz)) :
+        logging.error('Oops! vcf file {0} or vcf.gz file {1} doesn\'t exist. Please try again ...'.format(vcf,vcfgz))
         exit(1)
     elif (os.path.isfile(vcf) and (not os.path.isfile(vcfgz)) and (not os.path.isfile(vcfgztbi))):
         logging.warning('We will generate vcfgz for you ...'.format(vcfgz))
         cmd="bgzip -c %s > %s"%(vcf,vcfgz)
         os.system(cmd)
-        cmd="tabix -p vcf %s"%(vcfgz)
+        cmd="tabix -fp vcf %s"%(vcfgz)
         os.system(cmd)
     elif (os.path.isfile(vcfgz)) and (not os.path.isfile(vcf)):
         logging.warning('Oops! VCF file {0} not found. We will generate that for you ...'.format(vcf))
         cmd="gunzip %s > %s"%(vcfgz,vcf)
         os.system(cmd)
-        cmd="tabix -p vcf %s"%(vcfgz)
+        cmd="tabix -fp vcf %s"%(vcfgz)
         os.system(cmd)
     ##### reference directory : AF file and gencode directory
     AF_file = False

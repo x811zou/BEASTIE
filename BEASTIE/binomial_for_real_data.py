@@ -92,24 +92,20 @@ def getBaseline_pooled(fields,depth,hets):
         return (None,None,None,None)
 
 def run(prefix,inFile,out,picklename):
-    # prefix="NA19257"
-    # inFile="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/other_example/"+prefix+"/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/"+prefix+"_hetSNP_intersected_filtered.TEMP.modelinput.tsv"
-    # out="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/other_example/"+prefix+"/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000"
-    # picklename=prefix+"_a-0.05_W1000K1000_s0t1.pickle"
     outfix=picklename
-    out_path=out+"/output_pkl/binomial"
+    out_path=os.path.join(out,"output_pkl","binomial")
     # First site
-    out_path_1 = out_path+"/FS_esti/"
-    out_path_2 = out_path+"/FS_p/"
+    out_path_1 = os.path.join(out_path,"FS_esti")
+    out_path_2 = os.path.join(out_path,"FS_p")
     # naive sum
-    out_path_3 = out_path+"/NS_esti/"
-    out_path_4 = out_path+"/NS_p/"
+    out_path_3 = os.path.join(out_path,"NS_esti")
+    out_path_4 = os.path.join(out_path,"NS_p")
     # pseudo phasing
-    out_path_5 = out_path+"/pseudo_esti/"
-    out_path_6 = out_path+"/pseudo_p/"
+    out_path_5 = os.path.join(out_path,"pseudo_esti")
+    out_path_6 = os.path.join(out_path,"pseudo_p")
     # major site
-    out_path_7 = out_path+"/MS_esti/"
-    out_path_8 = out_path+"/MS_p/"
+    out_path_7 = os.path.join(out_path,"MS_esti")
+    out_path_8 = os.path.join(out_path,"MS_p")
 
     Path(out_path_1).mkdir(parents=True,exist_ok=True)
     Path(out_path_2).mkdir(parents=True,exist_ok=True)
