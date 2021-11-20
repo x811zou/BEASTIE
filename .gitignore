@@ -4,3 +4,9 @@ dist
 *.egg-info
 BEASTIE/reference
 BEASTIE_example/**/output
+other_example/
+.ipynb_checkpoints/
+BEASTIE/run_config_HG0*
+BEASTIE/run_config_NA*
+BEASTIE/parameters_NA*
+BEASTIE/parameters_HG0*

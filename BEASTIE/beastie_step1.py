@@ -2,21 +2,21 @@
 #=========================================================================
 # 2021 Xue Zou (xue.zou@duke.edu)
 #=========================================================================
-import logging
 import os
 import sys
-
+import logging
 import pandas as pd
-
+from pathlib import Path
 import BEASTIE.annotation as annotation
-
 from .extractHets import count_all_het_sites
 from .intersect_hets import Intersect_exonicHetSnps
 from .parse_mpileup import Parse_mpileup_allChr
 
-
-def check_file_existence(prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,parsed_pileup,sigma,alpha,WARMUP,KEEPER,min_single_cov,min_total_cov,chr_start,chr_end):
-    out,common = create_output_directory(in_path,out,sigma,alpha,WARMUP,KEEPER,min_single_cov,min_total_cov)
+def check_file_existence(specification,prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,parsed_pileup,sigma,alpha,WARMUP,KEEPER,min_single_cov,min_total_cov,chr_start,chr_end):
+    out,common,temp,_ = create_output_directory(specification,in_path,out,sigma,alpha,WARMUP,KEEPER,min_single_cov,min_total_cov)
+    split=os.path.split(model)
+    STAN=split[0]
+    modelName=split[1]
     ##### STAN model
     if not os.path.exists(model):
         logging.error('Oops! STAN model {0} doesn\'t exist. Please try again ...'.format(model))
@@ -24,20 +24,20 @@ def check_file_existence(prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,pars
     ##### vcf & vcfgz
     vcfgz = '{0}.gz'.format(vcf)
     vcfgztbi = '{0}.tbi'.format(vcfgz)
-    if (not os.path.isfile(vcf)) :
-        logging.error('Oops! vcf file {0} doesn\'t exist. Please try again ...'.format(vcf,vcfgz))
+    if (not os.path.isfile(vcf) and not os.path.isfile(vcfgz)) :
+        logging.error('Oops! vcf file {0} or vcf.gz file {1} doesn\'t exist. Please try again ...'.format(vcf,vcfgz))
         exit(1)
     elif (os.path.isfile(vcf) and (not os.path.isfile(vcfgz)) and (not os.path.isfile(vcfgztbi))):
         logging.warning('We will generate vcfgz for you ...'.format(vcfgz))
         cmd="bgzip -c %s > %s"%(vcf,vcfgz)
         os.system(cmd)
-        cmd="tabix -p vcf %s"%(vcfgz)
+        cmd="tabix -fp vcf %s"%(vcfgz)
         os.system(cmd)
     elif (os.path.isfile(vcfgz)) and (not os.path.isfile(vcf)):
         logging.warning('Oops! VCF file {0} not found. We will generate that for you ...'.format(vcf))
         cmd="gunzip %s > %s"%(vcfgz,vcf)
         os.system(cmd)
-        cmd="tabix -p vcf %s"%(vcfgz)
+        cmd="tabix -fp vcf %s"%(vcfgz)
         os.system(cmd)
     ##### reference directory : AF file and gencode directory
     AF_file = False
@@ -73,14 +73,14 @@ def check_file_existence(prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,pars
         hetSNP_file = '{0}_hetSNP_chr{1}-{2}.tsv'.format(os.path.join(common,prefix),chr_start,chr_end)
         logging.info('We will generate {0} for you ...'.format(hetSNP_file))
     ##### TEMP output generation: hetSNP_file
-    hetSNP_intersect_unique_file = '{0}_hetSNP_intersected_filtered.TEMP.tsv'.format(os.path.join(out,prefix))
-    hetSNP_intersect_unique_forlambda_file = '{0}_hetSNP_intersected_filtered_forLambda.TEMP.tsv'.format(os.path.join(out,prefix))
-    hetSNP_intersect_unique_lambdaPredicted_file= '{0}_hetSNP_intersected_filtered_lambdaPredicted.TEMP.tsv'.format(os.path.join(out,prefix))
+    hetSNP_intersect_unique_file = '{0}_hetSNP_intersected_filtered.TEMP.tsv'.format(os.path.join(temp,prefix))
+    hetSNP_intersect_unique_forlambda_file = '{0}_hetSNP_intersected_filtered_forLambda.TEMP.tsv'.format(os.path.join(temp,prefix))
+    hetSNP_intersect_unique_lambdaPredicted_file= '{0}_hetSNP_intersected_filtered_lambdaPredicted.TEMP.tsv'.format(os.path.join(temp,prefix))
     logging.info('We will generate intermediate file {0} ...'.format(hetSNP_intersect_unique_file))
     logging.info('We will generate intermediate file {0} ...'.format(hetSNP_intersect_unique_forlambda_file))
     logging.info('We will generate intermediate file {0} ...'.format(hetSNP_intersect_unique_lambdaPredicted_file))
     ##### TEMP output generation: meta_file
-    meta_file = '{0}_meta.TEMP.tsv'.format(os.path.join(out,prefix))
+    meta_file = '{0}_meta.TEMP.tsv'.format(os.path.join(temp,prefix))
     logging.info('We will generate intermedate file {0} for you ...'.format(meta_file))
     ##### parsed_pileup_file
     if parsed_pileup is not None:
@@ -90,28 +90,44 @@ def check_file_existence(prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,pars
     else:
         parsed_pileup_file = '{0}_parsed_pileup_chr{1}-{2}.tsv'.format(os.path.join(common,prefix),chr_start,chr_end)
         logging.info('We will generate {0} for you ...'.format(parsed_pileup_file))
-    return out,common,vcfgz,pileup_file,hetSNP_file,meta_file,hetSNP_intersect_unique_file,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,parsed_pileup_file,gencode_dir_name
+    return out,common,temp,vcfgz,pileup_file,hetSNP_file,meta_file,hetSNP_intersect_unique_file,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,parsed_pileup_file,gencode_dir_name
 
-def create_output_directory(in_path,out,sigma,alpha,WARMUP,KEEPER,min_single_cov,min_total_cov):
+def create_output_directory(specification,in_path,out,sigma,alpha,WARMUP,KEEPER,min_single_cov,min_total_cov):
    common = os.path.join(in_path,out)
-   if not os.path.isdir(common):
-       os.mkdir(common)
-       logging.info('Creating output directory : {0}'.format(common))
+
+   if not os.path.exists(common):
+       Path(common).mkdir(parents=True,exist_ok=True)
+       logging.info('Creating COMMON directory : {0}'.format(common))
    else:
-       logging.info('Found existed output directory : {0}'.format(common))
-   out=common+"/s-"+str(sigma)+"_a-"+str(alpha)+"_sinCov"+str(min_single_cov)+"_totCov"+str(min_total_cov)+"_W"+str(WARMUP)+"K"+str(KEEPER)
-   if not os.path.isdir(out):
-      logging.info('Creating specific output directory : {0}'.format(out))
-      os.mkdir(out)
+       logging.info('Found existed COMMON directory : {0}'.format(common))
+
+   out=os.path.join(common,specification)
+
+   if not os.path.exists(out):
+      logging.info('Creating specific OUTPUT directory : {0}'.format(out))
+      Path(out).mkdir(parents=True,exist_ok=True)
    else:
-      #shutil.rmtree(out)
-      #os.mkdir(out)
-      logging.info('Found existed specific output directory : {0}, remove content ...'.format(out))
-   return out,common
+      logging.info('Found existed specific OUTPUT directory : {0}, remove content ...'.format(out))
+   
+   temp =os.path.join(out,'tmp')
+   if not os.path.exists(temp):
+      logging.info('Creating specific TEMP directory : {0}'.format(temp))
+      Path(temp).mkdir(parents=True,exist_ok=True)
+   else:
+      logging.info('Found existed specific TEMP directory : {0}, remove content ...'.format(temp))
+
+   result = os.path.join(out,'result')
+   if not os.path.exists(result):
+      logging.info('Creating specific RESULT directory : {0}'.format(result))
+      Path(result).mkdir(parents=True,exist_ok=True)
+   else:
+      logging.info('Found existed specific RESULT directory : {0}, remove content ...'.format(result))
+
+   return out,common,temp,result
 
 
-def run(sigma,alpha,WARMUP,KEEPER,prefix,vcf_sample_name,in_path,out,model,vcf,ref_dir,ancestry,chr_start,chr_end,min_total_cov,min_single_cov,read_length,LD_token,pileup,hetSNP,parsed_pileup):
-    out,common,vcfgz,pileup,hetSNP,meta,hetSNP_intersect_unique,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,parsed_pileup,gencode_dir = check_file_existence(prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,parsed_pileup,sigma,alpha,WARMUP,KEEPER,min_single_cov,min_total_cov,chr_start,chr_end)
+def run(specification,sigma,alpha,WARMUP,KEEPER,prefix,vcf_sample_name,in_path,out,model,vcf,ref_dir,ancestry,chr_start,chr_end,min_total_cov,min_single_cov,read_length,LD_token,pileup,hetSNP,parsed_pileup):
+    out,common,temp,vcfgz,pileup,hetSNP,meta,hetSNP_intersect_unique,hetSNP_intersect_unique_forlambda_file,hetSNP_intersect_unique_lambdaPredicted_file,parsed_pileup,gencode_dir = check_file_existence(specification,prefix,in_path,out,model,vcf,ref_dir,pileup,hetSNP,parsed_pileup,sigma,alpha,WARMUP,KEEPER,min_single_cov,min_total_cov,chr_start,chr_end)
     ##### 1.1 Generate hetSNP file: extract heterozygous bi-allelic SNPs for specific chromosomes from all gencode transcripts
     if not os.path.exists(hetSNP):
         logging.info('=================')
@@ -148,7 +164,7 @@ def run(sigma,alpha,WARMUP,KEEPER,prefix,vcf_sample_name,in_path,out,model,vcf,r
 
    ##### 1.3 Annotation: AF
     hetSNP_AF = f"{os.path.splitext(hetSNP)[0]}_AF.tsv"
-    print(hetSNP_AF)
+    #print(hetSNP_AF)
     if os.path.isfile(hetSNP_AF):
         logging.info('=================')
         logging.info('================= Skipping common step 1.3')
@@ -195,7 +211,7 @@ def run(sigma,alpha,WARMUP,KEEPER,prefix,vcf_sample_name,in_path,out,model,vcf,r
         logging.info('=================')
         logging.info('================= Starting specific step 1.5')
         logging.info('..... start annotating LD information')
-        annotation.annotateLD(prefix,ancestry,hetSNP_intersect_unique,out,LD_token,chr_start,chr_end,meta)
+        annotation.annotateLD(prefix,ancestry,hetSNP_intersect_unique,temp,LD_token,chr_start,chr_end,meta)
     else:
         logging.info('=================')
         logging.info('================= Skipping specific step 1.5')

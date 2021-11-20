@@ -15,6 +15,7 @@ def annotateAF(ancestry, hetSNP, out_AF, ref_dir):
         logging.info('..... start reading 1000 Genome AF annotation file')
         AF=pd.read_csv(AF_file, header=0, sep=',', engine='c', na_filter=False)
         logging.info('..... finish reading 1000 Genome AF annotation file')
+        #hetSNP="NA19248_hetSNP_chr1-22.tsv"
         data=pd.read_csv(hetSNP,sep="\t",header=0,index_col=False)
         if ancestry == "EUR":
             AF=AF[['chr','pos','rsid','EUR_AF']]
@@ -33,6 +34,7 @@ def annotateAF(ancestry, hetSNP, out_AF, ref_dir):
             AF=AF.rename(columns={'SAS_AF': 'AF'})
         data_AF=pd.merge(data,AF,on=['chr','pos'],how='left')
         data_AF=data_AF.drop_duplicates()
+        #out_AF="NA19248_hetSNP_chr1-22_AF.tsv"
         data_AF.to_csv(out_AF,sep='\t')
         logging.info('..... finish annotating AF for SNPs, file save at {0}'.format(out_AF))
     else:

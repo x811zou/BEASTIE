@@ -7,14 +7,14 @@ import logging
 import os
 import os.path
 from datetime import date
-
 import beastie_step1
 import beastie_step2
 
 today = date.today()
 
 def _build(args):
-    logname = os.path.join(args.in_path, "output", f"{args.prefix}-{today.strftime('%b-%d-%Y')}.log")
+    specification = f"s{args.sigma}_a{args.alpha}_sinCov{args.min_single_cov}_totCov{args.min_total_cov}_W{args.WARMUP}K{args.KEEPER}"
+    logname = os.path.join(args.in_path, args.out, specification, "log", f"{args.prefix}-{today.strftime('%b-%d-%Y')}.log")
     if os.path.isfile(logname):
         os.remove(logname)
     logging.basicConfig(filename=logname,
@@ -22,7 +22,6 @@ def _build(args):
                             format='%(asctime)-15s [%(levelname)s] %(message)s',
                             level=logging.DEBUG)
     logging.info(">> Starting running BEASTIE")
-
     logging.info('========================================')
     logging.info('======================================== step1: Processing raw data & annotating LD and AF information')
     logging.info('======================================== ')
@@ -59,7 +58,7 @@ def main():
     build_parser.add_argument('--alpha', type=float, default=0.05, help='Significance cutoff for ASE. Defaults to 0.5.')
     build_parser.add_argument('--sigma', type=float, default=0.5, help='Significance cutoff for ASE. Defaults to 0.5.')
     build_parser.add_argument('--out', default='output', help='Location to write output files. Defaults to \'output\' inside the sample folder')
-    build_parser.add_argument('--SAVE_INT', default='False', help='Whether to delte TEMP folder where it stores intermediate output. Defaults to keep \'TEMP\' folder inside \'output\' folder')
+    build_parser.add_argument('--SAVE_INT', help="Save the TEMP folder that stores intermediate output.", action="store_true")
     build_parser.add_argument('--WARMUP', type=int, default=1000, help='Number of wamrup samples in stan model.')
     build_parser.add_argument('--KEEPER', type=int, default=1000, help='Number of keeped samples in stan model.')
 

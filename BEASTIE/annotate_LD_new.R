@@ -19,6 +19,7 @@ beastie_wd=args[9]
 source(file.path(beastie_wd, "Get_LD.R"))
 
 if (!file.exists(meta)){
+    print("meta file not exist")
 #================================================ specify input
     df = read.table(infile, header=T, sep = '\t')
     batch_size = 1000

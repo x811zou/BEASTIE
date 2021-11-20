@@ -166,5 +166,6 @@ def count_all_het_sites(
     data0.to_csv(outputFilename, sep="\t", header=True, index=False)
     for files in os.listdir(tmp):
         if "TEMP" in files:
+            logging.info('..... remove created TEMP files: {0}'.format(files))
             os.remove(tmp + "/" + files)
 
