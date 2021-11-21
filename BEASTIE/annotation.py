@@ -2,26 +2,24 @@
 # =========================================================================
 # 2021 Xue Zou (xue.zou@duke.edu)
 # =========================================================================
-from datetime import datetime
+import csv
+import gzip
 import logging
 import os
-import csv
-
+import pandas as pd
 from pkg_resources import resource_filename
 
-import pandas as pd
-
 from .helpers import runhelper
-
 
 USE_CONSTANT_MEMORY_ALGORITHM = True
 
 
 def annotateAF(ancestry, hetSNP, out_AF, ref_dir):
-    AF_file = os.path.join(ref_dir, "AF_1_22_trimmed2.csv")
     if USE_CONSTANT_MEMORY_ALGORITHM:
+        AF_file = os.path.join(ref_dir, "AF_1_22_trimmed2.csv.gz")
         annotateAFConstantMemory(ancestry, hetSNP, out_AF, AF_file)
     else:
+        AF_file = os.path.join(ref_dir, "AF_1_22_trimmed2.csv")
         annotateAFPandas(ancestry, hetSNP, out_AF, AF_file)
 
     logging.info("..... finish annotating AF for SNPs, file save at {0}".format(out_AF))
@@ -57,7 +55,7 @@ def annotateAFPandas(ancestry, hetSNP, out_AF, AF_file):
 def annotateAFConstantMemory(ancestry, hetSNP, out_AF, AF_file):
     logging.info("..... start annotating AF with constant memory join")
 
-    with open(AF_file, newline="") as affile, open(
+    with gzip.open(AF_file, mode="rt", newline="") as affile, open(
         hetSNP, newline=""
     ) as hetSNPfile, open(out_AF, "w", newline="") as outFile:
         af_reader = csv.reader(affile, delimiter=",", dialect="unix")
