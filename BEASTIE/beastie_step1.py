@@ -9,6 +9,7 @@ import pandas as pd
 from pathlib import Path
 import BEASTIE.annotation as annotation
 from .extractHets import count_all_het_sites
+from .helpers import runhelper
 from .intersect_hets import Intersect_exonicHetSnps
 from .parse_mpileup import Parse_mpileup_allChr
 
@@ -66,9 +67,9 @@ def check_file_existence(
     elif os.path.isfile(vcf) and (not os.path.isfile(vcfgz)):
         logging.warning("We will generate vcfgz for you ...".format(vcfgz))
         cmd = "bgzip -c %s > %s" % (vcf, vcfgz)
-        os.system(cmd)
+        runhelper(cmd)
         cmd = "tabix -fp vcf %s" % (vcfgz)
-        os.system(cmd)
+        runhelper(cmd)
     elif (os.path.isfile(vcfgz)) and (not os.path.isfile(vcf)):
         logging.warning(
             "Oops! VCF file {0} not found. We will generate that for you ...".format(
@@ -76,9 +77,9 @@ def check_file_existence(
             )
         )
         cmd = "gunzip %s > %s" % (vcfgz, vcf)
-        os.system(cmd)
+        runhelper(cmd)
         cmd = "tabix -fp vcf %s" % (vcfgz)
-        os.system(cmd)
+        runhelper(cmd)
     ##### reference directory : AF file and gencode directory
     AF_file = False
     if os.path.exists(ref_dir):

@@ -9,7 +9,8 @@ import statistics
 import numpy as np
 import pandas as pd
 from math import floor, log10, log2
-from BEASTIE.misc_tools.StanParser import StanParser
+from .misc_tools.StanParser import StanParser
+from .helpers import runhelper
 
 
 def writeInitializationFile(filename):
@@ -127,7 +128,7 @@ def runModel(
             % (model, KEEPER, WARMUP, tmp_output_file, init_file, stan_output_file)
         )
         print(cmd)
-        os.system(cmd)  # Parse MCMC output
+        runhelper(cmd)  # Parse MCMC output
         parser = StanParser(stan_output_file)
         thetas = parser.getVariable("theta")
         return geneID, thetas

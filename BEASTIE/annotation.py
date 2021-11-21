@@ -5,9 +5,11 @@
 import logging
 import os
 
+from pkg_resources import resource_filename
+
 import pandas as pd
 
-from pkg_resources import resource_filename
+from .helpers import runhelper
 
 
 def annotateAF(ancestry, hetSNP, out_AF, ref_dir):
@@ -56,7 +58,7 @@ def annotateLD(
 
     if not os.path.isfile(meta):
         cmd = f"Rscript --vanilla {annotate_ld_new} {prefix} {ancestry} {hetSNP_intersect_unique} {out} {LD_token} {chr_start} {chr_end} {meta} {beastie_wd}"
-        os.system(cmd)
+        runhelper(cmd)
         logging.info(f"..... finish annotating LD for SNP pairs, file save at {meta}")
     else:
         logging.info(
