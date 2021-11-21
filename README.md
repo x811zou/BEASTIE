@@ -57,7 +57,7 @@ If all your data and outputs exist under the current directory, the following te
 We don't build a singularity image directly, but you can build one using the docker image.
 
 ```bash
-% sudo singularity build beastie.sif docker://x811zou/beastie
+% sudo singularity build beastie.sif docker://xuezou/beastie
 ```
 
 This will create a singularity image, `beastie.sif` that can potentially be run like
