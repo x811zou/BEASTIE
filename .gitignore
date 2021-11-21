@@ -2,11 +2,12 @@
 __pycache__
 dist
 *.egg-info
+BEASTIE/LinearReg_iBEASTIE_fitted_model_lambda_loglambda.rds
+BEASTIE/LinearReg_iBEASTIE_fitted_model_lambda.rds
 BEASTIE/reference
 BEASTIE_example/**/output
+BEASTIE_example/**/*inuse*
 other_example/
 .ipynb_checkpoints/
-BEASTIE/run_config_HG0*
-BEASTIE/run_config_NA*
-BEASTIE/parameters_NA*
-BEASTIE/parameters_HG0*
+BEASTIE/run_config*
+BEASTIE/parameters*

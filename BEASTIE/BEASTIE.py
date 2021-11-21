@@ -31,7 +31,9 @@ def _build(args):
         level=logging.DEBUG,
     )
     logging.info(">> Starting running BEASTIE")
+    print(">> Starting running BEASTIE")
     logging.info("========================================")
+    print("======================================== step1: Processing raw data & annotating LD and AF information")
     logging.info(
         "======================================== step1: Processing raw data & annotating LD and AF information"
     )
