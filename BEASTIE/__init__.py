@@ -7,6 +7,7 @@ import argparse
 import configparser
 import logging
 import os.path
+import sys
 from collections import namedtuple
 from pathlib import Path
 from datetime import date
@@ -112,20 +113,7 @@ def run(config):
     model = os.path.join(config.STAN, config.modelName)
     today = date.today()
 
-    specification = (
-        "s"
-        + str(config.sigma)
-        + "_a"
-        + str(config.alpha)
-        + "_sinCov"
-        + str(config.min_single_cov)
-        + "_totCov"
-        + str(config.min_total_cov)
-        + "_W"
-        + str(config.WARMUP)
-        + "K"
-        + str(config.KEEPER)
-    )
+    specification = f"s{config.sigma}_a{config.alpha}_sinCov{config.min_single_cov}_totCov{config.min_total_cov}_W{config.WARMUP}K{config.KEEPER}
     output_path = os.path.join(str(out_dir), "output")
     specification_path = os.path.join(output_path, str(specification))
     log_path = os.path.join(specification_path, "log")
@@ -138,14 +126,14 @@ def run(config):
     Path(tmp_path).mkdir(parents=True, exist_ok=True)
     Path(result_path).mkdir(parents=True, exist_ok=True)
 
-    logname = os.path.join(
-        config.output_dir,
-        config.prefix,
-        "output",
-        specification,
-        "log",
-        f"{config.prefix}-{today.strftime('%b-%d-%Y')}.log",
-    )
+    log_filename = f"{config.prefix}-{today.strftime('%b-%d-%Y')}"
+
+    stdout_stderr_filepath = os.path.join(log_path, f"{log_filename}.output")
+    stdout_stderr_file = open(stdout_stderr_filepath, "w")
+    sys.stdout = stdout_stderr_file
+    sys.stderr = stdout_stderr_file
+
+    logname = os.path.join(log_path, f"{log_filename}.log")
     if os.path.isfile(logname):
         os.remove(logname)
     logging.basicConfig(
@@ -154,9 +142,6 @@ def run(config):
         format="%(asctime)-15s [%(levelname)s] %(message)s",
         level=logging.DEBUG,
     )
-    # stderr_file=os.path.join(config.input_dir,config.output_folder,config.specification,"/log/",config.prefix+"-"+str(today.strftime("%b-%d-%Y"))+".stderr")
-    # cmd = f"python BEASTIE.py build --prefix {prefix} --vcf_sample_name {vcf_sample_name} --ref_dir {ref_dir} --vcf {vcf_file} --pileup {pileup_file} --in_path {in_path} --out {output_folder} --ancestry {ancestry} --chr_start {chr_start} --chr_end {chr_end} --read_length {read_length} --WARMUP {WARMUP} --KEEPER {KEEPER} --LD_token {LD_token} --model {model} '--SAVE_INT' {SAVE_INT}"
-    # subprocess.call(cmd,shell=True,stdout=open(stderr_file, 'w'), stderr=open(stderr_file, 'w'))
 
     logging.info(">> Starting running BEASTIE")
 
