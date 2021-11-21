@@ -12,6 +12,7 @@ import BEASTIE.binomial_for_real_data as binomial_for_real_data
 import BEASTIE.run_model_stan_wrapper as run_model_stan_wrapper
 from pkg_resources import resource_filename
 from .beastie_step1 import create_output_directory
+from .helpers import runhelper
 from .prepare_model import (
     generate_modelCount,
     significant_genes,
@@ -96,7 +97,7 @@ def run(
     )
     beastie_wd = resource_filename("BEASTIE", ".")
     cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {common} {prefix} {model} {hetSNP_intersect_unique} {hetSNP_intersect_unique_forlambda_file} {hetSNP_intersect_unique_lambdaPredicted_file} {meta} {meta_error} {beastie_wd}"
-    os.system(cmd)
+    runhelper(cmd)
     data22 = pd.read_csv(
         hetSNP_intersect_unique_lambdaPredicted_file,
         sep="\t",
