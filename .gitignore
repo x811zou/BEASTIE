@@ -5,6 +5,7 @@ dist
 BEASTIE/LinearReg_iBEASTIE_fitted_model_lambda_loglambda.rds
 BEASTIE/LinearReg_iBEASTIE_fitted_model_lambda.rds
 BEASTIE/reference
+BEASTIE_example/HG00096_chr20
 BEASTIE_example/**/output
 BEASTIE_example/**/*inuse*
 other_example/
