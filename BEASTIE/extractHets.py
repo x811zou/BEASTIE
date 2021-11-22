@@ -98,10 +98,7 @@ def count_all_het_sites(
                 if len(output) > 0:
                     outputs.append(output)
 
-            out_stream = open(outputFile, "w")
-            out_stream.write(
-                "chr\tchrN\tgeneID\tpos\ttranscriptID\ttranscript_pos\tSNP_id\tgenotype\n"
-            )
+            data = []
             for output in outputs:
                 lines = output.split("\n")
                 transcripts = None
@@ -131,25 +128,32 @@ def count_all_het_sites(
                     for transcript in transcripts:
                         transcriptCoord = transcript.mapToTranscript(pos)
                         chrom = transcript.getSubstrate()
-                        chromN = chrom.strip("chr")
+                        chromN = int(chrom.strip("chr"))
                         total_biSNP += 1
                         chr_pos = f"{chromN}_{pos}"
                         byGene[geneID].add(chr_pos)
-                        out_stream.write(
-                            "\t".join(
-                                [
-                                    str(chrom),
-                                    str(chromN),
-                                    str(transcript.getGeneId()),
-                                    str(pos),
-                                    str(transcript.getTranscriptId()),
-                                    str(transcriptCoord),
-                                    str(rs),
-                                    str(genotype),
-                                ]
-                            )
+                        data.append(
+                            [
+                                chrom,
+                                chromN,
+                                transcript.getGeneId(),
+                                pos,
+                                transcript.getTranscriptId(),
+                                transcriptCoord,
+                                rs,
+                                genotype,
+                            ]
                         )
-                        out_stream.write("\n")
+
+            data.sort(key=lambda r: (r[1], r[3]))
+
+            out_stream = open(outputFile, "w")
+            out_stream.write(
+                "chr\tchrN\tgeneID\tpos\ttranscriptID\ttranscript_pos\tSNP_id\tgenotype\n"
+            )
+            for r in data:
+                out_stream.write("\t".join(map(str, r)))
+                out_stream.write("\n")
 
             out_stream.close()
         else:

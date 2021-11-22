@@ -16,7 +16,7 @@ USE_CONSTANT_MEMORY_ALGORITHM = True
 
 def annotateAF(ancestry, hetSNP, out_AF, ref_dir):
     if USE_CONSTANT_MEMORY_ALGORITHM:
-        AF_file = os.path.join(ref_dir, "AF_1_22_trimmed2.csv.gz")
+        AF_file = os.path.join(ref_dir, "AF_1_22_chr20.csv.gz")
         annotateAFConstantMemory(ancestry, hetSNP, out_AF, AF_file)
     else:
         AF_file = os.path.join(ref_dir, "AF_1_22_trimmed2.csv")
@@ -60,7 +60,6 @@ def annotateAFConstantMemory(ancestry, hetSNP, out_AF, AF_file):
     ) as hetSNPfile, open(out_AF, "w", newline="") as outFile:
         af_reader = csv.reader(affile, delimiter=",", dialect="unix")
         hetSNP_reader = csv.reader(hetSNPfile, delimiter="\t", dialect="unix")
-        out_writer = csv.writer(outFile, delimiter="\t", dialect="unix")
 
         af_header = next(af_reader)
         hetSNP_header = next(hetSNP_reader)
@@ -82,11 +81,18 @@ def annotateAFConstantMemory(ancestry, hetSNP, out_AF, AF_file):
         rows_written = 0
         rows_read = 0
 
+        out_writer = csv.writer(
+            outFile, delimiter="\t", dialect="unix", quoting=csv.QUOTE_MINIMAL
+        )
+        out_writer.writerow(hetSNP_header + ["rsid", "AF"])
+
         for row in hetSNP_reader:
             chr, pos = row[hetSNP_chr_index], int(row[hetSNP_pos_index])
             chr_n = int(chr.strip("chr"))
 
-            while af_rows_left and (chr_n > af_chr_n or pos > af_pos):
+            while af_rows_left and (
+                (chr_n > af_chr_n) or (chr_n == af_chr_n and pos > af_pos)
+            ):
                 try:
                     af_row = next(af_reader)
                     af_chr, af_pos = af_row[af_chr_index], int(af_row[af_pos_index])
@@ -96,9 +102,9 @@ def annotateAFConstantMemory(ancestry, hetSNP, out_AF, AF_file):
                     af_row = None
                     af_rows_left = False
 
-            if af_row is not None:
+            if af_row is not None and chr_n == af_chr_n and pos == af_pos:
                 out_writer.writerow(
-                    row + [af_row[af_af_col_index], af_row[af_rsid_col_index]]
+                    row + [af_row[af_rsid_col_index], af_row[af_af_col_index]]
                 )
             else:
                 out_writer.writerow(row + ["", ""])
