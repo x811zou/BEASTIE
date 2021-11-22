@@ -14,12 +14,12 @@ from .helpers import runhelper
 USE_CONSTANT_MEMORY_ALGORITHM = True
 
 
-def annotateAF(ancestry, hetSNP, out_AF, ref_dir):
+def annotateAF(ancestry, hetSNP, out_AF):
     if USE_CONSTANT_MEMORY_ALGORITHM:
-        AF_file = os.path.join(ref_dir, "AF_1_22_trimmed2.csv.gz")
+        AF_file = resource_filename("BEASTIE", "reference/AF_1_22_trimmed2.csv.gz")
         annotateAFConstantMemory(ancestry, hetSNP, out_AF, AF_file)
     else:
-        AF_file = os.path.join(ref_dir, "AF_1_22_trimmed2.csv")
+        AF_file = resource_filename("BEASTIE", "reference/AF_1_22_trimmed2.csv")
         annotateAFPandas(ancestry, hetSNP, out_AF, AF_file)
 
     logging.info("..... finish annotating AF for SNPs, file save at {0}".format(out_AF))

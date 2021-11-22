@@ -14,6 +14,10 @@ COPY BEASTIE/iBEASTIE2.stan .
 RUN make iBEASTIE2
 
 
+
+
+
+
 FROM ubuntu:20.10 AS tabix
 
 WORKDIR /
@@ -26,8 +30,24 @@ WORKDIR /htslib
 RUN ./configure && make
 
 
-FROM ubuntu:20.10
+
+
+
+
+FROM ubuntu:20.10 AS beastie-py
+
+RUN apt-get update; apt-get install --no-install-recommends -qq make pipenv python3.8-venv
+
 WORKDIR /BEASTIE
+COPY . .
+RUN make clean dist
+
+
+
+
+
+
+FROM ubuntu:20.10
 ENV DEBIAN_FRONTEND noninteractive
 ENV CYTHONIZE 1
 RUN apt-get update \
@@ -50,13 +70,12 @@ RUN R -e 'install.packages("LDlinkR", dependencies=T, repos="http://cran.us.r-pr
   R -e 'install.packages("glmnetUtils", dependencies=T, repos="http://cran.us.r-project.org"); if (!library(glmnetUtils, logical.return=T)) quit(status=10)' && \
   R -e 'if (!requireNamespace("BiocManager", quietly=T)) install.packages("BiocManager", dependencies=T, repos="http://cran.us.r-project.org"); BiocManager::install("pasilla"); if (!library(pasilla, logical.return=T)) quit(status=10)'
 
+RUN apt-get purge -y libicu-dev make gcc g++ libxml2-dev git autoconf zlib1g-dev libbz2-dev libssl-dev libcurl4-openssl-dev
+
 COPY --from=CMDSTAN /cmdstan/iBEASTIE2 /usr/local/bin
 COPY --from=tabix /htslib/tabix /usr/local/bin
+COPY --from=beastie-py /BEASTIE/dist/*.whl /tmp
 
-COPY . .
-RUN make install
-
-RUN apt-get purge -y libicu-dev make gcc g++ libxml2-dev git autoconf zlib1g-dev libbz2-dev libssl-dev libcurl4-openssl-dev
-# RUN apk del -r icu-dev make gcc g++ musl-dev curl-dev libxml2-dev git autoconf zlib-dev bzip2 bzip2-dev
+RUN pip3 install /tmp/*.whl && rm -f /tmp/*.whl
 
 ENTRYPOINT ["beastie"]
