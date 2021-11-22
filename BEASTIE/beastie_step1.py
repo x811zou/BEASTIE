@@ -7,6 +7,8 @@ import sys
 import logging
 import pandas as pd
 from pathlib import Path
+
+from pkg_resources import resource_filename
 import BEASTIE.annotation as annotation
 from .extractHets import count_all_het_sites
 from .helpers import runhelper
@@ -81,33 +83,11 @@ def check_file_existence(
         cmd = "tabix -fp vcf %s" % (vcfgz)
         runhelper(cmd)
     ##### reference directory : AF file and gencode directory
-    AF_file = False
-    if os.path.exists(ref_dir):
-        for filename in os.listdir(ref_dir):
-            if "AF_1_22_trimmed2.csv" in filename:
-                AF_file = True
-                AF_file_name = filename
-            if "gencode" in filename:
-                gencode_dir = True
-                gencode_dir_name = os.path.join(ref_dir, "gencode_chr")
-    else:
+    ref_dir = resource_filename("BEASTIE", "reference/")
+    if not os.path.exists(ref_dir):
         logging.error(
             "Oops! REFERENCE path {0} doesn't exist. Please try again ...".format(
                 ref_dir
-            )
-        )
-        sys.exit(1)
-    if AF_file is False:
-        logging.error(
-            "Oops! AF file {0} doesn't exist in {1}. Please try again ...".format(
-                AF_file_name, ref_dir
-            )
-        )
-        sys.exit(1)
-    if gencode_dir is False:
-        logging.error(
-            "Oops! gencode directory {0} doesn't exist. Please try again ...".format(
-                gencode_dir_name
             )
         )
         sys.exit(1)
@@ -197,7 +177,6 @@ def check_file_existence(
         hetSNP_intersect_unique_forlambda_file,
         hetSNP_intersect_unique_lambdaPredicted_file,
         parsed_pileup_file,
-        gencode_dir_name,
     )
 
 
@@ -293,7 +272,6 @@ def run(
         hetSNP_intersect_unique_forlambda_file,
         hetSNP_intersect_unique_lambdaPredicted_file,
         parsed_pileup,
-        gencode_dir,
     ) = check_file_existence(
         specification,
         prefix,
@@ -320,7 +298,7 @@ def run(
         logging.info("================= Starting common step 1.1")
         logging.info("..... start extracting heterozygous bi-allelic SNPs")
         count_all_het_sites(
-            common, prefix, vcfgz, gencode_dir, hetSNP, int(chr_start), int(chr_end)
+            common, prefix, vcfgz, hetSNP, int(chr_start), int(chr_end)
         )
     else:
         logging.info("=================")
@@ -377,7 +355,7 @@ def run(
         logging.info("=================")
         logging.info("================= Starting common step 1.3")
         logging.info("..... start annotating AF and LD information")
-        annotation.annotateAF(ancestry, hetSNP, hetSNP_AF, ref_dir)
+        annotation.annotateAF(ancestry, hetSNP, hetSNP_AF)
 
     logging.info(f"..... annotated hetSNP with AF file can be found at {hetSNP_AF}")
 

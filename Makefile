@@ -9,8 +9,8 @@ docker: clean $(PYTHON_FILES)
 	docker build .
 
 dist: $(PYTHON_FILES)
-	if [ -z $$(pip list | grep -e "^build\s") ]; then pip install build; fi
-	python -m build
+	if [ -z $$(pip3 list | grep -e "^build\s") ]; then pip3 install build; fi
+	python3 -m build
 
 install: dist
-	pip install dist/*.whl
+	pip3 install dist/*.whl

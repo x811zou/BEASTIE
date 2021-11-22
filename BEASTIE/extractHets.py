@@ -7,6 +7,7 @@ import logging
 import os
 
 import pandas as pd
+from pkg_resources import resource_filename
 
 from BEASTIE.misc_tools.GffTranscriptReader import GffTranscriptReader
 from BEASTIE.misc_tools.Pipe import Pipe
@@ -49,7 +50,7 @@ def isHeterozygous(genotype):
 
 
 def count_all_het_sites(
-    tmp, sample, vcfFilename, file_dir, outputFilename, chr_start, chr_end
+    tmp, sample, vcfFilename, outputFilename, chr_start, chr_end
 ):
     logging.info("..... We are looking at individual: {0}".format(sample))
     filename = os.path.splitext(str(outputFilename))[0]
@@ -58,7 +59,7 @@ def count_all_het_sites(
         outputFile = filename + ".chr" + str(Num) + ".TEMP.tsv"
         if not os.path.isfile(outputFile):
             reader = GffTranscriptReader()
-            geneFile = os.path.join(file_dir, f"chr{Num}")
+            geneFile = resource_filename("BEASTIE", f"reference/gencode_chr/chr{Num}")
             geneList = reader.loadGenes(geneFile)
             logging.info(
                 "..... Working on chr {0} with {1} genes".format(Num, len(geneList))
