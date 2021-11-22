@@ -90,7 +90,7 @@ Compiling BEASTIE stan model
 
 Download reference data and unzip it, and set the environment variable $refdir to the directory where reference folder has been unzipped.
 ```
-https://drive.google.com/file/d/1gwplvg4az1op6ExDjCLYgGKYXQrFDd2T/view?usp=sharing
+https://drive.google.com/file/d/106HEFKV_0TAzoekXNEWYf-XqdqAYZoh4/view?usp=sharing
 ```
 
 Then either install BEASTIE:
