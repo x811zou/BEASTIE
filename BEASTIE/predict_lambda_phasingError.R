@@ -91,7 +91,7 @@ if (!file.exists(out_data)) {
 if (!file.exists(meta_error)) {
   print("meta file with phasing error not exists, has to run logistic reg!")
   sample_info<-read.delim(file.path(meta),header=TRUE,sep="\t")
-  cv.glmnet.fit.GIAB<- readRDS("./BEASTIE/LogisticReg_GIAB_fitted_phasing_error.rds")
+  cv.glmnet.fit.GIAB<- readRDS(file.path(beastie_wd, "LogisticReg_GIAB_fitted_phasing_error.rds"))
   x.test<-as.matrix(sample_info%>%dplyr::select(min_MAF,diff_MAF,log10_distance,r2,d)%>%
                       dplyr::mutate(min_MAF_diff_MAF=min_MAF*diff_MAF)%>%
                       mutate(min_MAF_log10_distance=log10_distance*min_MAF)%>%
