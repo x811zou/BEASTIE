@@ -17,39 +17,19 @@ from .parse_mpileup import Parse_mpileup_allChr
 
 
 def check_file_existence(
-    specification,
     prefix,
     in_path,
-    out,
+    output_path,
+    tmp_path,
     model,
     vcf,
     ref_dir,
     pileup,
     hetSNP,
     parsed_pileup,
-    sigma,
-    alpha,
-    WARMUP,
-    KEEPER,
-    min_single_cov,
-    min_total_cov,
     chr_start,
     chr_end,
 ):
-    out, common, temp, _ = create_output_directory(
-        specification,
-        in_path,
-        out,
-        sigma,
-        alpha,
-        WARMUP,
-        KEEPER,
-        min_single_cov,
-        min_total_cov,
-    )
-    split = os.path.split(model)
-    STAN = split[0]
-    modelName = split[1]
     ##### STAN model
     if not os.path.exists(model):
         logging.error(
@@ -115,23 +95,18 @@ def check_file_existence(
                 )
             )
     else:
-        hetSNP_file = "{0}_hetSNP_chr{1}-{2}.tsv".format(
-            os.path.join(common, prefix), chr_start, chr_end
-        )
+        hetSNP_file = os.path.join(output_path, f"{prefix}_hetSNP_chr{chr_start}-{chr_end}.tsv")
         logging.info("We will generate {0} for you ...".format(hetSNP_file))
     ##### TEMP output generation: hetSNP_file
-    hetSNP_intersect_unique_file = "{0}_hetSNP_intersected_filtered.TEMP.tsv".format(
-        os.path.join(temp, prefix)
+    hetSNP_intersect_unique_file = os.path.join(
+        tmp_path, f"{prefix}_hetSNP_intersected_filtered.TEMP.tsv"
     )
-    hetSNP_intersect_unique_forlambda_file = (
-        "{0}_hetSNP_intersected_filtered_forLambda.TEMP.tsv".format(
-            os.path.join(temp, prefix)
-        )
+    hetSNP_intersect_unique_forlambda_file = os.path.join(
+        tmp_path,
+        f"{prefix}_hetSNP_intersected_filtered_forLambda.TEMP.tsv"
     )
-    hetSNP_intersect_unique_lambdaPredicted_file = (
-        "{0}_hetSNP_intersected_filtered_lambdaPredicted.TEMP.tsv".format(
-            os.path.join(temp, prefix)
-        )
+    hetSNP_intersect_unique_lambdaPredicted_file = os.path.join(
+        tmp_path, f"{prefix}_hetSNP_intersected_filtered_lambdaPredicted.TEMP.tsv"
     )
     logging.info(
         "We will generate intermediate file {0} ...".format(
@@ -149,7 +124,7 @@ def check_file_existence(
         )
     )
     ##### TEMP output generation: meta_file
-    meta_file = "{0}_meta.TEMP.tsv".format(os.path.join(temp, prefix))
+    meta_file = os.path.join(tmp_path, f"{prefix}_meta.TEMP.tsv")
     logging.info("We will generate intermedate file {0} for you ...".format(meta_file))
     ##### parsed_pileup_file
     if parsed_pileup is not None:
@@ -161,14 +136,9 @@ def check_file_existence(
                 )
             )
     else:
-        parsed_pileup_file = "{0}_parsed_pileup_chr{1}-{2}.tsv".format(
-            os.path.join(common, prefix), chr_start, chr_end
-        )
+        parsed_pileup_file = os.path.join(output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv")
         logging.info("We will generate {0} for you ...".format(parsed_pileup_file))
     return (
-        out,
-        common,
-        temp,
         vcfgz,
         pileup_file,
         hetSNP_file,
@@ -179,73 +149,12 @@ def check_file_existence(
         parsed_pileup_file,
     )
 
-
-def create_output_directory(
-    specification,
-    in_path,
-    out,
-    sigma,
-    alpha,
-    WARMUP,
-    KEEPER,
-    min_single_cov,
-    min_total_cov,
-):
-    common = os.path.join(in_path, out)
-
-    if not os.path.exists(common):
-        Path(common).mkdir(parents=True, exist_ok=True)
-        logging.info("Creating COMMON directory : {0}".format(common))
-    else:
-        logging.info("Found existed COMMON directory : {0}".format(common))
-
-    out = os.path.join(common, specification)
-
-    if not os.path.exists(out):
-        logging.info("Creating specific OUTPUT directory : {0}".format(out))
-        Path(out).mkdir(parents=True, exist_ok=True)
-    else:
-        logging.info(
-            "Found existed specific OUTPUT directory : {0}, remove content ...".format(
-                out
-            )
-        )
-
-    temp = os.path.join(out, "tmp")
-    if not os.path.exists(temp):
-        logging.info("Creating specific TEMP directory : {0}".format(temp))
-        Path(temp).mkdir(parents=True, exist_ok=True)
-    else:
-        logging.info(
-            "Found existed specific TEMP directory : {0}, remove content ...".format(
-                temp
-            )
-        )
-
-    result = os.path.join(out, "result")
-    if not os.path.exists(result):
-        logging.info("Creating specific RESULT directory : {0}".format(result))
-        Path(result).mkdir(parents=True, exist_ok=True)
-    else:
-        logging.info(
-            "Found existed specific RESULT directory : {0}, remove content ...".format(
-                result
-            )
-        )
-
-    return out, common, temp, result
-
-
 def run(
-    specification,
-    sigma,
-    alpha,
-    WARMUP,
-    KEEPER,
     prefix,
     vcf_sample_name,
     in_path,
-    out,
+    output_path,
+    tmp_path,
     model,
     vcf,
     ref_dir,
@@ -261,9 +170,6 @@ def run(
     parsed_pileup,
 ):
     (
-        out,
-        common,
-        temp,
         vcfgz,
         pileup,
         hetSNP,
@@ -273,22 +179,16 @@ def run(
         hetSNP_intersect_unique_lambdaPredicted_file,
         parsed_pileup,
     ) = check_file_existence(
-        specification,
         prefix,
         in_path,
-        out,
+        output_path,
+        tmp_path,
         model,
         vcf,
         ref_dir,
         pileup,
         hetSNP,
         parsed_pileup,
-        sigma,
-        alpha,
-        WARMUP,
-        KEEPER,
-        min_single_cov,
-        min_total_cov,
         chr_start,
         chr_end,
     )
@@ -298,7 +198,7 @@ def run(
         logging.info("================= Starting common step 1.1")
         logging.info("..... start extracting heterozygous bi-allelic SNPs")
         count_all_het_sites(
-            common, prefix, vcfgz, hetSNP, int(chr_start), int(chr_end)
+            tmp_path, prefix, vcfgz, hetSNP, int(chr_start), int(chr_end)
         )
     else:
         logging.info("=================")
@@ -416,7 +316,7 @@ def run(
             prefix,
             ancestry,
             hetSNP_intersect_unique,
-            temp,
+            tmp_path,
             LD_token,
             chr_start,
             chr_end,

@@ -295,7 +295,6 @@ def save_raw_theta(
 
 
 def run(
-    specification,
     prefix,
     inFile,
     sigma,
@@ -330,7 +329,7 @@ def run(
     init_file = os.path.join(out_path, initFile)
     stan_output_file = os.path.join(out_path, outFile)
     ###########################################################################################
-    outname1 = specification + ".pickle"
+    outname1 = "stan1.pickle"
     out_path = os.path.join(out_path, "theta")
     if not os.path.exists(out_path):
         os.makedirs(out_path)
@@ -359,5 +358,4 @@ def run(
         )
     df = parse_stan_output(out0, prefix, inFile, out1, KEEPER, lambdas_file)
     # step2
-    outname2 = specification + ".pickle"
-    return df, outname2
+    return df, outname1
