@@ -11,7 +11,6 @@ import BEASTIE.ADM_for_real_data as ADM_for_real_data
 import BEASTIE.binomial_for_real_data as binomial_for_real_data
 import BEASTIE.run_model_stan_wrapper as run_model_stan_wrapper
 from pkg_resources import resource_filename
-from .beastie_step1 import create_output_directory
 from .helpers import runhelper
 from .prepare_model import (
     generate_modelCount,
@@ -36,7 +35,6 @@ def create_file_name(hetSNP_intersect_unique, meta, temp):
 
 
 def run(
-    specification,
     hetSNP_intersect_unique,
     meta,
     hetSNP_intersect_unique_forlambda_file,
@@ -46,7 +44,9 @@ def run(
     model,
     sigma,
     in_path,
-    out,
+    out_path,
+    tmp_path,
+    result_path,
     cutoff,
     SAVE_INT,
     WARMUP,
@@ -54,11 +54,8 @@ def run(
     total_cov,
     either_cov,
 ):
-    out, common, temp, result = create_output_directory(
-        specification, in_path, out, sigma, alpha, WARMUP, KEEPER, either_cov, total_cov
-    )
     base_modelin, base_modelin_error, meta_error = create_file_name(
-        hetSNP_intersect_unique, meta, temp
+        hetSNP_intersect_unique, meta, tmp_path
     )
     ##########################
     logging.info("=================")
@@ -96,7 +93,7 @@ def run(
         "BEASTIE", "predict_lambda_phasingError.R"
     )
     beastie_wd = resource_filename("BEASTIE", ".")
-    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {common} {prefix} {model} {hetSNP_intersect_unique} {hetSNP_intersect_unique_forlambda_file} {hetSNP_intersect_unique_lambdaPredicted_file} {meta} {meta_error} {beastie_wd}"
+    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {tmp_path} {prefix} {model} {hetSNP_intersect_unique} {hetSNP_intersect_unique_forlambda_file} {hetSNP_intersect_unique_lambdaPredicted_file} {meta} {meta_error} {beastie_wd}"
     runhelper(cmd)
     data22 = pd.read_csv(
         hetSNP_intersect_unique_lambdaPredicted_file,
@@ -129,13 +126,12 @@ def run(
     logging.info("================= Starting step 2.4")
     logging.info("..... start running iBEASTIE model")
     df_ibeastie, picklename = run_model_stan_wrapper.run(
-        specification,
         prefix,
         base_modelin_error,
         sigma,
         alpha,
         model,
-        result,
+        result_path,
         hetSNP_intersect_unique_lambdaPredicted_file,
         WARMUP,
         KEEPER,
@@ -151,19 +147,19 @@ def run(
     # df_beastie,_ = run_model_stan_wrapper_beastie.run(prefix,base_modelin_error,sigma,alpha,"/Users/scarlett/allenlab/software/cmdstan/examples/BEASTIE/BEASTIE",result,hetSNP_intersect_unique_lambdaPredicted_file,WARMUP,KEEPER,either_cov,total_cov)
     # logging.info('..... finishing running BEASTIE')
 
-    df_adm = ADM_for_real_data.run(prefix, base_modelin, result, picklename)
+    df_adm = ADM_for_real_data.run(prefix, base_modelin, result_path, picklename)
     logging.info("..... finishing running ADM method")
 
-    df_binomial = binomial_for_real_data.run(prefix, base_modelin, result, picklename)
+    df_binomial = binomial_for_real_data.run(prefix, base_modelin, result_path, picklename)
     logging.info("..... finishing running binomial")
 
     ##########################
     logging.info("=================")
     logging.info("================= Starting step 2.5")
     logging.info("..... start generating gene list")
-    outfilename = os.path.join(result, prefix + "_ASE_all.tsv")
+    outfilename = os.path.join(result_path, f"{prefix}_ASE_all.tsv")
     outfilename_ase = os.path.join(
-        result, prefix + "_ASE_cutoff_" + str(cutoff) + "_filtered.tsv"
+        result_path, f"{prefix}_ASE_cutoff_{cutoff}_filtered.tsv"
     )
     if (os.path.isfile(outfilename)) and (os.path.isfile(outfilename_ase)):
         logging.info(
@@ -186,8 +182,8 @@ def run(
     )
     logging.info("..... done with significant_gene")
     if not SAVE_INT:
-        shutil.rmtree(temp)
-        logging.info("..... remove TEMP folder {0}".format(temp))
+        shutil.rmtree(tmp_path)
+        logging.info("..... remove TEMP folder {0}".format(tmp_path))
     logging.info("=================")
     logging.info(">>  Finishing running BEASTIE!")
     data25_1 = pd.read_csv(outfilename, sep="\t", header=0, index_col=False)
