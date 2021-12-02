@@ -43,7 +43,7 @@ Most of these pakages can be installed from CRAN using the `install.packages` R 
 
 
 ### Installation options
-#### Using Docker Image:
+#### Using Docker Image locally:
 Docker does not allow the container any access to the host system by default. To allow the BEASTIE container to access necessary
 files on the host system you need use the `-v` flag to "mount" a host directory at a particular mount point inside the container.
 
@@ -53,22 +53,36 @@ If all your data and outputs exist under the current directory, the following te
 % docker run -v "`pwd`":"`pwd`" <BEASTIE_IMAGE> -c <config_file>
 ```
 
-#### Using Singularity:
-We don't build a singularity image directly, but you can build one using the docker image.
+#### Using Singularity in cluster:
+We don't build a singularity image directly, but you can build one using the docker image. 
 
+1. pull docker image from Dockerhub, and create beastie.tar file
 ```bash
-% sudo singularity build beastie.sif docker://xuezou/beastie
+% docker save --output beastie.tar xuezou/beastie
 ```
 
-This will create a singularity image, `beastie.sif` that can potentially be run like
+2. copy the beastie.tar file to your cluster using scp
+
+3. add the path you want to run singularity in your bashrc file. Or, you could just run it in terminal.
 ```bash
-% ./beastie.sif -c <config_file>
+% export SINGULARITY_CACHEDIR=/your_path/.singularity
+% export SINGULARIT_TMPDIR=/your_path/tmp
+```
+And then 
+```bash
+% source ~/.bashrc
 ```
 
-If you have files that exist in directories outside your current one, you'll need to use the more verbose method:
+4. Create a singularity image, `beastie.sif` that can potentially be run like
+```bash
+% singularity build -s beastie.sif docker-archive://beastie.tar
+```
+
+5. Run
 ```bash
 % singularity run --bind <directory> beastie.sif -c <config_file>
 ```
+
 
 #### Customized installation:
 Git clone our BEASTIE scripts and example data in your working directory ($workdir)
