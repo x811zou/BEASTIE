@@ -63,22 +63,12 @@ We don't build a singularity image directly, but you can build one using the doc
 
 2. copy the beastie.tar file to your cluster using scp
 
-3. add the path you want to run singularity in your bashrc file. Or, you could just run it in terminal.
-```bash
-% export SINGULARITY_CACHEDIR=/your_path/.singularity
-% export SINGULARIT_TMPDIR=/your_path/tmp
-```
-And then 
-```bash
-% source ~/.bashrc
-```
-
-4. Create a singularity image, `beastie.sif` that can potentially be run like
+3. Create a singularity image, `beastie.sif` that can potentially be run like
 ```bash
 % singularity build -s beastie.sif docker-archive://beastie.tar
 ```
 
-5. Run
+4. Run
 ```bash
 % singularity run --bind <directory> beastie.sif -c <config_file>
 ```
