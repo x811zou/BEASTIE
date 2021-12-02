@@ -42,8 +42,7 @@ We don't build a singularity image directly, but you can build one using the doc
 
 
 ### Customized installation:
-## Installation
-### Software prerequisites
+#### Software prerequisites
 Only if you want to use our recommended pipeline to align RNAseq reads):
 * [bedtools2.25](https://bedtools.readthedocs.io/en/latest/content/installation.html)
 * [picard](https://broadinstitute.github.io/picard/) - set location as $picard_path
