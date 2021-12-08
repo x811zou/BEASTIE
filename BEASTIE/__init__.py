@@ -32,7 +32,6 @@ ConfigurationData = namedtuple(
         "LD_token",
         "modelName",
         "STAN",
-        "work_dir",
         "ref_dir",
         "input_dir",
         "SAVE_INT",
@@ -86,7 +85,6 @@ def load_configuration(config_file):
         LD_token=inputs["LD_token"],
         modelName=inputs["modelName"],
         STAN=inputs["STAN"],
-        work_dir=inputs["work_dir"],
         ref_dir=inputs["ref_dir"],
         input_dir=inputs["input_dir"],
         SAVE_INT=bool(inputs.get("SAVE_INT", False)),
@@ -114,8 +112,8 @@ def run(config):
     today = date.today()
 
     specification = f"s{config.sigma}_a{config.alpha}_sinCov{config.min_single_cov}_totCov{config.min_total_cov}_W{config.WARMUP}K{config.KEEPER}"
-    output_path = os.path.join(str(out_dir), "output")
-    specification_path = os.path.join(output_path, str(specification))
+    output_path = os.path.join(out_dir, "output")
+    specification_path = os.path.join(output_path, specification)
     log_path = os.path.join(specification_path, "log")
     tmp_path = os.path.join(specification_path, "tmp")
     result_path = os.path.join(specification_path, "result")
@@ -156,23 +154,19 @@ def run(config):
         hetSNP_intersect_unique_forlambda_file,
         hetSNP_intersect_unique_lambdaPredicted_file,
     ) = beastie_step1.run(
-        specification,
-        config.sigma,  # sigma
-        config.alpha,  # alpha
-        config.WARMUP,  # WARMUP
-        config.KEEPER,  # KEEPER
         config.prefix,
         config.vcf_sample_name,
         in_path,
-        "output",  # out
+        output_path,
+        tmp_path,
         model,
         vcf_file,
         config.ref_dir,
         config.ancestry,
         config.chr_start,
         config.chr_end,
-        config.min_total_cov,  # min_total_cov
-        config.min_single_cov,  # min_single_cov
+        config.min_total_cov,
+        config.min_single_cov,
         config.read_length,
         config.LD_token,
         pileup_file,
@@ -185,23 +179,24 @@ def run(config):
     )
     logging.info("======================================== ")
     beastie_step2.run(
-        specification,
         hetSNP_intersect_unique,
         meta,
         hetSNP_intersect_unique_forlambda_file,
         hetSNP_intersect_unique_lambdaPredicted_file,
         config.prefix,
-        config.alpha,  # alpha
+        config.alpha,
         model,
-        config.sigma,  # sigma
+        config.sigma,
         in_path,
-        "output",  # out
-        0.5,
-        config.SAVE_INT,  # SAVE_INT
-        config.WARMUP,  # WARMUP
-        config.KEEPER,  # KEEPER
-        config.min_total_cov,  # min_total_cov
-        config.min_single_cov,  # min_single_cov
+        output_path,
+        tmp_path,
+        result_path,
+        config.cutoff,
+        config.SAVE_INT,
+        config.WARMUP,
+        config.KEEPER,
+        config.min_total_cov,
+        config.min_single_cov,
     )
 
 

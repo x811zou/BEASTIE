@@ -8,9 +8,42 @@ BEASTIE has been found to be substantially more accurate than other tests based 
 
 BEASTIE is free for academic and non-profit use.
 
-## Installation
-### Software prerequisites
-Only if you want to use our recommended pipeline to align RNAseq reads):
+
+## Installation options
+### Using Docker Image locally:
+Docker does not allow the container any access to the host system by default. To allow the BEASTIE container to access necessary
+files on the host system you need use the `-v` flag to "mount" a host directory at a particular mount point inside the container.
+
+If all your data and outputs exist under the current directory, the following template should work for running BEASTIE. Just replace "<BEASTIE_IMAGE>" with the docker image and "<config_file>" with the path to your BEASTIE configuration file.
+
+```bash
+% docker run -v "`pwd`":"`pwd`" xuezou/beastie -c <config_file>
+```
+
+### Using Singularity in cluster:
+We don't build a singularity image directly, but you can build one using the docker image. 
+
+1. pull docker image from Dockerhub, and create beastie.tar file
+```bash
+% docker save --output beastie.tar xuezou/beastie
+```
+
+2. copy the beastie.tar file to your cluster using scp
+
+3. Create a singularity image, `beastie.sif` that can potentially be run like
+```bash
+% singularity build -s beastie.sif docker-archive://beastie.tar
+```
+
+4. Run
+```bash
+% singularity run --bind <directory> beastie.sif -c <config_file>
+```
+
+
+### Customized installation:
+#### Software prerequisites
+Only if you want to use our recommended pipeline to align RNAseq reads and modify the pipeline:
 * [bedtools2.25](https://bedtools.readthedocs.io/en/latest/content/installation.html)
 * [picard](https://broadinstitute.github.io/picard/) - set location as $picard_path
 * [samtools1.9](https://github.com/samtools/samtools)
@@ -40,37 +73,6 @@ The following R packages are required to install in your system:
 
 Most of these pakages can be installed from CRAN using the `install.packages` R function. However, "pasilla" is a Bioconductor package and must be installed using the
 [Bioconductor Manager](https://cran.r-project.org/web/packages/BiocManager/index.html) package. Once BiocManager is installed run `BiocManager::install("pasilla")` to install it.
-
-
-### Installation options
-#### Using Docker Image:
-Docker does not allow the container any access to the host system by default. To allow the BEASTIE container to access necessary
-files on the host system you need use the `-v` flag to "mount" a host directory at a particular mount point inside the container.
-
-If all your data and outputs exist under the current directory, the following template should work for running BEASTIE. Just replace "<BEASTIE_IMAGE>" with the docker image and "<config_file>" with the path to your BEASTIE configuration file.
-
-```bash
-% docker run -v "`pwd`":"`pwd`" <BEASTIE_IMAGE> -c <config_file>
-```
-
-#### Using Singularity:
-We don't build a singularity image directly, but you can build one using the docker image.
-
-```bash
-% sudo singularity build beastie.sif docker://xuezou/beastie
-```
-
-This will create a singularity image, `beastie.sif` that can potentially be run like
-```bash
-% ./beastie.sif -c <config_file>
-```
-
-If you have files that exist in directories outside your current one, you'll need to use the more verbose method:
-```bash
-% singularity run --bind <directory> beastie.sif -c <config_file>
-```
-
-#### Customized installation:
 Git clone our BEASTIE scripts and example data in your working directory ($workdir)
 ```bash
 % git clone --recurse-submodules https://github.com/x811zou/BEASTIE.git
