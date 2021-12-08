@@ -7,6 +7,13 @@ import logging
 from cyvcf2 import VCF
 
 
+def if_ref(read, ref, allele):
+    if read.lower() == ref or read.upper() == ref:
+        return True
+    else:
+        return False
+
+
 def if_alt(read, ref, allele):
     if read.lower() in allele.get(ref) or read.upper() in allele.get(ref):
         return True
@@ -97,10 +104,15 @@ def GATK_ParseMpileup(
                 basequal = ord(baseq) - 33
                 mapqual = ord(mapq) - 33
                 if basequal >= 0 and mapqual >= 0:  # min_mapq=93    # count this base
-                    if read == "." or read == ",":  # print("ref: "+str(read))
+                    # logging.info("..... reads: {0}".format(read))
+                    if (
+                        read == "." or read == "," or if_ref(read, record.REF, alleles)
+                    ):  # print("ref: "+str(read))
                         ref_count += 1
+                        # logging.info("..... ref - {0} - {1}".format(read, ref_count))
                     elif if_alt(read, record.REF, alleles):  # print("alt: "+str(read))
                         alt_count += 1
+                        # logging.info("..... alt - {0} - {1}".format(read, alt_count))
                     else:
                         other_count += 1  # print("other: "+str(read))
                 if basequal < 0:
