@@ -118,7 +118,6 @@ def annotateAFConstantMemoryParallel(ancestry, hetSNP, out_AF):
             chr = row[hetSNP_chr_index]
             if chr != current_chr:
                 if current_chr is not None:
-                    print(f"started job for {current_chr}")
                     output_handles.append(
                         pool.apply_async(annotateCHRLines, (current_rows, current_chr, ancestry, hetSNP_chr_index, hetSNP_pos_index))
                     )
@@ -126,12 +125,10 @@ def annotateAFConstantMemoryParallel(ancestry, hetSNP, out_AF):
                 current_rows = []
             current_rows.append(row)
         if current_rows is not None and len(current_rows) > 0:
-            print(f"started job for {current_chr}", flush=True)
             output_handles.append(
                 pool.apply_async(annotateCHRLines, (current_rows, current_chr, ancestry, hetSNP_chr_index, hetSNP_pos_index))
             )
 
-        print(len(output_handles))
         pool.close()
 
         out_writer = csv.writer(
@@ -139,12 +136,8 @@ def annotateAFConstantMemoryParallel(ancestry, hetSNP, out_AF):
         )
         out_writer.writerow(hetSNP_header + ["rsid", "AF"])
 
-        handles_processed = 0
         for handle in output_handles:
-            handles_processed += 1
-            print(f"processing handle {handles_processed}")
             handle.wait()
-            # assert handle.successful()
             output = handle.get()
             out_writer.writerows(output)
 
