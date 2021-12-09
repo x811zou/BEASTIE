@@ -13,6 +13,7 @@ from pkg_resources import resource_filename
 from .helpers import runhelper
 
 ANNOTATION_ALGORITH = 'parallel_join' #'constant_memory' 
+MAX_WORKERS = 4
 
 
 def annotateAF(ancestry, hetSNP, out_AF):
@@ -99,7 +100,7 @@ def annotateCHRLines(hetSNP_lines, chr, ancestry, hetSNP_chr_index, hetSNP_pos_i
 def annotateAFConstantMemoryParallel(ancestry, hetSNP, out_AF):
     logging.info("..... start annotating AF with parallel constant memory join")
 
-    with multiprocessing.Pool(4) as pool, open(hetSNP, newline="") as hetSNPfile, open(
+    with multiprocessing.Pool(MAX_WORKERS) as pool, open(hetSNP, newline="") as hetSNPfile, open(
         out_AF, "w", newline=""
     ) as outFile:
         hetSNP_reader = csv.reader(hetSNPfile, delimiter="\t", dialect="unix")
