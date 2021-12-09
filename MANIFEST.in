@@ -2,4 +2,4 @@ include requirements.txt
 include BEASTIE/*.R
 include BEASTIE/*.rds
 include BEASTIE/reference/gencode_chr/*
-include BEASTIE/reference/AF_1_22_trimmed2.csv.gz
+include BEASTIE/reference/AF_chr*.csv.gz
