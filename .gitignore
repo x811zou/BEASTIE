@@ -13,3 +13,4 @@ other_example/
 .ipynb_checkpoints/
 BEASTIE/run_config*
 BEASTIE/parameters*
+*.icloud

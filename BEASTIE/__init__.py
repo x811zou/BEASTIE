@@ -8,6 +8,7 @@ import configparser
 import logging
 import os.path
 import sys
+from pkg_resources import resource_filename
 from collections import namedtuple
 from pathlib import Path
 from datetime import date
@@ -20,6 +21,8 @@ ConfigurationData = namedtuple(
         "vcf_file_name",
         "vcf_sample_name",
         "pileup_file_name",
+        "shapeit2",
+        "gencode_path",
         "ancestry",
         "min_total_cov",
         "min_single_cov",
@@ -73,6 +76,8 @@ def load_configuration(config_file):
         vcf_file_name=inputs["vcf_file_name"],
         vcf_sample_name=inputs["vcf_sample_name"],
         pileup_file_name=inputs["pileup_file_name"],
+        shapeit2=inputs.get("shapeit2", None),
+        gencode_path=inputs.get("gencode_path", None),
         ancestry=inputs["ancestry"],
         min_total_cov=int(inputs.get("min_total_cov", 0)),
         min_single_cov=int(inputs.get("min_single_cov", 1)),
@@ -108,6 +113,15 @@ def run(config):
     out_dir = os.path.join(config.output_dir, config.prefix)
     vcf_file = os.path.join(in_path, config.vcf_file_name)
     pileup_file = os.path.join(in_path, config.pileup_file_name)
+    shapeit2_file = (
+        os.path.join(in_path, config.shapeit2) if config.shapeit2 is not None else None
+    )
+    gencode_path = (
+        config.gencode_path
+        if config.gencode_path is not None
+        else resource_filename("BEASTIE", "reference/gencode_chr")
+        # else config.ref_dir + "/gencode_chr"
+    )
     model = os.path.join(config.STAN, config.modelName)
     today = date.today()
 
@@ -150,6 +164,8 @@ def run(config):
     logging.info("======================================== ")
     (
         hetSNP_intersect_unique,
+        hetSNP_intersect_unique_shapeit2,
+        hetSNP_intersect_unique_shapeit2_dropNA,
         meta,
         hetSNP_intersect_unique_forlambda_file,
         hetSNP_intersect_unique_lambdaPredicted_file,
@@ -159,6 +175,7 @@ def run(config):
         in_path,
         output_path,
         tmp_path,
+        gencode_path,
         model,
         vcf_file,
         config.ref_dir,
@@ -179,7 +196,10 @@ def run(config):
     )
     logging.info("======================================== ")
     beastie_step2.run(
+        shapeit2_file,
         hetSNP_intersect_unique,
+        hetSNP_intersect_unique_shapeit2,
+        hetSNP_intersect_unique_shapeit2_dropNA,
         meta,
         hetSNP_intersect_unique_forlambda_file,
         hetSNP_intersect_unique_lambdaPredicted_file,

@@ -33,7 +33,9 @@ def _build(args):
     logging.info(">> Starting running BEASTIE")
     print(">> Starting running BEASTIE")
     logging.info("========================================")
-    print("======================================== step1: Processing raw data & annotating LD and AF information")
+    print(
+        "======================================== step1: Processing raw data & annotating LD and AF information"
+    )
     logging.info(
         "======================================== step1: Processing raw data & annotating LD and AF information"
     )
@@ -72,6 +74,7 @@ def _build(args):
     )
     logging.info("======================================== ")
     beastie_step2.run(
+        args.shapeit2,
         hetSNP_intersect_unique,
         meta,
         hetSNP_intersect_unique_forlambda_file,
@@ -139,6 +142,11 @@ def main():
     # default setting
     build_parser.add_argument(
         "--model", default="stan_path/iBEASTIE2/iBEASTIE2", help="model name."
+    )
+    build_parser.add_argument(
+        "--shapeit2",
+        default=None,
+        help="Optional phasing results from shapeit2",
     )
     build_parser.add_argument(
         "--min_total_cov",

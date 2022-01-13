@@ -13,6 +13,7 @@ import BEASTIE.run_model_stan_wrapper as run_model_stan_wrapper
 from pkg_resources import resource_filename
 from .helpers import runhelper
 from .prepare_model import (
+    add_shapepit2,
     generate_modelCount,
     significant_genes,
     update_model_input_lambda_phasing,
@@ -31,11 +32,14 @@ def create_file_name(hetSNP_intersect_unique, meta, temp):
     meta_error = os.path.join(
         temp, "{0}.w_prediction.tsv".format(os.path.splitext(base_meta[1])[0])
     )
-    return base_modelin, base_modelin_error, meta_error
+    return meta_error
 
 
 def run(
+    shapeit2_input,
     hetSNP_intersect_unique,
+    hetSNP_intersect_unique_shapeit2,
+    hetSNP_intersect_unique_shapeit2_dropNA,
     meta,
     hetSNP_intersect_unique_forlambda_file,
     hetSNP_intersect_unique_lambdaPredicted_file,
@@ -54,9 +58,7 @@ def run(
     total_cov,
     either_cov,
 ):
-    base_modelin, base_modelin_error, meta_error = create_file_name(
-        hetSNP_intersect_unique, meta, tmp_path
-    )
+    meta_error = create_file_name(hetSNP_intersect_unique, meta, tmp_path)
     ##########################
     logging.info("=================")
     logging.info("================= Starting step 2.1")
@@ -64,7 +66,19 @@ def run(
     logging.info(
         "..... hetSNP_intersect_unique file save to {0}".format(hetSNP_intersect_unique)
     )
-    generate_modelCount(hetSNP_intersect_unique)
+
+    if shapeit2_input is not None:
+        add_shapepit2(
+            hetSNP_intersect_unique,
+            shapeit2_input,
+            hetSNP_intersect_unique_shapeit2,
+            hetSNP_intersect_unique_shapeit2_dropNA,
+        )
+        base_modelin, base_modelin_error = generate_modelCount(
+            hetSNP_intersect_unique_shapeit2_dropNA, shapeit2_input
+        )
+    else:
+        base_modelin, base_modelin_error = generate_modelCount(hetSNP_intersect_unique)
 
     ##########################
     logging.info("=================")
@@ -101,6 +115,7 @@ def run(
         header=None,
         index_col=False,
     )  # check whether this data is generated, debugging purpose
+    logging.debug("size of predicted lambda file is {0}".format(len(data22)))
     logging.info(
         "..... For type 1 error model, input alpha (family wise error rate) is {0}, adjusted after size of input {1} : {2}".format(
             alpha, data22.shape[0], alpha / data22.shape[0]
@@ -110,6 +125,7 @@ def run(
     logging.info("=================")
     logging.info("================= Starting step 2.3")
     logging.info("..... start adding model input with phasing error information")
+
     if os.path.isfile(base_modelin_error):
         logging.info("..... output file save to {0}".format(base_modelin_error))
     else:
@@ -121,6 +137,7 @@ def run(
     update_model_input_lambda_phasing(
         "pred_error_GIAB", base_modelin, base_modelin_error, meta_error
     )
+
     ##########################
     logging.info("=================")
     logging.info("================= Starting step 2.4")
@@ -144,13 +161,12 @@ def run(
         logging.error("..... model output is empty, please try again!")
         sys.exit(1)
 
-    # df_beastie,_ = run_model_stan_wrapper_beastie.run(prefix,base_modelin_error,sigma,alpha,"/Users/scarlett/allenlab/software/cmdstan/examples/BEASTIE/BEASTIE",result,hetSNP_intersect_unique_lambdaPredicted_file,WARMUP,KEEPER,either_cov,total_cov)
-    # logging.info('..... finishing running BEASTIE')
-
     df_adm = ADM_for_real_data.run(prefix, base_modelin, result_path, picklename)
     logging.info("..... finishing running ADM method")
 
-    df_binomial = binomial_for_real_data.run(prefix, base_modelin, result_path, picklename)
+    df_binomial = binomial_for_real_data.run(
+        prefix, base_modelin, result_path, picklename
+    )
     logging.info("..... finishing running binomial")
 
     ##########################

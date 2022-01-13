@@ -50,7 +50,7 @@ def isHeterozygous(genotype):
 
 
 def count_all_het_sites(
-    tmp, sample, vcfFilename, outputFilename, chr_start, chr_end
+    sample, vcfFilename, outputFilename, chr_start, chr_end, gencode_path
 ):
     logging.info("..... We are looking at individual: {0}".format(sample))
     filename = os.path.splitext(str(outputFilename))[0]
@@ -59,7 +59,9 @@ def count_all_het_sites(
         outputFile = filename + ".chr" + str(Num) + ".TEMP.tsv"
         if not os.path.isfile(outputFile):
             reader = GffTranscriptReader()
-            geneFile = resource_filename("BEASTIE", f"reference/gencode_chr/chr{Num}")
+            # geneFile = resource_filename(gencode_path, f"/chr{Num}")
+            geneFile = gencode_path + f"/chr{Num}"
+            print(geneFile)
             geneList = reader.loadGenes(geneFile)
             logging.info(
                 "..... Working on chr {0} with {1} genes".format(Num, len(geneList))
@@ -169,7 +171,8 @@ def count_all_het_sites(
 
     data0.drop_duplicates()
     data0.to_csv(outputFilename, sep="\t", header=True, index=False)
-    for files in os.listdir(tmp):
-        if "TEMP" in files:
-            logging.info("..... remove created TEMP files: {0}".format(files))
-            os.remove(tmp + "/" + files)
+    # if tmp is not None:
+    #     for files in os.listdir(tmp):
+    #         if "TEMP" in files:
+    #             logging.info("..... remove created TEMP files: {0}".format(files))
+    #             os.remove(tmp + "/" + files)

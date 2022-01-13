@@ -9,7 +9,7 @@ import pandas as pd
 from pathlib import Path
 
 from pkg_resources import resource_filename
-import BEASTIE.annotation as annotation
+from . import annotation
 from .extractHets import count_all_het_sites
 from .helpers import runhelper
 from .intersect_hets import Intersect_exonicHetSnps
@@ -95,18 +95,26 @@ def check_file_existence(
                 )
             )
     else:
-        hetSNP_file = os.path.join(output_path, f"{prefix}_hetSNP_chr{chr_start}-{chr_end}.tsv")
+        hetSNP_file = os.path.join(
+            output_path, f"{prefix}_hetSNP_chr{chr_start}-{chr_end}.tsv"
+        )
         logging.info("We will generate {0} for you ...".format(hetSNP_file))
     ##### TEMP output generation: hetSNP_file
     hetSNP_intersect_unique_file = os.path.join(
-        tmp_path, f"{prefix}_hetSNP_intersected_filtered.TEMP.tsv"
+        tmp_path, f"TEMP.{prefix}_hetSNP_intersected_filtered.tsv"
     )
+    hetSNP_intersect_unique_shapeit2 = os.path.join(
+        tmp_path, f"TEMP.{prefix}_hetSNP_intersected_filtered.shapeit2.tsv"
+    )
+    hetSNP_intersect_unique_shapeit2_dropNA = os.path.join(
+        tmp_path, f"TEMP.{prefix}_hetSNP_intersected_filtered.shapeit2.dropNA.tsv"
+    )
+
     hetSNP_intersect_unique_forlambda_file = os.path.join(
-        tmp_path,
-        f"{prefix}_hetSNP_intersected_filtered_forLambda.TEMP.tsv"
+        tmp_path, f"TEMP.{prefix}_hetSNP_intersected_filtered.forLambda.tsv"
     )
     hetSNP_intersect_unique_lambdaPredicted_file = os.path.join(
-        tmp_path, f"{prefix}_hetSNP_intersected_filtered_lambdaPredicted.TEMP.tsv"
+        tmp_path, f"TEMP.{prefix}_hetSNP_intersected_filtered.lambdaPredicted.tsv"
     )
     logging.info(
         "We will generate intermediate file {0} ...".format(
@@ -136,7 +144,9 @@ def check_file_existence(
                 )
             )
     else:
-        parsed_pileup_file = os.path.join(output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv")
+        parsed_pileup_file = os.path.join(
+            output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv"
+        )
         logging.info("We will generate {0} for you ...".format(parsed_pileup_file))
     return (
         vcfgz,
@@ -144,10 +154,13 @@ def check_file_existence(
         hetSNP_file,
         meta_file,
         hetSNP_intersect_unique_file,
+        hetSNP_intersect_unique_shapeit2,
+        hetSNP_intersect_unique_shapeit2_dropNA,
         hetSNP_intersect_unique_forlambda_file,
         hetSNP_intersect_unique_lambdaPredicted_file,
         parsed_pileup_file,
     )
+
 
 def run(
     prefix,
@@ -155,6 +168,7 @@ def run(
     in_path,
     output_path,
     tmp_path,
+    gencode_path,
     model,
     vcf,
     ref_dir,
@@ -175,6 +189,8 @@ def run(
         hetSNP,
         meta,
         hetSNP_intersect_unique,
+        hetSNP_intersect_unique_shapeit2,
+        hetSNP_intersect_unique_shapeit2_dropNA,
         hetSNP_intersect_unique_forlambda_file,
         hetSNP_intersect_unique_lambdaPredicted_file,
         parsed_pileup,
@@ -193,12 +209,18 @@ def run(
         chr_end,
     )
     ##### 1.1 Generate hetSNP file: extract heterozygous bi-allelic SNPs for specific chromosomes from all gencode transcripts
+
     if not os.path.exists(hetSNP):
         logging.info("=================")
         logging.info("================= Starting common step 1.1")
         logging.info("..... start extracting heterozygous bi-allelic SNPs")
         count_all_het_sites(
-            tmp_path, prefix, vcfgz, hetSNP, int(chr_start), int(chr_end)
+            prefix,
+            vcfgz,
+            hetSNP,
+            int(chr_start),
+            int(chr_end),
+            gencode_path,
         )
     else:
         logging.info("=================")
@@ -297,7 +319,7 @@ def run(
     if data14_2.shape[0] < 2:
         os.remove(hetSNP_intersect_unique)
         logging.error(
-            "..... existed hetSNP file with filtered sites prepared for lambda model file is empty, please try again!"
+            "..... pre-existed hetSNP file with filtered sites prepared for lambda model file is empty, please try again!"
         )
         sys.exit(1)
     else:
@@ -306,7 +328,6 @@ def run(
                 hetSNP_intersect_unique_forlambda_file
             )
         )
-
     ##### 1.5 Annotation LD
     if not os.path.isfile(meta):
         logging.info("=================")
@@ -340,6 +361,8 @@ def run(
     logging.info("================= finish step1! ")
     return (
         hetSNP_intersect_unique,
+        hetSNP_intersect_unique_shapeit2,
+        hetSNP_intersect_unique_shapeit2_dropNA,
         meta,
         hetSNP_intersect_unique_forlambda_file,
         hetSNP_intersect_unique_lambdaPredicted_file,

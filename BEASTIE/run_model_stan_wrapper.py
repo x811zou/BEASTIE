@@ -121,13 +121,15 @@ def runModel(
 ):
     if len(fields) >= 4:
         geneID = str(fields[0])
+        # logging.debug(geneID)
         writeInputsFile_i(fields, tmp_output_file, sigma)
         writeInitializationFile(init_file)
         cmd = (
             "%s sample num_samples=%s num_warmup=%s data file=%s init=%s output file=%s refresh=0"
             % (model, KEEPER, WARMUP, tmp_output_file, init_file, stan_output_file)
         )
-        print(cmd)
+        # print(cmd)
+        # logging.debug(cmd)
         runhelper(cmd)  # Parse MCMC output
         parser = StanParser(stan_output_file)
         thetas = parser.getVariable("theta")
@@ -218,7 +220,12 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
             geneID.append(ID)  # read the ith geneID
             # j=i+int(KEEPER)-1
             gene_thetas = thetas.get(ID)
-            lambdas_choice = lambdas.loc[lambdas["geneID"] == ID].iloc[0, 8]
+            lambdas_choice = lambdas.loc[lambdas["geneID"] == ID].iloc[
+                0, 6
+            ]  # has to change here
+            # log_lambda=(log(alpha/(1-alpha)) -(as.numeric(model$coefficients[1])+as.numeric(model$coefficients[3])*as.integer(totalCount)))/as.numeric(model$coefficients[2]))
+            # predicted_lambda = exp(log_lambda)
+            # predicted_lambda_plus1 = predicted_lambda_1+1)
             median, variance, left_CI, right_CI = summarize(gene_thetas, 0.05)
             max_prob = getMaxProb_RMSE(gene_thetas)
             max_prob_lambda, sum_prob_lambda = getMaxProb_lambda(
@@ -272,7 +279,9 @@ def save_raw_theta(
         i = 0
         for line in IN:
             i += 1
+            # logging.debug(line)
             fields = line.rstrip().split()
+            # logging.debug(fields)
             geneID, thetas = runModel(
                 models,
                 fields,
@@ -312,10 +321,6 @@ def run(
             WARMUP, KEEPER
         )
     )
-    # if "txt" in inFile:
-    #     outfix=os.path.split(inFile)[1].rsplit("_hetSNP_intersected_filtered.TEMP.txt")[0]
-    # if "tsv" in inFile:
-    #     outfix=os.path.split(inFile)[1].rsplit("_hetSNP_intersected_filtered.TEMP.tsv")[0]
     tmpFile = "tmp_output.txt"
     initFile = "initialization_stan.txt"
     outFile = "stan_output.txt"

@@ -5,18 +5,133 @@
 
 import re
 import os
+import sys
 import logging
 import scipy.stats
 import pandas as pd
 import numpy as np
-from math import floor, log10, pi
+from math import floor, log10, pi, isnan
 
 
-def generate_modelCount(filename):
+def change_phasing(data):
+    row_n = data.shape[0]
+    data["patCount"] = data["refCount"]
+    data["matCount"] = data["altCount"]
+    reference_row = data.iloc[0]
+    if not isnan(reference_row["e_paternal"]):
+        for x in range(1, row_n):
+            row = data.iloc[x]
+            if row["e_paternal"] != reference_row["e_paternal"] and not isnan(
+                row["e_paternal"]
+            ):
+                data.at[x, "patCount"] = row["altCount"]
+                data.at[x, "matCount"] = row["refCount"]
+    return data
+
+
+def incorporate_shapeit2(
+    shapeit2,
+    hetSNP_intersect_unique,
+    hetSNP_intersect_unique_shapeit2,
+    hetSNP_intersect_unique_shapeit2_dropNA,
+    version="V2",
+):
+    hetSNP_shapeit2 = pd.merge(
+        hetSNP_intersect_unique, shapeit2, how="left", on=["chr", "pos"]
+    )
+    hetSNP_shapeit2 = hetSNP_shapeit2[
+        [
+            "chr",
+            "pos",
+            "geneID",
+            "genotype",
+            "refCount",
+            "altCount",
+            "e_paternal",
+            "e_maternal",
+        ]
+    ]
+    #### version1
+    if version == "V1":
+        geneIDs = hetSNP_shapeit2["geneID"].unique()
+        new_df = pd.DataFrame()
+        for gene in geneIDs:
+            selected_gene = hetSNP_shapeit2[hetSNP_shapeit2["geneID"] == gene]
+            selected_gene = selected_gene.reset_index(drop=True)
+            edited_selected_gene = change_phasing(selected_gene)
+            new_df = new_df.append(edited_selected_gene)
+
+    #### version2
+    else:
+        new_df = hetSNP_shapeit2
+        row_n = new_df.shape[0]
+        s = new_df["e_paternal"] == 1
+        new_df["patCount"] = new_df["refCount"]
+        new_df["matCount"] = new_df["altCount"]
+        new_df.loc[s, ["patCount", "matCount"]] = new_df.loc[
+            s, ["altCount", "refCount"]
+        ].values
+    new_df.to_csv(hetSNP_intersect_unique_shapeit2, sep="\t", header=True, index=False)
+    # drop NAN
+    new_df_dropNA = new_df.dropna()
+    new_df_dropNA = new_df_dropNA.drop(
+        ["refCount", "altCount", "e_paternal", "e_maternal"], axis=1
+    )
+    logging.debug(
+        "size of hetSNPunique is {0} ; size of shapeit2 is {1}; leftjoin size is {2}; leftjoin dropNA size is {3}".format(
+            len(hetSNP_intersect_unique), len(shapeit2), len(new_df), len(new_df_dropNA)
+        )
+    )
+    new_df_dropNA.to_csv(
+        hetSNP_intersect_unique_shapeit2_dropNA, sep="\t", header=True, index=False
+    )
+    # return new_df_dropNA
+
+
+def add_shapepit2(
+    filename,
+    shapeit2_input,
+    hetSNP_intersect_unique_shapeit2,
+    hetSNP_intersect_unique_shapeit2_dropNA,
+):
+    logging.info("shapeit2 phasing is provided: {0}".format(shapeit2_input))
+    if not os.path.isfile(hetSNP_intersect_unique_shapeit2_dropNA):
+        gene_df = pd.read_csv(filename, sep="\t", header=0, index_col=False)
+        shapeit2_df = pd.read_csv(shapeit2_input, sep="\t", header=0, index_col=False)
+        incorporate_shapeit2(
+            shapeit2_df,
+            gene_df,
+            hetSNP_intersect_unique_shapeit2,
+            hetSNP_intersect_unique_shapeit2_dropNA,
+        )
+
+        logging.info(
+            "..... hetSNP-correctedby-shapeit2-phasing is saved to {0}".format(
+                hetSNP_intersect_unique_shapeit2_dropNA
+            )
+        )
+    else:
+        logging.info(
+            "..... hetSNP-correctedby-shapeit2-phasing is pre-existed at {0}".format(
+                hetSNP_intersect_unique_shapeit2_dropNA
+            )
+        )
+
+
+def generate_modelCount(filename, shapeit2_input=None):
     logging.info("filename: {0}".format(filename))
     gene_df = pd.read_csv(filename, sep="\t", header=0, index_col=False)
+    logging.debug("size of input file is {0}".format(len(gene_df)))
+    data = gene_df
+    if shapeit2_input is None:
+        logging.info(
+            "..... No phasing information, we take ALT as maternal, REF as paternal"
+        )
+        data["patCount"] = data["refCount"]
+        data["matCount"] = data["altCount"]
     base_out = os.path.splitext(filename)[0]
     out_modelinput = "{0}.modelinput.tsv".format(base_out)
+    out_modelinput_error = "{0}.modelinput.w_error.tsv".format(base_out)
     logging.info("out_modelinput: {0}".format(out_modelinput))
     # gene_df=pd.read_csv(filename,sep="\t",header=0,index_col=False)
     if not os.path.isfile(out_modelinput):
@@ -26,7 +141,7 @@ def generate_modelCount(filename):
             idx = each
             gene_lst = [idx, sum(gene_df["geneID"] == each)] + list(
                 np.ravel(
-                    gene_df[gene_df["geneID"] == each][["altCount", "refCount"]].values
+                    gene_df[gene_df["geneID"] == each][["matCount", "patCount"]].values
                 )
             )
             rst += "\t".join([str(x) for x in gene_lst]) + "\n"
@@ -36,6 +151,8 @@ def generate_modelCount(filename):
         logging.info("..... model input saved to {0}".format(out_modelinput))
     else:
         logging.info("..... model input exists at {0}".format(out_modelinput))
+    logging.debug("size of model input is {0}".format(len(out_modelinput)))
+    return out_modelinput, out_modelinput_error
 
 
 def count_reads(fields):
@@ -72,14 +189,22 @@ def update_model_input_lambda_phasing(
             counter += 1
             if counter % 1000 == 0:
                 logging.info("{0} line processed".format(counter))
+            # logging.debug(line)
             geneID = line.split("\t")[0]
+            # logging.debug("geneID :{0}".format(geneID))
             nhet = int(line.split("\t")[1])
+            # logging.debug("num of hets :{0}".format(nhet))
             phasing_error_selected = phasing_error[(phasing_error["geneID"] == geneID)]
+            # logging.debug(phasing_error_selected)
             pred_prob = phasing_error_selected[str(pred_prob_column)].tolist()
+
             if len(pred_prob) != 0:
                 del pred_prob[0]
+            # logging.debug("original predicted prob :{0}".format(pred_prob))
             nNAs = np.count_nonzero(np.isnan(pred_prob))
+            # logging.debug("num of NAs :{0}".format(nNAs))
             pred_prob = [-1 if x != x else x for x in pred_prob]  # -1 if missing
+            # logging.debug("corrected predicted prob :{0}".format(pred_prob))
             PI_pred = []
             if nhet == 1:
                 updated_line += "%s\t%d\n" % (line, 0)  # 0 for 1 het gene
@@ -90,6 +215,8 @@ def update_model_input_lambda_phasing(
                     else:
                         PI_pred = "%s\t%s" % (PI_pred, pred_prob[m])
                 updated_line += "%s\t%s\n" % (line, PI_pred)
+            # if counter == 10:
+            #     sys.exit()
     file1 = open(outfile, "w")
     file1.write(updated_line)
     file1.close()
@@ -106,17 +233,7 @@ def significant_genes(
 ):
     data_modeloutput = pd.read_csv(
         hetSNP_intersect_unique_lambdaPredicted_file, header=0, sep="\t"
-    )  # data_modeloutput = pd.read_csv("/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr20/output/TEMP/HG00096_chr20_hetSNP_intersect_unique_alpha0.05_lambdaPredicted.tsv",sep="\t")
-    # data_modeloutput.columns = [
-    #     "geneID",
-    #     "median_altratio",
-    #     "num_hets",
-    #     "totalRef",
-    #     "totalAlt",
-    #     "total_reads",
-    #     "predicted_lambda",
-    # ]
-    # print(data_modeloutput)
+    )
     logging.debug(
         "size of hetSNP_intersect_unique_lambdaPredicted_file file {}".format(
             len(data_modeloutput)

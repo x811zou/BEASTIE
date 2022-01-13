@@ -31,9 +31,10 @@ def Intersect_exonicHetSnps(
     hetSNP_data["contig"] = hetSNP_data["chrN"]
     hetSNP_data["position"] = hetSNP_data["pos"]
 
-    out_base = os.path.splitext(hetSNP_intersect_unique)[0]
-    out1 = "{0}_filtered_beforeThinning.TEMP.tsv".format(out_base)
-    out2 = "{0}_filtered_afterThinning_beforeDropTrans.TEMP.tsv".format(out_base)
+    # out_base = os.path.splitext(hetSNP_intersect_unique)[0]
+    out_base = os.path.dirname(hetSNP_intersect_unique)
+    out1 = "{0}/TEMP.filtered_beforeThinning.tsv".format(out_base)
+    out2 = "{0}/TEMP.filtered_afterThinning_beforeDropTrans.tsv".format(out_base)
     if len(df_sub):
         df2 = df_sub[df_sub["refCount"] >= int(min_singlecounts)]
         df3 = df2[df2["altCount"] >= int(min_singlecounts)]
@@ -110,6 +111,8 @@ def Intersect_exonicHetSnps(
         df_summary_2 = pd.merge(df_summary_1, df6_totalref, on=["geneID"], how="inner")
         df_summary_3 = pd.merge(df_summary_2, df6_totalalt, on=["geneID"], how="inner")
         df_summary_3["totalCount"] = df_summary_3["refCount"] + df_summary_3["altCount"]
+        df_summary_3 = df_summary_3.drop(["refCount", "altCount"], axis=1)
+
     else:
         logging.error("file no lines")
     logging.info(
