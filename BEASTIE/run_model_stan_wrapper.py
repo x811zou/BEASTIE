@@ -348,7 +348,7 @@ def run(
             KEEPER,
         )
     logging.info(
-        "...... Finshed running {0} and saved raw theta at : {1}".format(
+        "....... finshed running {0} and saved raw theta at : {1}".format(
             os.path.basename(models), os.path.dirname(out1)
         )
     )
