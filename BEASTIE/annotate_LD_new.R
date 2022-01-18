@@ -15,7 +15,7 @@ chr_start=args[6]
 chr_end=args[7]
 meta=args[8]
 beastie_wd=args[9]
-
+print(meta)
 source(file.path(beastie_wd, "Get_LD.R"))
 
 if (!file.exists(meta)){

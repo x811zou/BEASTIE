@@ -9,7 +9,7 @@ import pandas as pd
 from pathlib import Path
 
 from pkg_resources import resource_filename
-import BEASTIE.annotation as annotation
+from . import annotation
 from .extractHets import count_all_het_sites
 from .helpers import runhelper
 from .intersect_hets import Intersect_exonicHetSnps
@@ -95,37 +95,21 @@ def check_file_existence(
                 )
             )
     else:
-        hetSNP_file = os.path.join(output_path, f"{prefix}_hetSNP_chr{chr_start}-{chr_end}.tsv")
+        hetSNP_file = os.path.join(
+            output_path, f"{prefix}_hetSNP_chr{chr_start}-{chr_end}.tsv"
+        )
         logging.info("We will generate {0} for you ...".format(hetSNP_file))
     ##### TEMP output generation: hetSNP_file
     hetSNP_intersect_unique_file = os.path.join(
-        tmp_path, f"{prefix}_hetSNP_intersected_filtered.TEMP.tsv"
+        tmp_path, f"TEMP.{prefix}_hetSNP_intersected_filtered.tsv"
     )
-    hetSNP_intersect_unique_forlambda_file = os.path.join(
-        tmp_path,
-        f"{prefix}_hetSNP_intersected_filtered_forLambda.TEMP.tsv"
-    )
-    hetSNP_intersect_unique_lambdaPredicted_file = os.path.join(
-        tmp_path, f"{prefix}_hetSNP_intersected_filtered_lambdaPredicted.TEMP.tsv"
-    )
+
     logging.info(
         "We will generate intermediate file {0} ...".format(
             hetSNP_intersect_unique_file
         )
     )
-    logging.info(
-        "We will generate intermediate file {0} ...".format(
-            hetSNP_intersect_unique_forlambda_file
-        )
-    )
-    logging.info(
-        "We will generate intermediate file {0} ...".format(
-            hetSNP_intersect_unique_lambdaPredicted_file
-        )
-    )
-    ##### TEMP output generation: meta_file
-    meta_file = os.path.join(tmp_path, f"{prefix}_meta.TEMP.tsv")
-    logging.info("We will generate intermedate file {0} for you ...".format(meta_file))
+
     ##### parsed_pileup_file
     if parsed_pileup is not None:
         parsed_pileup_file = os.path.join(in_path, parsed_pileup)
@@ -136,18 +120,18 @@ def check_file_existence(
                 )
             )
     else:
-        parsed_pileup_file = os.path.join(output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv")
+        parsed_pileup_file = os.path.join(
+            output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv"
+        )
         logging.info("We will generate {0} for you ...".format(parsed_pileup_file))
     return (
         vcfgz,
         pileup_file,
         hetSNP_file,
-        meta_file,
         hetSNP_intersect_unique_file,
-        hetSNP_intersect_unique_forlambda_file,
-        hetSNP_intersect_unique_lambdaPredicted_file,
         parsed_pileup_file,
     )
+
 
 def run(
     prefix,
@@ -155,6 +139,7 @@ def run(
     in_path,
     output_path,
     tmp_path,
+    gencode_path,
     model,
     vcf,
     ref_dir,
@@ -164,7 +149,6 @@ def run(
     min_total_cov,
     min_single_cov,
     read_length,
-    LD_token,
     pileup,
     hetSNP,
     parsed_pileup,
@@ -173,10 +157,7 @@ def run(
         vcfgz,
         pileup,
         hetSNP,
-        meta,
         hetSNP_intersect_unique,
-        hetSNP_intersect_unique_forlambda_file,
-        hetSNP_intersect_unique_lambdaPredicted_file,
         parsed_pileup,
     ) = check_file_existence(
         prefix,
@@ -192,34 +173,48 @@ def run(
         chr_start,
         chr_end,
     )
+    #####
     ##### 1.1 Generate hetSNP file: extract heterozygous bi-allelic SNPs for specific chromosomes from all gencode transcripts
+    #####
+
     if not os.path.exists(hetSNP):
         logging.info("=================")
         logging.info("================= Starting common step 1.1")
-        logging.info("..... start extracting heterozygous bi-allelic SNPs")
+        logging.info("....... start extracting heterozygous bi-allelic SNPs from VCF")
         count_all_het_sites(
-            tmp_path, prefix, vcfgz, hetSNP, int(chr_start), int(chr_end)
+            prefix,
+            vcfgz,
+            hetSNP,
+            int(chr_start),
+            int(chr_end),
+            gencode_path,
         )
     else:
         logging.info("=================")
         logging.info("================= Skipping common step 1.1")
     data11 = pd.read_csv(hetSNP, sep="\t", header=0, index_col=False)
+    logging.debug(
+        "output {0} has {1} het SNPs from VCF file".format(
+            os.path.basename(hetSNP), data11.shape[0]
+        )
+    )
     if data11.shape[0] < 2:
         os.remove(hetSNP)
         logging.error("..... existed hetSNP file is empty, please try again!")
         sys.exit(1)
     else:
         logging.info(
-            "..... generated heterozygous bi-allelic SNPs data extracted from VCF can be found at {0}".format(
-                hetSNP
+            "....... {0} save to {1}".format(
+                os.path.basename(hetSNP), os.path.dirname(hetSNP)
             )
         )
-
+    #####
     ##### 1.2 Generate parsed pileup file: parse samtools mpile up output files
+    #####
     if not os.path.exists(parsed_pileup):
         logging.info("=================")
         logging.info("================= Starting common step 1.2")
-        logging.info("..... start parsing samtools pileup result")
+        logging.info("....... start parsing samtools pileup result")
         Parse_mpileup_allChr(
             vcf_sample_name, vcfgz, pileup, min_total_cov, min_single_cov, parsed_pileup
         )
@@ -227,45 +222,66 @@ def run(
         logging.info("=================")
         logging.info("================= Skipping common step 1.2")
     data12 = pd.read_csv(parsed_pileup, sep="\t", header=0, index_col=False)
+    logging.debug(
+        "output {0} has {1} variants from parsing pileup file".format(
+            os.path.basename(parsed_pileup), data12.shape[0]
+        )
+    )
     if data12.shape[1] < 2:
         os.remove(parsed_pileup)
-        logging.error("..... existed parsed pileup file is empty, please try again!")
+        logging.error("....... existed parsed pileup file is empty, please try again!")
         sys.exit(1)
     else:
         logging.info(
-            "..... generated parsed pileup file can be found at {0}".format(
-                parsed_pileup
+            "....... {0} save to {1}".format(
+                os.path.basename(parsed_pileup), os.path.dirname(parsed_pileup)
             )
         )
 
+    #####
     ##### 1.3 Annotation: AF
+    #####
     hetSNP_AF = f"{os.path.splitext(hetSNP)[0]}_AF.tsv"
     if os.path.isfile(hetSNP_AF):
         logging.info("=================")
         logging.info("================= Skipping common step 1.3")
-        data13 = pd.read_csv(hetSNP_AF, sep="\t", header=0, index_col=False)
 
-        if data13.shape[0] < 2:
-            os.remove(hetSNP_AF)
-            logging.error(
-                "..... existing annotated hetSNP with AF is empty, please try again!"
-            )
-            sys.exit(1)
     else:
         logging.info("=================")
         logging.info("================= Starting common step 1.3")
-        logging.info("..... start annotating AF and LD information")
+        logging.info("..... start annotating hetSNP from 1.1 with AF from 1000 Genome")
         annotation.annotateAF(ancestry, hetSNP, hetSNP_AF)
 
-    logging.info(f"..... annotated hetSNP with AF file can be found at {hetSNP_AF}")
+    data13 = pd.read_csv(hetSNP_AF, sep="\t", header=0, index_col=False)
+    logging.debug(
+        "output {0} annotates {1} het SNPs with AF annotation".format(
+            os.path.basename(hetSNP_AF), data13.shape[0]
+        )
+    )
+    if data13.shape[0] < 2:
+        os.remove(hetSNP_AF)
+        logging.error(
+            "....... existing annotated hetSNP with AF is empty, please try again!"
+        )
+        sys.exit(1)
+    else:
+        logging.info(
+            "....... {0} save to {1}".format(
+                os.path.basename(hetSNP_AF), os.path.dirname(hetSNP_AF)
+            )
+        )
 
-    ##### 1.4 Thinning reads: one reads only count once
-    if (not os.path.exists(hetSNP_intersect_unique)) or (
-        not os.path.exists(hetSNP_intersect_unique_forlambda_file)
-    ):
+    #####
+    ##### 1.4 Combine hetSNPs and parsed mpileup & thinning reads: one reads only count once
+    #####
+    if not os.path.exists(hetSNP_intersect_unique):
         logging.info("=================")
         logging.info("================= Starting specific step 1.4")
-        logging.info("..... start filtering variants, we only keep unique reads")
+        logging.info(
+            "....... start filtering variants with min total counts {0}, and min single allele counts {1}, each read of read length {2} only count for each variant".format(
+                min_total_cov, min_single_cov, read_length
+            )
+        )
         Intersect_exonicHetSnps(
             parsed_pileup,
             hetSNP_AF,
@@ -273,74 +289,30 @@ def run(
             min_total_cov,
             min_single_cov,
             hetSNP_intersect_unique,
-            hetSNP_intersect_unique_forlambda_file,
         )
     else:
         logging.info("=================")
         logging.info("================= Skipping specific step 1.4")
-    data14_1 = pd.read_csv(hetSNP_intersect_unique, sep="\t", header=0, index_col=False)
-    data14_2 = pd.read_csv(
-        hetSNP_intersect_unique_forlambda_file, sep="\t", header=0, index_col=False
+    data14 = pd.read_csv(hetSNP_intersect_unique, sep="\t", header=0, index_col=False)
+    logging.debug(
+        "output {0} has {1} het SNPs with AF annotation after taking intersection between output from 1.2 and 1.3".format(
+            os.path.basename(hetSNP_intersect_unique), data14.shape[0]
+        )
     )
-    if data14_1.shape[1] < 2:
+    if data14.shape[1] < 2:
         os.remove(hetSNP_intersect_unique)
         logging.error(
-            "..... existed hetSNP file with filtered sites file is empty, please try again!"
-        )
-        sys.exit(1)
-    else:
-        logging.info(
-            "..... generated hetSNP file after intersection with pileup file size {0} with filtered sites can be found at {1}".format(
-                data14_1.shape[1], hetSNP_intersect_unique
+            "....... existed {0} with filtered sites file is empty, please try again!".format(
+                os.path.basename(hetSNP_intersect_unique)
             )
         )
-    if data14_2.shape[0] < 2:
-        os.remove(hetSNP_intersect_unique)
-        logging.error(
-            "..... existed hetSNP file with filtered sites prepared for lambda model file is empty, please try again!"
-        )
         sys.exit(1)
     else:
         logging.info(
-            "..... generated hetSNP file with filtered sites prepared for lambda model can be found at {0}".format(
-                hetSNP_intersect_unique_forlambda_file
+            "....... {0} save to {1}".format(
+                os.path.basename(hetSNP_intersect_unique),
+                os.path.dirname(hetSNP_intersect_unique),
             )
         )
-
-    ##### 1.5 Annotation LD
-    if not os.path.isfile(meta):
-        logging.info("=================")
-        logging.info("================= Starting specific step 1.5")
-        logging.info("..... start annotating LD information")
-        annotation.annotateLD(
-            prefix,
-            ancestry,
-            hetSNP_intersect_unique,
-            tmp_path,
-            LD_token,
-            chr_start,
-            chr_end,
-            meta,
-        )
-    else:
-        logging.info("=================")
-        logging.info("================= Skipping specific step 1.5")
-    data15 = pd.read_csv(meta, sep="\t", header=0, index_col=False)
-    if data15.shape[0] < 2:
-        os.remove(meta)
-        logging.error(
-            "..... existed meta file with filtered sites file is empty, please try again!"
-        )
-        sys.exit(1)
-    else:
-        logging.info(
-            "..... generated annotated meta file can be found at {0}".format(meta)
-        )
-
+    return hetSNP_intersect_unique
     logging.info("================= finish step1! ")
-    return (
-        hetSNP_intersect_unique,
-        meta,
-        hetSNP_intersect_unique_forlambda_file,
-        hetSNP_intersect_unique_lambdaPredicted_file,
-    )

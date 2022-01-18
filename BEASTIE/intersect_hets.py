@@ -3,6 +3,7 @@ import logging
 import statistics
 import numpy as np
 import pandas as pd
+import sys
 
 
 def Intersect_exonicHetSnps(
@@ -12,7 +13,6 @@ def Intersect_exonicHetSnps(
     min_totalcounts,
     min_singlecounts,
     hetSNP_intersect_unique,
-    hetSNP_intersect_unique_forlambda_file,
 ):
     df = pd.read_csv(parsed_mpileup_file, index_col=False, sep="\t")
     df_sub = df.drop(
@@ -31,9 +31,10 @@ def Intersect_exonicHetSnps(
     hetSNP_data["contig"] = hetSNP_data["chrN"]
     hetSNP_data["position"] = hetSNP_data["pos"]
 
-    out_base = os.path.splitext(hetSNP_intersect_unique)[0]
-    out1 = "{0}_filtered_beforeThinning.TEMP.tsv".format(out_base)
-    out2 = "{0}_filtered_afterThinning_beforeDropTrans.TEMP.tsv".format(out_base)
+    # out_base = os.path.splitext(hetSNP_intersect_unique)[0]
+    out_base = os.path.dirname(hetSNP_intersect_unique)
+    out1 = "{0}/TEMP.filtered_beforeThinning.tsv".format(out_base)
+    out2 = "{0}/TEMP.filtered_afterThinning_beforeDropTrans.tsv".format(out_base)
     if len(df_sub):
         df2 = df_sub[df_sub["refCount"] >= int(min_singlecounts)]
         df3 = df2[df2["altCount"] >= int(min_singlecounts)]
@@ -82,49 +83,6 @@ def Intersect_exonicHetSnps(
         df_overlapped_uni.to_csv(
             hetSNP_intersect_unique, index=False, sep="\t", header=True
         )
-
-        df6_med = (
-            df_overlapped_uni.groupby(["geneID"])
-            .agg({"altRatio": "median"})
-            .reset_index()
-            .rename(columns={"altRatio": "median.altRatio"})
-        )
-        df6_nhets = (
-            df_overlapped_uni.groupby(by="geneID")
-            .agg({"position": pd.Series.nunique})
-            .rename(columns={"position": "number.of.hets"})
-        )
-        df6_totalref = (
-            df_overlapped_uni.groupby(by="geneID")
-            .agg({"refCount": "sum"})
-            .reset_index()
-            .rename(columns={"totalRef": "total refAllele"})
-        )
-        df6_totalalt = (
-            df_overlapped_uni.groupby(by="geneID")
-            .agg({"altCount": "sum"})
-            .reset_index()
-            .rename(columns={"totalAlt": "total altAllele"})
-        )
-        df_summary_1 = pd.merge(df6_med, df6_nhets, on=["geneID"], how="inner")
-        df_summary_2 = pd.merge(df_summary_1, df6_totalref, on=["geneID"], how="inner")
-        df_summary_3 = pd.merge(df_summary_2, df6_totalalt, on=["geneID"], how="inner")
-        df_summary_3["totalCount"] = df_summary_3["refCount"] + df_summary_3["altCount"]
-    else:
-        logging.error("file no lines")
-    logging.info(
-        "..... Aggregated pasred mpile up data dim {0} saved to {1}".format(
-            df_overlapped_uni.size, hetSNP_intersect_unique
-        )
-    )
-    df_summary_3.to_csv(
-        hetSNP_intersect_unique_forlambda_file, index=False, sep="\t", header=True
-    )
-    logging.info(
-        "..... Number of genes in this file for lambda prediction is {0} saved to {1}".format(
-            df_summary_3.size, hetSNP_intersect_unique_forlambda_file
-        )
-    )
 
 
 def summary_statistics(data, title):

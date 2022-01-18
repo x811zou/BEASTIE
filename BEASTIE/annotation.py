@@ -12,14 +12,14 @@ from pkg_resources import resource_filename
 
 from .helpers import runhelper
 
-ANNOTATION_ALGORITH = 'parallel_join' #'constant_memory' 
+ANNOTATION_ALGORITH = "parallel_join"  #'constant_memory'
 MAX_WORKERS = 4
 
 
 def annotateAF(ancestry, hetSNP, out_AF):
-    if ANNOTATION_ALGORITH == 'parallel_join':
+    if ANNOTATION_ALGORITH == "parallel_join":
         annotateAFConstantMemoryParallel(ancestry, hetSNP, out_AF)
-    elif ANNOTATION_ALGORITH == 'constant_memory':
+    elif ANNOTATION_ALGORITH == "constant_memory":
         AF_file = resource_filename("BEASTIE", "reference/AF_1_22_trimmed2.csv.gz")
         annotateAFConstantMemory(ancestry, hetSNP, out_AF, AF_file)
     else:
@@ -55,7 +55,7 @@ def annotateAFPandas(ancestry, hetSNP, out_AF, AF_file):
 
 
 def annotateCHRLines(hetSNP_lines, chr, ancestry, hetSNP_chr_index, hetSNP_pos_index):
-    AF_filename = resource_filename('BEASTIE', f"reference/AF_{chr}.csv.gz")
+    AF_filename = resource_filename("BEASTIE", f"reference/AF_{chr}.csv.gz")
     with gzip.open(AF_filename, mode="rt", newline="") as AF_file:
         af_reader = csv.reader(AF_file, delimiter=",", dialect="unix")
         af_header = next(af_reader)
@@ -96,19 +96,17 @@ def annotateCHRLines(hetSNP_lines, chr, ancestry, hetSNP_chr_index, hetSNP_pos_i
     return output
 
 
-
 def annotateAFConstantMemoryParallel(ancestry, hetSNP, out_AF):
     logging.info("..... start annotating AF with parallel constant memory join")
 
-    with multiprocessing.Pool(MAX_WORKERS) as pool, open(hetSNP, newline="") as hetSNPfile, open(
-        out_AF, "w", newline=""
-    ) as outFile:
+    with multiprocessing.Pool(MAX_WORKERS) as pool, open(
+        hetSNP, newline=""
+    ) as hetSNPfile, open(out_AF, "w", newline="") as outFile:
         hetSNP_reader = csv.reader(hetSNPfile, delimiter="\t", dialect="unix")
         hetSNP_header = next(hetSNP_reader)
 
         hetSNP_chr_index = hetSNP_header.index("chr")
         hetSNP_pos_index = hetSNP_header.index("pos")
-
 
         output_handles = []
 
@@ -120,14 +118,32 @@ def annotateAFConstantMemoryParallel(ancestry, hetSNP, out_AF):
             if chr != current_chr:
                 if current_chr is not None:
                     output_handles.append(
-                        pool.apply_async(annotateCHRLines, (current_rows, current_chr, ancestry, hetSNP_chr_index, hetSNP_pos_index))
+                        pool.apply_async(
+                            annotateCHRLines,
+                            (
+                                current_rows,
+                                current_chr,
+                                ancestry,
+                                hetSNP_chr_index,
+                                hetSNP_pos_index,
+                            ),
+                        )
                     )
                 current_chr = chr
                 current_rows = []
             current_rows.append(row)
         if current_rows is not None and len(current_rows) > 0:
             output_handles.append(
-                pool.apply_async(annotateCHRLines, (current_rows, current_chr, ancestry, hetSNP_chr_index, hetSNP_pos_index))
+                pool.apply_async(
+                    annotateCHRLines,
+                    (
+                        current_rows,
+                        current_chr,
+                        ancestry,
+                        hetSNP_chr_index,
+                        hetSNP_pos_index,
+                    ),
+                )
             )
 
         pool.close()
@@ -141,7 +157,6 @@ def annotateAFConstantMemoryParallel(ancestry, hetSNP, out_AF):
             handle.wait()
             output = handle.get()
             out_writer.writerows(output)
-
 
 
 def annotateAFConstantMemory(ancestry, hetSNP, out_AF, AF_file):
@@ -205,13 +220,13 @@ def annotateAFConstantMemory(ancestry, hetSNP, out_AF, AF_file):
 
 
 def annotateLD(
-    prefix, ancestry, hetSNP_intersect_unique, out, LD_token, chr_start, chr_end, meta
+    prefix, ancestry, file_for_LDannotation, out, LD_token, chr_start, chr_end, meta
 ):
     annotate_ld_new = resource_filename("BEASTIE", "annotate_LD_new.R")
     beastie_wd = resource_filename("BEASTIE", ".")
 
     if not os.path.isfile(meta):
-        cmd = f"Rscript --vanilla {annotate_ld_new} {prefix} {ancestry} {hetSNP_intersect_unique} {out} {LD_token} {chr_start} {chr_end} {meta} {beastie_wd}"
+        cmd = f"Rscript --vanilla {annotate_ld_new} {prefix} {ancestry} {file_for_LDannotation} {out} {LD_token} {chr_start} {chr_end} {meta} {beastie_wd}"
         runhelper(cmd)
         logging.info(f"..... finish annotating LD for SNP pairs, file save at {meta}")
     else:

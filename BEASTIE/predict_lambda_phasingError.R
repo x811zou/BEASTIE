@@ -25,12 +25,7 @@ suppressMessages(library("readr"))
 suppressMessages(library("dplyr"))
 suppressMessages(library("LDlinkR"))
 library(glmnetUtils)
-#mytoken="c313799c13c3"
-#suppressMessages(library(foreach))
-#suppressMessages(library(doParallel))
-#suppressMessages(library(parallel))
-#### read in self-defined functions
-#### read in parameters
+
 
 alpha=args[1]
 tmp=paste0(args[2],"/",sep="")
@@ -43,16 +38,6 @@ meta=args[8]
 meta_error=args[9]
 beastie_wd=args[10]
 
-# alpha=0.05 #FWE
-# sample="HG00096_chr21"
-# model="iBEASTIE2"
-# tmp="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/"
-# hetSNP_intersect_unique="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_hetSNP_intersect_unique.tsv"
-# hetSNP_intersect_unique_forlambda_file="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/other_example/HG00096/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_hetSNP_intersected_filtered_forLambda.TEMP.tsv"
-# hetSNP_intersect_unique_lambdaPredicted_file="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_hetSNP_intersect_unique_lambdaPredicted.tsv"
-# meta="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_meta.tsv"
-# meta_error="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/HG00096_chr21_meta_w_error.tsv"
-
 source(file.path(beastie_wd, "Get_phasing_error_rate.R"))
 source(file.path(beastie_wd, "Get_LD.R"))
 
@@ -60,8 +45,8 @@ predict_lambda_realdata <- function(alpha,in_data,out_data,model){
   #colnames(in_data)<-c("gene_ID","total_reads","num_hets")
   data<-in_data%>%
     dplyr::mutate(log_lambda_1=(log(alpha/(1-alpha)) -(as.numeric(model$coefficients[1])+as.numeric(model$coefficients[3])*as.integer(totalCount)))/as.numeric(model$coefficients[2]))%>%
-    mutate(predicted_lambda_1 = exp(log_lambda_1))%>%
-    mutate(predicted_lambda = predicted_lambda_1+1)
+    mutate(predicted_lambda = exp(log_lambda_1))%>%
+    mutate(predicted_lambda_plus1 = predicted_lambda+1)
     #%>%mutate(predicted_lambda=ifelse(predicted_lambda<1,1,predicted_lambda))
   #data<-in_data%>%mutate(predicted_lambda=(log(alpha/(1-alpha)) -(15.587909+-0.006483*total_reads))/-13.248682)
   write.table(data,file = out_data,row.names=FALSE,col.names = TRUE,sep="\t")

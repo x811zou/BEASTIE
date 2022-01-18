@@ -121,13 +121,15 @@ def runModel(
 ):
     if len(fields) >= 4:
         geneID = str(fields[0])
+        # logging.debug(geneID)
         writeInputsFile_i(fields, tmp_output_file, sigma)
         writeInitializationFile(init_file)
         cmd = (
             "%s sample num_samples=%s num_warmup=%s data file=%s init=%s output file=%s refresh=0"
             % (model, KEEPER, WARMUP, tmp_output_file, init_file, stan_output_file)
         )
-        print(cmd)
+        # print(cmd)
+        # logging.debug(cmd)
         runhelper(cmd)  # Parse MCMC output
         parser = StanParser(stan_output_file)
         thetas = parser.getVariable("theta")
@@ -202,7 +204,6 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
     lambdas = pd.read_csv(
         lambdas_file, delimiter="\t", header=0
     )  # names = ['geneID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda']
-    # logging.info('lambdas {}'.format(lambdas.head(5)))
 
     prob_sum_lambda = []
     model_theta_med = []  # 150
@@ -218,7 +219,12 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
             geneID.append(ID)  # read the ith geneID
             # j=i+int(KEEPER)-1
             gene_thetas = thetas.get(ID)
-            lambdas_choice = lambdas.loc[lambdas["geneID"] == ID].iloc[0, 8]
+            lambdas_choice = lambdas.loc[lambdas["geneID"] == ID].iloc[
+                0, 6
+            ]  # has to change here
+            # log_lambda=(log(alpha/(1-alpha)) -(as.numeric(model$coefficients[1])+as.numeric(model$coefficients[3])*as.integer(totalCount)))/as.numeric(model$coefficients[2]))
+            # predicted_lambda = exp(log_lambda)
+            # predicted_lambda_plus1 = predicted_lambda_1+1)
             median, variance, left_CI, right_CI = summarize(gene_thetas, 0.05)
             max_prob = getMaxProb_RMSE(gene_thetas)
             max_prob_lambda, sum_prob_lambda = getMaxProb_lambda(
@@ -230,11 +236,7 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
             CI_right.append(round(right_CI, 3))
             model_theta_med.append(round(median, 3))
             model_theta_var.append(variance)
-    logging.debug(
-        "size of thetas : {0}, size of output list :{1}".format(
-            len(thetas), len(prob_sum_lambda)
-        )
-    )
+
     df = {
         "geneID": geneID,
         "posterior_median": model_theta_med,
@@ -272,7 +274,9 @@ def save_raw_theta(
         i = 0
         for line in IN:
             i += 1
+            # logging.debug(line)
             fields = line.rstrip().split()
+            # logging.debug(fields)
             geneID, thetas = runModel(
                 models,
                 fields,
@@ -312,10 +316,6 @@ def run(
             WARMUP, KEEPER
         )
     )
-    # if "txt" in inFile:
-    #     outfix=os.path.split(inFile)[1].rsplit("_hetSNP_intersected_filtered.TEMP.txt")[0]
-    # if "tsv" in inFile:
-    #     outfix=os.path.split(inFile)[1].rsplit("_hetSNP_intersected_filtered.TEMP.tsv")[0]
     tmpFile = "tmp_output.txt"
     initFile = "initialization_stan.txt"
     outFile = "stan_output.txt"
@@ -335,13 +335,7 @@ def run(
         os.makedirs(out_path)
     out1 = os.path.join(out_path, outname1)
     # step1
-    if os.path.isfile(out1):
-        logging.info(
-            ".... Already finshed running {0} and saved raw theta at : {1}".format(
-                models, out1
-            )
-        )
-    else:
+    if not os.path.isfile(out1):
         save_raw_theta(
             out1,
             models,
@@ -353,9 +347,11 @@ def run(
             WARMUP,
             KEEPER,
         )
-        logging.info(
-            ".... Finish running {0} and save raw theta at : {1}".format(models, out1)
+    logging.info(
+        "...... Finshed running {0} and saved raw theta at : {1}".format(
+            os.path.basename(models), os.path.dirname(out1)
         )
+    )
     df = parse_stan_output(out0, prefix, inFile, out1, KEEPER, lambdas_file)
     # step2
     return df, outname1
