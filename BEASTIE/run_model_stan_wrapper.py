@@ -204,7 +204,6 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
     lambdas = pd.read_csv(
         lambdas_file, delimiter="\t", header=0
     )  # names = ['geneID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda']
-    # logging.info('lambdas {}'.format(lambdas.head(5)))
 
     prob_sum_lambda = []
     model_theta_med = []  # 150
@@ -237,11 +236,7 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
             CI_right.append(round(right_CI, 3))
             model_theta_med.append(round(median, 3))
             model_theta_var.append(variance)
-    logging.debug(
-        "size of thetas : {0}, size of output list :{1}".format(
-            len(thetas), len(prob_sum_lambda)
-        )
-    )
+
     df = {
         "geneID": geneID,
         "posterior_median": model_theta_med,
@@ -340,13 +335,7 @@ def run(
         os.makedirs(out_path)
     out1 = os.path.join(out_path, outname1)
     # step1
-    if os.path.isfile(out1):
-        logging.info(
-            ".... Already finshed running {0} and saved raw theta at : {1}".format(
-                models, out1
-            )
-        )
-    else:
+    if not os.path.isfile(out1):
         save_raw_theta(
             out1,
             models,
@@ -358,9 +347,11 @@ def run(
             WARMUP,
             KEEPER,
         )
-        logging.info(
-            ".... Finish running {0} and save raw theta at : {1}".format(models, out1)
+    logging.info(
+        "...... Finshed running {0} and saved raw theta at : {1}".format(
+            os.path.basename(models), os.path.dirname(out1)
         )
+    )
     df = parse_stan_output(out0, prefix, inFile, out1, KEEPER, lambdas_file)
     # step2
     return df, outname1

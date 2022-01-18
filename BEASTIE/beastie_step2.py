@@ -102,7 +102,7 @@ def run(
     ##### 2.1 incorporate with optional shapeit2 results, and convert data into model input format
     #####
     logging.info("=================")
-    logging.info("================= Starting step 2.1")
+    logging.info("================= Starting specific step 2.1")
     logging.info(
         "....... start converting {0} for model input".format(
             os.path.basename(hetSNP_intersect_unique)
@@ -199,14 +199,14 @@ def run(
     ##### 2.3 logistic regression model predict switching phasing error, linear regression model predicts lambda
     #####
     logging.info("=================")
-    logging.info("================= Starting step 2.3")
+    logging.info("================= Starting step specific 2.3")
     logging.info(
-        "..... start predicting lambda for {0}".format(
+        "....... start predicting lambda for {0}".format(
             os.path.basename(file_for_lambda)
         )
     )
     logging.info(
-        "..... start predicting switching eror for {0}".format(os.path.basename(meta))
+        "....... start predicting switching eror for {0}".format(os.path.basename(meta))
     )
 
     predict_lambda_phasing_error = resource_filename(
@@ -254,9 +254,9 @@ def run(
     ##### 2.4 adding switching error information to model input
     #####
     logging.info("=================")
-    logging.info("================= Starting step 2.4")
+    logging.info("================= Starting specific step 2.4")
     logging.info(
-        "..... start adding model input with predicted swhitching error information"
+        "....... start adding model input with predicted swhitching error information"
     )
 
     if os.path.isfile(base_modelin_error):
@@ -279,8 +279,8 @@ def run(
     ##### 2.5 running stan model
     #####
     logging.info("=================")
-    logging.info("================= Starting step 2.5")
-    logging.info("..... start running iBEASTIE model")
+    logging.info("================= Starting specific step 2.5")
+    logging.info("....... start running iBEASTIE model")
     df_ibeastie, picklename = run_model_stan_wrapper.run(
         prefix,
         base_modelin_error,
@@ -295,24 +295,24 @@ def run(
         total_cov,
     )
     if df_ibeastie.shape[0] > 2:
-        logging.info("....... model output is finished!")
+        logging.info("....... done with running model!")
     else:
         logging.error("....... model output is empty, please try again!")
         sys.exit(1)
 
     df_adm = ADM_for_real_data.run(prefix, base_modelin, result_path, picklename)
-    logging.info("....... finishing running ADM method")
+    logging.info("....... done with running ADM method")
 
     df_binomial = binomial_for_real_data.run(
         prefix, base_modelin, result_path, picklename
     )
-    logging.info("....... finishing running binomial")
+    logging.info("....... done with running binomial")
 
     #####
     ##### 2.6 generating output
     #####
     logging.info("=================")
-    logging.info("================= Starting step 2.6")
+    logging.info("================= Starting specific step 2.6")
     logging.info("....... start generating gene list")
     outfilename = os.path.join(result_path, f"{prefix}_ASE_all.tsv")
     outfilename_ase = os.path.join(
@@ -320,12 +320,15 @@ def run(
     )
     if (os.path.isfile(outfilename)) and (os.path.isfile(outfilename_ase)):
         logging.info(
-            "....... data exists, overwrites and saves at {0}".format(outfilename)
+            "....... {0} exists, but we will overwrites".format(
+                os.path.basename(outfilename)
+            )
         )
         logging.info(
-            "....... data exists, overwrites and saves at {0}".format(outfilename_ase)
+            "....... {0} exists, but we will overwrites".format(
+                os.path.basename(outfilename_ase)
+            )
         )
-
     significant_genes(
         df_ibeastie,
         df_binomial,
@@ -339,10 +342,17 @@ def run(
     if not SAVE_INT:
         shutil.rmtree(tmp_path)
         logging.info("....... remove TEMP folder {0}".format(tmp_path))
-    logging.info("=================")
-    logging.info(">>  Finishing running BEASTIE!")
+
     data26_1 = pd.read_csv(outfilename, sep="\t", header=0, index_col=False)
     data26_2 = pd.read_csv(outfilename_ase, sep="\t", header=0, index_col=False)
+    if data26_1.shape[0] <= 2 or data26_2.shape[0] <= 2:
+        logging.error(
+            "....... existed {0} or {1} is empty, please try again!".format(
+                os.path.basename(outfilename),
+                os.path.basename(outfilename_ase),
+            )
+        )
+        sys.exit(1)
     logging.info(
         "output {0} has all {1} genes".format(
             os.path.basename(outfilename),
@@ -351,21 +361,10 @@ def run(
     )
     logging.info(
         "output {0} has filtered {1} genes passing ASE cutoff {2}".format(
-            os.path.basename(outfilename_ase)
-        ),
-        data26_2.shape[0],
-        cutoff,
-    )
-    if data26_1.shape[0] > 2 or data26_2.shape[0] > 2:
-        logging.info("....... Yep! You are done!")
-    else:
-        logging.error(
-            "....... existed {0} or {1} is empty, please try again!".format(
-                os.path.basename(outfilename),
-                os.path.basename(outfilename_ase),
-            )
+            os.path.basename(outfilename_ase),
+            data26_2.shape[0],
+            cutoff,
         )
-        sys.exit(1)
-
-    logging.info("================= finish step2! ")
-    logging.info(">> Finish running BEASTIE!")
+    )
+    logging.info("=================")
+    logging.info(">>  Finishing running BEASTIE!")
