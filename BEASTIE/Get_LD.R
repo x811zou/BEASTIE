@@ -59,7 +59,7 @@ Get_LD <- function(snp,lag_snp,mytoken,pop,r2d){
 }
 
 loop_chr <-function(outpath,data,ancestry,batch_size,mytoken,chr_start,chr_end){
-  final_df_filename=paste0(outpath,"/",prefix,"_chr",chr_start,"-",chr_end,"_LD.TEMP.tsv",sep="")
+  final_df_filename=paste0(outpath,"/TEMP.",prefix,"_chr",chr_start,"-",chr_end,"_LD.tsv",sep="")
   if (!file.exists(final_df_filename)) {
     counter=0
     first_counter=0

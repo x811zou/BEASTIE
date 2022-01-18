@@ -171,8 +171,7 @@ def count_all_het_sites(
 
     data0.drop_duplicates()
     data0.to_csv(outputFilename, sep="\t", header=True, index=False)
-    # if tmp is not None:
-    #     for files in os.listdir(tmp):
-    #         if "TEMP" in files:
-    #             logging.info("..... remove created TEMP files: {0}".format(files))
-    #             os.remove(tmp + "/" + files)
+    for files in os.listdir(os.path.dirname(outputFilename)):
+        if "TEMP" in files:
+            logging.info("..... remove created TEMP files: {0}".format(files))
+            os.remove(os.path.dirname(outputFilename) + "/" + files)

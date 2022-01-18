@@ -12,6 +12,7 @@ import BEASTIE.binomial_for_real_data as binomial_for_real_data
 import BEASTIE.run_model_stan_wrapper as run_model_stan_wrapper
 from pkg_resources import resource_filename
 from .helpers import runhelper
+from . import annotation
 from .prepare_model import (
     add_shapepit2,
     generate_modelCount,
@@ -20,35 +21,63 @@ from .prepare_model import (
 )
 
 
-def create_file_name(hetSNP_intersect_unique, meta, temp):
-    base = os.path.split(hetSNP_intersect_unique)
-    base_modelin = os.path.join(
-        temp, "{0}.modelinput.tsv".format(os.path.splitext(base[1])[0])
+def create_file_name(prefix, tmp_path, shapeit2_input):
+    ##### TEMP output generation: meta_file
+    meta_file = os.path.join(
+        tmp_path,
+        f"{prefix}.meta.tsv",
     )
-    base_modelin_error = os.path.join(
-        temp, "{0}.modelinput_w_error.tsv".format(os.path.splitext(base[1])[0])
-    )
-    base_meta = os.path.split(meta)
     meta_error = os.path.join(
-        temp, "{0}.w_prediction.tsv".format(os.path.splitext(base_meta[1])[0])
+        tmp_path,
+        f"{prefix}.meta.w_error.tsv",
     )
-    return meta_error
+    if shapeit2_input is not None:
+        hetSNP_intersect_unique_forlambda_file = os.path.join(
+            tmp_path,
+            f"TEMP.{prefix}_hetSNP_intersected_filtered.shapeit2.dropNA.forLambda.tsv",
+        )
+        hetSNP_intersect_unique_lambdaPredicted_file = os.path.join(
+            tmp_path,
+            f"TEMP.{prefix}_hetSNP_intersected_filtered.shapeit2.dropNA.lambdaPredicted.tsv",
+        )
+    else:
+        hetSNP_intersect_unique_forlambda_file = os.path.join(
+            tmp_path, f"TEMP.{prefix}_hetSNP_intersected_filtered.forLambda.tsv"
+        )
+        hetSNP_intersect_unique_lambdaPredicted_file = os.path.join(
+            tmp_path, f"TEMP.{prefix}_hetSNP_intersected_filtered.lambdaPredicted.tsv"
+        )
+    logging.info(
+        "We will generate intermedate file {0} ...".format(os.path.basename(meta_file))
+    )
+    logging.info(
+        "We will generate intermedate file {0} ...".format(os.path.basename(meta_error))
+    )
+    logging.info(
+        "We will generate intermediate file {0} ...".format(
+            os.path.basename(hetSNP_intersect_unique_forlambda_file)
+        )
+    )
+    logging.info(
+        "We will generate intermediate file {0} ...".format(
+            os.path.basename(hetSNP_intersect_unique_lambdaPredicted_file)
+        )
+    )
+    return (
+        meta_file,
+        meta_error,
+        hetSNP_intersect_unique_forlambda_file,
+        hetSNP_intersect_unique_lambdaPredicted_file,
+    )
 
 
 def run(
     shapeit2_input,
     hetSNP_intersect_unique,
-    hetSNP_intersect_unique_shapeit2,
-    hetSNP_intersect_unique_shapeit2_dropNA,
-    meta,
-    hetSNP_intersect_unique_forlambda_file,
-    hetSNP_intersect_unique_lambdaPredicted_file,
     prefix,
     alpha,
     model,
     sigma,
-    in_path,
-    out_path,
     tmp_path,
     result_path,
     cutoff,
@@ -57,90 +86,200 @@ def run(
     KEEPER,
     total_cov,
     either_cov,
+    ancestry,
+    LD_token,
+    chr_start,
+    chr_end,
 ):
-    meta_error = create_file_name(hetSNP_intersect_unique, meta, tmp_path)
-    ##########################
+    (
+        meta,
+        meta_error,
+        hetSNP_intersect_unique_forlambda_file,
+        hetSNP_intersect_unique_lambdaPredicted_file,
+    ) = create_file_name(prefix, tmp_path, shapeit2_input)
+
+    #####
+    ##### 2.1 incorporate with optional shapeit2 results, and convert data into model input format
+    #####
     logging.info("=================")
     logging.info("================= Starting step 2.1")
-    logging.info("..... start converting data in format for model input")
     logging.info(
-        "..... hetSNP_intersect_unique file save to {0}".format(hetSNP_intersect_unique)
+        "....... start converting {0} for model input".format(
+            os.path.basename(hetSNP_intersect_unique)
+        )
     )
 
     if shapeit2_input is not None:
-        add_shapepit2(
-            hetSNP_intersect_unique,
-            shapeit2_input,
-            hetSNP_intersect_unique_shapeit2,
-            hetSNP_intersect_unique_shapeit2_dropNA,
+        logging.info(
+            "....... shapeit2 phasing is provided {0}".format(
+                os.path.basename(shapeit2_input)
+            )
         )
-        base_modelin, base_modelin_error = generate_modelCount(
-            hetSNP_intersect_unique_shapeit2_dropNA, shapeit2_input
-        )
+        add_shapepit2(hetSNP_intersect_unique, shapeit2_input)
     else:
-        base_modelin, base_modelin_error = generate_modelCount(hetSNP_intersect_unique)
+        logging.info(
+            "....... shapeit2 phasing is NOT provided, we take ALT as maternal, REF as paternal"
+        )
 
-    ##########################
-    logging.info("=================")
-    logging.info("================= Starting step 2.2")
-    logging.info("..... start predicting phasing error")
-    if (os.path.isfile(meta_error)) and (
-        os.path.isfile(hetSNP_intersect_unique_lambdaPredicted_file)
-    ):
-        logging.info(
-            "..... output file save to {0}".format(
-                hetSNP_intersect_unique_lambdaPredicted_file
+    (
+        file_for_LDannotation,
+        file_for_lambda,
+        base_modelin,
+        base_modelin_error,
+    ) = generate_modelCount(hetSNP_intersect_unique, shapeit2_input)
+    data21 = pd.read_csv(file_for_lambda, sep="\t", header=0, index_col=False)
+    logging.debug(
+        "output {0} has {1} genes for lambda prediction".format(
+            os.path.basename(hetSNP_intersect_unique_forlambda_file), data21.shape[0]
+        )
+    )
+    if data21.shape[0] < 2:
+        os.remove(file_for_lambda)
+        logging.error(
+            "....... existed {0} with filtered sites prepared for lambda model file is empty, please try again!".format(
+                os.path.basename(file_for_lambda)
             )
         )
-        logging.info("..... output file save to {0}".format(meta_error))
+        sys.exit(1)
     else:
         logging.info(
-            "..... data exists, overwrites and saves at {0}".format(
-                hetSNP_intersect_unique_lambdaPredicted_file
+            "....... {0} save to {1}".format(
+                os.path.basename(file_for_lambda),
+                os.path.dirname(file_for_lambda),
             )
         )
-        logging.info(
-            "..... data exists, overwrites and saves at {0}".format(meta_error)
+
+    #####
+    ##### 2.2 Annotation LD
+    #####
+    if not os.path.isfile(meta):
+        logging.info("=================")
+        logging.info("================= Starting specific step 2.2")
+        logging.info("....... start annotating LD information")
+        annotation.annotateLD(
+            prefix,
+            ancestry,
+            file_for_LDannotation,
+            tmp_path,
+            LD_token,
+            chr_start,
+            chr_end,
+            meta,
         )
+    else:
+        logging.info("=================")
+        logging.info("================= Skipping specific step 2.2")
+    data22 = pd.read_csv(meta, sep="\t", header=0, index_col=False)
+    logging.debug(
+        "output {0} has {1} het SNPs for LD (d',r2) annotation".format(
+            os.path.basename(meta), data22.shape[0]
+        )
+    )
+    if data22.shape[0] < 2:
+        os.remove(meta)
+        logging.error(
+            "....... existed {0} is empty, please try again!".format(
+                os.path.basename(meta)
+            )
+        )
+        sys.exit(1)
+    else:
+        for files in os.listdir(os.path.dirname(meta)):
+            if "TEMP_chr" in files:
+                logging.info("..... remove created TEMP files: {0}".format(files))
+                os.remove(os.path.dirname(meta) + "/" + files)
+        logging.info(
+            "....... {0} save to {1}".format(
+                os.path.basename(meta),
+                os.path.dirname(meta),
+            )
+        )
+
+    #####
+    ##### 2.3 logistic regression model predict switching phasing error, linear regression model predicts lambda
+    #####
+    logging.info("=================")
+    logging.info("================= Starting step 2.3")
+    logging.info(
+        "..... start predicting lambda for {0}".format(
+            os.path.basename(file_for_lambda)
+        )
+    )
+    logging.info(
+        "..... start predicting switching eror for {0}".format(os.path.basename(meta))
+    )
 
     predict_lambda_phasing_error = resource_filename(
         "BEASTIE", "predict_lambda_phasingError.R"
     )
     beastie_wd = resource_filename("BEASTIE", ".")
-    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {tmp_path} {prefix} {model} {hetSNP_intersect_unique} {hetSNP_intersect_unique_forlambda_file} {hetSNP_intersect_unique_lambdaPredicted_file} {meta} {meta_error} {beastie_wd}"
+    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {tmp_path} {prefix} {model} {file_for_LDannotation} {hetSNP_intersect_unique_forlambda_file} {hetSNP_intersect_unique_lambdaPredicted_file} {meta} {meta_error} {beastie_wd}"
     runhelper(cmd)
-    data22 = pd.read_csv(
+    data23_1 = pd.read_csv(
         hetSNP_intersect_unique_lambdaPredicted_file,
         sep="\t",
         header=None,
         index_col=False,
-    )  # check whether this data is generated, debugging purpose
-    logging.debug("size of predicted lambda file is {0}".format(len(data22)))
+    )
+    data23_2 = pd.read_csv(
+        meta_error,
+        sep="\t",
+        header=None,
+        index_col=False,
+    )
     logging.info(
-        "..... For type 1 error model, input alpha (family wise error rate) is {0}, adjusted after size of input {1} : {2}".format(
-            alpha, data22.shape[0], alpha / data22.shape[0]
+        "lambda prediction model: input {0}".format(os.path.basename(file_for_lambda))
+    )
+    logging.info(
+        "lambda prediction model: input alpha (family wise error rate) is {0}, adjusted after size of input {1} is {2}".format(
+            alpha, data23_1.shape[0], alpha / data23_1.shape[0]
         )
     )
-    #########################
+    logging.debug(
+        "output {0} has {1} genes with lambda prediction".format(
+            os.path.basename(hetSNP_intersect_unique_lambdaPredicted_file),
+            data23_1.shape[0],
+        )
+    )
+    logging.info(
+        "switching error prediction model: input {0}".format(os.path.basename(meta))
+    )
+    logging.debug(
+        "output {0} has {1} het SNPs with switching error prediction".format(
+            os.path.basename(meta_error), data23_2.shape[0]
+        )
+    )
+
+    #####
+    ##### 2.4 adding switching error information to model input
+    #####
     logging.info("=================")
-    logging.info("================= Starting step 2.3")
-    logging.info("..... start adding model input with phasing error information")
+    logging.info("================= Starting step 2.4")
+    logging.info(
+        "..... start adding model input with predicted swhitching error information"
+    )
 
     if os.path.isfile(base_modelin_error):
-        logging.info("..... output file save to {0}".format(base_modelin_error))
+        logging.info(
+            "output {0} is generated for BEASTIE stan model".format(
+                os.path.basename(base_modelin_error)
+            )
+        )
     else:
         logging.info(
-            "..... data exists, overwrites and saves at : {0}".format(
-                base_modelin_error
+            "....... {0} exists, overwrites".format(
+                os.path.basename(base_modelin_error)
             )
         )
     update_model_input_lambda_phasing(
         "pred_error_GIAB", base_modelin, base_modelin_error, meta_error
     )
 
-    ##########################
+    #####
+    ##### 2.5 running stan model
+    #####
     logging.info("=================")
-    logging.info("================= Starting step 2.4")
+    logging.info("================= Starting step 2.5")
     logging.info("..... start running iBEASTIE model")
     df_ibeastie, picklename = run_model_stan_wrapper.run(
         prefix,
@@ -156,37 +295,37 @@ def run(
         total_cov,
     )
     if df_ibeastie.shape[0] > 2:
-        logging.info("..... model output is finished!")
+        logging.info("....... model output is finished!")
     else:
-        logging.error("..... model output is empty, please try again!")
+        logging.error("....... model output is empty, please try again!")
         sys.exit(1)
 
     df_adm = ADM_for_real_data.run(prefix, base_modelin, result_path, picklename)
-    logging.info("..... finishing running ADM method")
+    logging.info("....... finishing running ADM method")
 
     df_binomial = binomial_for_real_data.run(
         prefix, base_modelin, result_path, picklename
     )
-    logging.info("..... finishing running binomial")
+    logging.info("....... finishing running binomial")
 
-    ##########################
+    #####
+    ##### 2.6 generating output
+    #####
     logging.info("=================")
-    logging.info("================= Starting step 2.5")
-    logging.info("..... start generating gene list")
+    logging.info("================= Starting step 2.6")
+    logging.info("....... start generating gene list")
     outfilename = os.path.join(result_path, f"{prefix}_ASE_all.tsv")
     outfilename_ase = os.path.join(
         result_path, f"{prefix}_ASE_cutoff_{cutoff}_filtered.tsv"
     )
     if (os.path.isfile(outfilename)) and (os.path.isfile(outfilename_ase)):
         logging.info(
-            "..... data exists, overwrites and saves at {0}".format(outfilename)
+            "....... data exists, overwrites and saves at {0}".format(outfilename)
         )
         logging.info(
-            "..... data exists, overwrites and saves at {0}".format(outfilename_ase)
+            "....... data exists, overwrites and saves at {0}".format(outfilename_ase)
         )
-    else:
-        logging.info("..... output file save to {0}".format(outfilename))
-        logging.info("..... output file save to {0}".format(outfilename_ase))
+
     significant_genes(
         df_ibeastie,
         df_binomial,
@@ -196,16 +335,37 @@ def run(
         cutoff,
         hetSNP_intersect_unique_lambdaPredicted_file,
     )
-    logging.info("..... done with significant_gene")
+    logging.info("....... done with significant_gene")
     if not SAVE_INT:
         shutil.rmtree(tmp_path)
-        logging.info("..... remove TEMP folder {0}".format(tmp_path))
+        logging.info("....... remove TEMP folder {0}".format(tmp_path))
     logging.info("=================")
     logging.info(">>  Finishing running BEASTIE!")
-    data25_1 = pd.read_csv(outfilename, sep="\t", header=0, index_col=False)
-    data25_2 = pd.read_csv(outfilename_ase, sep="\t", header=0, index_col=False)
-    if data25_1.shape[0] > 2 or data25_2.shape[0] > 2:
-        logging.info("..... Yep! You are done!")
+    data26_1 = pd.read_csv(outfilename, sep="\t", header=0, index_col=False)
+    data26_2 = pd.read_csv(outfilename_ase, sep="\t", header=0, index_col=False)
+    logging.info(
+        "output {0} has all {1} genes".format(
+            os.path.basename(outfilename),
+            data26_1.shape[0],
+        )
+    )
+    logging.info(
+        "output {0} has filtered {1} genes passing ASE cutoff {2}".format(
+            os.path.basename(outfilename_ase)
+        ),
+        data26_2.shape[0],
+        cutoff,
+    )
+    if data26_1.shape[0] > 2 or data26_2.shape[0] > 2:
+        logging.info("....... Yep! You are done!")
     else:
-        logging.error("..... output is empty, please try again!")
+        logging.error(
+            "....... existed {0} or {1} is empty, please try again!".format(
+                os.path.basename(outfilename),
+                os.path.basename(outfilename_ase),
+            )
+        )
         sys.exit(1)
+
+    logging.info("================= finish step2! ")
+    logging.info(">> Finish running BEASTIE!")

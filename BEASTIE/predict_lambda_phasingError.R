@@ -25,12 +25,7 @@ suppressMessages(library("readr"))
 suppressMessages(library("dplyr"))
 suppressMessages(library("LDlinkR"))
 library(glmnetUtils)
-#mytoken="c313799c13c3"
-#suppressMessages(library(foreach))
-#suppressMessages(library(doParallel))
-#suppressMessages(library(parallel))
-#### read in self-defined functions
-#### read in parameters
+
 
 alpha=args[1]
 tmp=paste0(args[2],"/",sep="")
@@ -42,16 +37,6 @@ hetSNP_intersect_unique_lambdaPredicted_file=args[7]
 meta=args[8]
 meta_error=args[9]
 beastie_wd=args[10]
-
-# alpha=0.05 #FWE
-# sample="HG00096_chr21"
-# model="iBEASTIE2"
-# tmp="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/"
-# hetSNP_intersect_unique="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_hetSNP_intersect_unique.tsv"
-# hetSNP_intersect_unique_forlambda_file="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/other_example/HG00096/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_hetSNP_intersected_filtered_forLambda.TEMP.tsv"
-# hetSNP_intersect_unique_lambdaPredicted_file="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_hetSNP_intersect_unique_lambdaPredicted.tsv"
-# meta="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/TEMP/HG00096_chr21_meta.tsv"
-# meta_error="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/HG00096_chr21_meta_w_error.tsv"
 
 source(file.path(beastie_wd, "Get_phasing_error_rate.R"))
 source(file.path(beastie_wd, "Get_LD.R"))

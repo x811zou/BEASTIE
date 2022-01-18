@@ -162,14 +162,7 @@ def run(config):
         "======================================== step1: Processing raw data & annotating LD and AF information"
     )
     logging.info("======================================== ")
-    (
-        hetSNP_intersect_unique,
-        hetSNP_intersect_unique_shapeit2,
-        hetSNP_intersect_unique_shapeit2_dropNA,
-        meta,
-        hetSNP_intersect_unique_forlambda_file,
-        hetSNP_intersect_unique_lambdaPredicted_file,
-    ) = beastie_step1.run(
+    hetSNP_intersect_unique = beastie_step1.run(
         config.prefix,
         config.vcf_sample_name,
         in_path,
@@ -185,7 +178,6 @@ def run(config):
         config.min_total_cov,
         config.min_single_cov,
         config.read_length,
-        config.LD_token,
         pileup_file,
         None,  # hetSNP
         None,  # parsed_pileup
@@ -198,17 +190,10 @@ def run(config):
     beastie_step2.run(
         shapeit2_file,
         hetSNP_intersect_unique,
-        hetSNP_intersect_unique_shapeit2,
-        hetSNP_intersect_unique_shapeit2_dropNA,
-        meta,
-        hetSNP_intersect_unique_forlambda_file,
-        hetSNP_intersect_unique_lambdaPredicted_file,
         config.prefix,
         config.alpha,
         model,
         config.sigma,
-        in_path,
-        output_path,
         tmp_path,
         result_path,
         config.cutoff,
@@ -217,6 +202,10 @@ def run(config):
         config.KEEPER,
         config.min_total_cov,
         config.min_single_cov,
+        config.ancestry,
+        config.LD_token,
+        config.chr_start,
+        config.chr_end,
     )
 
 
