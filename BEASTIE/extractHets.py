@@ -50,47 +50,59 @@ def isHeterozygous(genotype):
 
 
 def count_all_het_sites(
-    sample, vcfFilename, outputFilename, chr_start, chr_end, gencode_path
+    sample, vcfFilename, outputFilename, chr_start, chr_end, geneFile
 ):
     logging.info("..... We are looking at individual: {0}".format(sample))
     filename = os.path.splitext(str(outputFilename))[0]
+    logging.info(
+        "..... start loading gencode annotation file : {0}".format(
+            os.path.basename(geneFile)
+        )
+    )
     count = 0
+    reader = GffTranscriptReader()
+    # geneFile = resource_filename(gencode_path, f"/chr{Num}")
+    all_geneList = reader.loadGenes(geneFile)
+    logging.info(
+        "..... finish loading gencode annotation file {0} with {1} genes".format(
+            geneFile, len(all_geneList)
+        )
+    )
     for Num in range(chr_start, chr_end + 1):
         outputFile = filename + ".chr" + str(Num) + ".TEMP.tsv"
         if not os.path.isfile(outputFile):
-            reader = GffTranscriptReader()
-            # geneFile = resource_filename(gencode_path, f"/chr{Num}")
-            geneFile = gencode_path + f"/chr{Num}"
-            print(geneFile)
-            geneList = reader.loadGenes(geneFile)
-            logging.info(
-                "..... Working on chr {0} with {1} genes".format(Num, len(geneList))
-            )
+            # geneList = filter(
+            #     lambda gene: gene.getSubstrate.strip("chr") == Num, all_geneList
+            # )
+            logging.info("..... Working on chr {0}".format(Num))
+            counter = 0
             byGene = {}
             total_biSNP = 0
-
             region_str_to_transcripts = {}
-            for gene in geneList:
-                Num_transcript = gene.getNumTranscripts()
-                for n in range(Num_transcript):
-                    transcript = gene.getIthTranscript(n)
-                    geneID = transcript.getGeneId()  # column 5
-                    byGene[geneID] = byGene.get(geneID, set())
-                    chrom = transcript.getSubstrate()  # column 1
-                    chromN = chrom.strip("chr")
-                    rawExons = transcript.getRawExons()
-                    for exon in rawExons:
-                        begin = exon.getBegin()  # column 7
-                        end = exon.getEnd()  # column 8
+            for gene in all_geneList:
+                # print(gene.getSubstrate().strip("chr"))
+                if str(gene.getSubstrate().strip("chr")) == str(Num):
+                    counter += 1
+                    Num_transcript = gene.getNumTranscripts()
+                    for n in range(Num_transcript):
+                        transcript = gene.getIthTranscript(n)
+                        geneID = transcript.getGeneId()  # column 5
+                        byGene[geneID] = byGene.get(geneID, set())
+                        chrom = transcript.getSubstrate()  # column 1
+                        chromN = chrom.strip("chr")
+                        rawExons = transcript.getRawExons()
+                        for exon in rawExons:
+                            begin = exon.getBegin()  # column 7
+                            end = exon.getEnd()  # column 8
 
-                        region_str = f"{chromN}:{begin}-{end}"
-                        if not region_str in region_str_to_transcripts:
-                            region_str_to_transcripts[region_str] = []
-                        # uncomment to debug duplicate transcript IDs as a possible optimization
-                        # else:
-                        #     for existing in region_str_to_transcripts[region_str]:
-                        #         print(f"existing transcript @ {region_str} {existing.getTranscriptId()} != {transcript.getTranscriptId()}")
-                        region_str_to_transcripts[region_str].append(transcript)
+                            region_str = f"{chromN}:{begin}-{end}"
+                            if not region_str in region_str_to_transcripts:
+                                region_str_to_transcripts[region_str] = []
+                            # uncomment to debug duplicate transcript IDs as a possible optimization
+                            # else:
+                            #     for existing in region_str_to_transcripts[region_str]:
+                            #         print(f"existing transcript @ {region_str} {existing.getTranscriptId()} != {transcript.getTranscriptId()}")
+                            region_str_to_transcripts[region_str].append(transcript)
 
             CHUNK_SIZE = 1000
             outputs = []
@@ -168,7 +180,7 @@ def count_all_het_sites(
         else:
             data = pd.read_csv(outputFile, sep="\t", header=0, index_col=False)
             data0 = pd.concat([data0, data])
-
+        logging.info("..... chr {0} is finished with {1} genes".format(Num, counter))
     data0.drop_duplicates()
     data0.to_csv(outputFilename, sep="\t", header=True, index=False)
     for files in os.listdir(os.path.dirname(outputFilename)):
