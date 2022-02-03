@@ -22,7 +22,7 @@ if (!file.exists(meta)){
     print("meta file not exist")
 #================================================ specify input
     df = read.table(infile, header=T, sep = '\t')
-    batch_size = 1000
+    batch_size = 500
     in_data=df
 
     #================================================ start running

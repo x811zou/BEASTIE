@@ -22,7 +22,7 @@ ConfigurationData = namedtuple(
         "vcf_sample_name",
         "pileup_file_name",
         "shapeit2",
-        "gencode_path",
+        "gencode_file",
         "ancestry",
         "min_total_cov",
         "min_single_cov",
@@ -77,7 +77,7 @@ def load_configuration(config_file):
         vcf_sample_name=inputs["vcf_sample_name"],
         pileup_file_name=inputs["pileup_file_name"],
         shapeit2=inputs.get("shapeit2", None),
-        gencode_path=inputs.get("gencode_path", None),
+        gencode_file=inputs.get("gencode_file", None),
         ancestry=inputs["ancestry"],
         min_total_cov=int(inputs.get("min_total_cov", 0)),
         min_single_cov=int(inputs.get("min_single_cov", 1)),
@@ -116,10 +116,12 @@ def run(config):
     shapeit2_file = (
         os.path.join(in_path, config.shapeit2) if config.shapeit2 is not None else None
     )
-    gencode_path = (
-        config.gencode_path
-        if config.gencode_path is not None
-        else resource_filename("BEASTIE", "reference/gencode_chr")
+    gencode_file = (
+        config.gencode_file
+        if config.gencode_file is not None
+        else resource_filename(
+            "BEASTIE", "reference/gencode.v19.annotation.filtered.gtf"
+        )
         # else config.ref_dir + "/gencode_chr"
     )
     model = os.path.join(config.STAN, config.modelName)
@@ -168,7 +170,7 @@ def run(config):
         in_path,
         output_path,
         tmp_path,
-        gencode_path,
+        gencode_file,
         model,
         vcf_file,
         config.ref_dir,

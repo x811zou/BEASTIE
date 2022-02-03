@@ -11,6 +11,7 @@ import scipy.stats
 import pandas as pd
 import numpy as np
 from math import floor, log10, pi, isnan
+from scipy.stats import binom_test
 
 
 def change_phasing(data):
@@ -121,9 +122,47 @@ def add_shapepit2(
         )
 
 
-def generate_modelCount(filename, shapeit2_input):
+def add_simulationData(prefix, p_cutoff):
+
+    name = prefix.split("_")[0] + "_splice_simulator"
+    sim_path = (
+        "/Users/scarlett/allenlab/BEASTIE_other_example/"
+        + name
+        + "/output/s0.5_a0.05_sinCov0_totCov1_W1000K1000/tmp/"
+    )
+    sim_filename = os.path.join(
+        sim_path, f"TEMP.{name}_hetSNP_intersected_filtered.tsv"
+    )
+    simulator_df = pd.read_csv(sim_filename, sep="\t", header=0, index_col=False)
+    simulator_df["alt_binomial_p"] = simulator_df.apply(
+        lambda x: binom_test(
+            x["altCount"],
+            x["totalCount"],
+            p=0.5,
+            alternative="two-sided",
+        ),
+        axis=1,
+    )
+    simulator_df_biased = simulator_df[simulator_df["alt_binomial_p"] <= p_cutoff]
+    logging.debug(
+        "{0} has {1} het SNPs, {2} het SNPs did not pass alignment bias filtering p-val<= {3}".format(
+            os.path.basename(sim_filename),
+            simulator_df.shape[0],
+            simulator_df_biased.shape[0],
+            p_cutoff,
+        )
+    )
+    simulator_df_biased = simulator_df_biased[["chr", "pos"]]
+
+    return simulator_df_biased
+
+
+def generate_modelCount(filename, simulator_df_biased=None, shapeit2_input=None):
+    base_out = os.path.splitext(filename)[0]
+
     if shapeit2_input is None:
         gene_df = pd.read_csv(filename, sep="\t", header=0, index_col=False)
+        print("len of real data variants is %s" % (gene_df.shape[0]))
         data = gene_df
         data["patCount"] = data["refCount"]
         data["matCount"] = data["altCount"]
@@ -143,17 +182,85 @@ def generate_modelCount(filename, shapeit2_input):
             ]
         ]
     else:
-        base_out = os.path.splitext(filename)[0]
         filename = f"{base_out}.shapeit2.dropNA.tsv"
         gene_df = pd.read_csv(filename, sep="\t", header=0, index_col=False)
         data = gene_df
-    file_for_LDannotation = filename
-    logging.debug(
-        "input {0} has {1} het SNPs".format(
-            os.path.basename(filename), gene_df.shape[0]
+        data = data[
+            [
+                "chr",
+                "chrN",
+                "pos",
+                "rsid",
+                "AF",
+                "geneID",
+                "genotype",
+                "patCount",
+                "matCount",
+                "totalCount",
+                "altRatio",
+            ]
+        ]
+    if simulator_df_biased is not None:
+        overlapped_variants = data.merge(
+            simulator_df_biased, on=["chr", "pos"], how="inner"
         )
-    )
-    base_out = os.path.splitext(filename)[0]
+        logging.debug(
+            "{0} het SNPs with alignment bias found in real data".format(
+                overlapped_variants.shape[0],
+            )
+        )
+        merged = data.merge(
+            simulator_df_biased, on=["chr", "pos"], how="left", indicator=True
+        )
+        merged = merged[merged["_merge"] == "left_only"]
+        gene_df_filtered = merged[
+            [
+                "chr",
+                "chrN",
+                "pos",
+                "rsid",
+                "AF",
+                "geneID",
+                "genotype",
+                "patCount",
+                "matCount",
+                "totalCount",
+                "altRatio",
+            ]
+        ]
+        logging.debug(
+            "real data has {0} het SNPs, {1} after removing alignment bias".format(
+                gene_df.shape[0],
+                gene_df_filtered.shape[0],
+            )
+        )
+        base_out = os.path.splitext(filename)[0]
+        afterFilter_filename = f"{base_out}_alignBiasFiltered.tsv"
+        gene_df_filtered.to_csv(
+            afterFilter_filename, index=False, sep="\t", header=True
+        )
+        data = gene_df_filtered
+        logging.debug(
+            "{0} has {1} het SNPs, {2} has {3} het SNPs ({4}%) pass alignment bias filtering".format(
+                os.path.basename(filename),
+                gene_df.shape[0],
+                os.path.basename(afterFilter_filename),
+                gene_df_filtered.shape[0],
+                round(100 * gene_df_filtered.shape[0] / gene_df.shape[0], 2),
+            )
+        )
+        file_for_LDannotation = afterFilter_filename
+        base_out = os.path.splitext(afterFilter_filename)[0]
+    else:
+        logging.debug(
+            "{0} has {1} het SNPs, no alignment bias filtering".format(
+                os.path.basename(filename),
+                data.shape[0],
+            )
+        )
+        file_for_LDannotation = filename
+        base_out = os.path.splitext(filename)[0]
+
     file_for_lambda = "{0}.forlambda.tsv".format(base_out)
     out_modelinput = "{0}.modelinput.tsv".format(base_out)
     out_modelinput_error = "{0}.modelinput.w_error.tsv".format(base_out)
@@ -196,15 +303,13 @@ def generate_modelCount(filename, shapeit2_input):
 
     counter = 0
     if not os.path.isfile(out_modelinput):
-        unique_gene = gene_df["geneID"].unique()
+        unique_gene = data["geneID"].unique()
         rst = ""
         for each in unique_gene:
             counter += 1
             idx = each
-            gene_lst = [idx, sum(gene_df["geneID"] == each)] + list(
-                np.ravel(
-                    gene_df[gene_df["geneID"] == each][["matCount", "patCount"]].values
-                )
+            gene_lst = [idx, sum(data["geneID"] == each)] + list(
+                np.ravel(data[data["geneID"] == each][["matCount", "patCount"]].values)
             )
             rst += "\t".join([str(x) for x in gene_lst]) + "\n"
         file1 = open(out_modelinput, "w")
@@ -271,22 +376,26 @@ def update_model_input_lambda_phasing(
             if len(pred_prob) != 0:
                 del pred_prob[0]
             # logging.debug("original predicted prob :{0}".format(pred_prob))
+            # count number of NAs in the predicted switching error for each gene
             nNAs = np.count_nonzero(np.isnan(pred_prob))
             # logging.debug("num of NAs :{0}".format(nNAs))
-            pred_prob = [-1 if x != x else x for x in pred_prob]  # -1 if missing
+            # replace NA with -1 for predicted switching error
+            pred_prob = [-1 if x != x else x for x in pred_prob]
             # logging.debug("corrected predicted prob :{0}".format(pred_prob))
             PI_pred = []
+            # for gene with 1 het, number of NA is 0, put 0 there
             if nhet == 1:
-                updated_line += "%s\t%d\n" % (line, 0)  # 0 for 1 het gene
+                updated_line += "%s\t%d\n" % (line, 0)
+            # for gene with more than 1 hets, append predicted switching error after nNAs
             else:
                 for m in range(int(nhet) - 1):  # 0,1,2
-                    if m == 0:
+                    if m == 0:  # the first het site
                         PI_pred = "%d\t%s" % (nNAs, pred_prob[m])
                     else:
                         PI_pred = "%s\t%s" % (PI_pred, pred_prob[m])
                 updated_line += "%s\t%s\n" % (line, PI_pred)
-            # if counter == 10:
-            #     sys.exit()
+            # if counter == 20:
+            #    sys.exit()
     file1 = open(outfile, "w")
     file1.write(updated_line)
     file1.close()

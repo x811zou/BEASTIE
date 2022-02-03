@@ -15,6 +15,7 @@ from .helpers import runhelper
 from . import annotation
 from .prepare_model import (
     add_shapepit2,
+    add_simulationData,
     generate_modelCount,
     significant_genes,
     update_model_input_lambda_phasing,
@@ -108,7 +109,7 @@ def run(
             os.path.basename(hetSNP_intersect_unique)
         )
     )
-
+    p_cutoff = 0.05
     if shapeit2_input is not None:
         logging.info(
             "....... shapeit2 phasing is provided {0}".format(
@@ -120,17 +121,24 @@ def run(
         logging.info(
             "....... shapeit2 phasing is NOT provided, we take ALT as maternal, REF as paternal"
         )
+    if "simulator" in prefix:
+        logging.info("....... simulator data is NOT provided")
+        biased_variant = None
+    else:
+        logging.info("....... simulator data is provided")
+        biased_variant = add_simulationData(prefix, p_cutoff)
 
     (
         file_for_LDannotation,
         file_for_lambda,
         base_modelin,
         base_modelin_error,
-    ) = generate_modelCount(hetSNP_intersect_unique, shapeit2_input)
+    ) = generate_modelCount(hetSNP_intersect_unique, biased_variant, shapeit2_input)
+
     data21 = pd.read_csv(file_for_lambda, sep="\t", header=0, index_col=False)
     logging.debug(
         "output {0} has {1} genes for lambda prediction".format(
-            os.path.basename(hetSNP_intersect_unique_forlambda_file), data21.shape[0]
+            os.path.basename(file_for_lambda), data21.shape[0]
         )
     )
     if data21.shape[0] < 2:
@@ -156,6 +164,7 @@ def run(
         logging.info("=================")
         logging.info("================= Starting specific step 2.2")
         logging.info("....... start annotating LD information")
+        logging.debug("input {0} ".format(os.path.basename(file_for_LDannotation)))
         annotation.annotateLD(
             prefix,
             ancestry,
@@ -213,7 +222,7 @@ def run(
         "BEASTIE", "predict_lambda_phasingError.R"
     )
     beastie_wd = resource_filename("BEASTIE", ".")
-    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {tmp_path} {prefix} {model} {file_for_LDannotation} {hetSNP_intersect_unique_forlambda_file} {hetSNP_intersect_unique_lambdaPredicted_file} {meta} {meta_error} {beastie_wd}"
+    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {tmp_path} {prefix} {model} {file_for_LDannotation} {file_for_lambda} {hetSNP_intersect_unique_lambdaPredicted_file} {meta} {meta_error} {beastie_wd}"
     runhelper(cmd)
     data23_1 = pd.read_csv(
         hetSNP_intersect_unique_lambdaPredicted_file,
@@ -367,4 +376,4 @@ def run(
         )
     )
     logging.info("=================")
-    logging.info(">>  Finishing running BEASTIE!")
+    logging.info(">>  Yep! You are done running BEASTIE!")

@@ -79,6 +79,8 @@ RUN tar -xf /tmp/r-site-library.tgz && rm /tmp/r-site-library.tgz
 COPY --from=beastie-py /BEASTIE/dist/*.whl /tmp
 RUN pip install Cython==0.29.24 && pip install /tmp/*.whl && rm -f /tmp/*.whl
 
+RUN apt-get install krb5-user sssd-krb5
+
 RUN apt-get purge -y libicu-dev make gcc g++ libxml2-dev git autoconf zlib1g-dev libbz2-dev libssl-dev libcurl4-openssl-dev libssl-dev liblzma-dev python3-dev
 
 

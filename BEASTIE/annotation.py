@@ -220,13 +220,20 @@ def annotateAFConstantMemory(ancestry, hetSNP, out_AF, AF_file):
 
 
 def annotateLD(
-    prefix, ancestry, file_for_LDannotation, out, LD_token, chr_start, chr_end, meta
+    prefix,
+    ancestry,
+    file_for_LDannotation,
+    out_path,
+    LD_token,
+    chr_start,
+    chr_end,
+    meta,
 ):
     annotate_ld_new = resource_filename("BEASTIE", "annotate_LD_new.R")
     beastie_wd = resource_filename("BEASTIE", ".")
 
     if not os.path.isfile(meta):
-        cmd = f"Rscript --vanilla {annotate_ld_new} {prefix} {ancestry} {file_for_LDannotation} {out} {LD_token} {chr_start} {chr_end} {meta} {beastie_wd}"
+        cmd = f"Rscript --vanilla {annotate_ld_new} {prefix} {ancestry} {file_for_LDannotation} {out_path} {LD_token} {chr_start} {chr_end} {meta} {beastie_wd}"
         runhelper(cmd)
         logging.info(f"..... finish annotating LD for SNP pairs, file save at {meta}")
     else:

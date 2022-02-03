@@ -58,7 +58,7 @@ def check_file_existence(
                 vcf
             )
         )
-        cmd = "gunzip %s > %s" % (vcfgz, vcf)
+        cmd = "gunzip -k %s" % (vcfgz)
         runhelper(cmd)
         cmd = "tabix -fp vcf %s" % (vcfgz)
         runhelper(cmd)
@@ -139,7 +139,7 @@ def run(
     in_path,
     output_path,
     tmp_path,
-    gencode_path,
+    gencode_file,
     model,
     vcf,
     ref_dir,
@@ -174,6 +174,20 @@ def run(
         chr_end,
     )
     #####
+    ##### 0.0 simulate data from BAM file
+    #####
+
+    # if not os.path.exists(simulated_folder) and os.path.isfile(fastq1) and os.path.isfile(fastq2):
+    #     logging.info("=================")
+    #     logging.info("================= Starting common step 0.0")
+    #     logging.info("....... start simulating reads")
+    #     simulate_reads(simulated_folder,fastq1,fastq2,depth,config)
+    # else:
+    #     logging.info("=================")
+    #     logging.info("================= Skipping common step 0.0")
+    # samtools view -h -o $SAM $BAM
+
+    #####
     ##### 1.1 Generate hetSNP file: extract heterozygous bi-allelic SNPs for specific chromosomes from all gencode transcripts
     #####
 
@@ -187,7 +201,7 @@ def run(
             hetSNP,
             int(chr_start),
             int(chr_end),
-            gencode_path,
+            gencode_file,
         )
     else:
         logging.info("=================")
@@ -314,5 +328,6 @@ def run(
                 os.path.dirname(hetSNP_intersect_unique),
             )
         )
-    return hetSNP_intersect_unique
     logging.info("================= finish step1! ")
+    sys.exit()
+    return hetSNP_intersect_unique
