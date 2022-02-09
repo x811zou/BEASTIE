@@ -47,4 +47,4 @@ count_all_het_sites(
 
 print("done!")
 
-# python run_extractHets.py HG00096 /Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/HG00096_chr21.remove_chr.content.SNPs.hets.header.vcf.gz /Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/test.txt 21 21 ./BEASTIE/reference/gencode.v19.annotation.filtered.gtf
+# python run_extractHets.py HG00096 /Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/HG00096_chr21.remove_chr.content.SNPs.hets.header.vcf.gz /Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/test.txt 21 21 .BEASTIE/reference/gencode_chr
