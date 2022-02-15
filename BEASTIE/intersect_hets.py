@@ -1,12 +1,14 @@
 import os
 import logging
 import statistics
+from xxlimited import Xxo
 import numpy as np
 import pandas as pd
 import sys
 
 
 def Intersect_exonicHetSnps(
+    prefix,
     parsed_mpileup_file,
     hetSNP_AF,
     read_length,
@@ -15,6 +17,8 @@ def Intersect_exonicHetSnps(
     hetSNP_intersect_unique,
 ):
     df = pd.read_csv(parsed_mpileup_file, index_col=False, sep="\t")
+    # print(df)
+    # sys.exit()
     df_sub = df.drop(
         [
             "refAllele",
@@ -57,32 +61,48 @@ def Intersect_exonicHetSnps(
             inplace=True,
         )
         df_overlapped.to_csv(out1, index=False, sep="\t", header=True)
+        if "simulator" in prefix:
+            logging.info(
+                "....... skipping {0} for thinning reads".format(os.path.basename(out2))
+            )
+            df_overlapped = df_overlapped.drop_duplicates()
+            df_overlapped.sort_values(
+                ["chrN", "pos", "geneID"], ascending=[True, True, True], inplace=True
+            )
+            df_overlapped_uni = (
+                df_overlapped.groupby(["chr", "pos"]).first().reset_index()
+            )
+            df_overlapped_uni.to_csv(
+                hetSNP_intersect_unique, index=False, sep="\t", header=True
+            )
+        else:
+            df_overlapped["snp_window"] = (
+                df_overlapped["transcript_pos"]
+                - df_overlapped.groupby(["geneID", "transcriptID"])[
+                    "transcript_pos"
+                ].transform(np.min)
+            ) // int(read_length)
+            df_overlapped = (
+                df_overlapped.sort_values("totalCount", ascending=False)
+                .groupby(["geneID", "transcriptID", "snp_window"])
+                .nth(0)
+            )
+            df_overlapped.reset_index(inplace=True)
+            df_overlapped.to_csv(out2, index=False, sep="\t", header=True)
 
-        df_overlapped["snp_window"] = (
-            df_overlapped["transcript_pos"]
-            - df_overlapped.groupby(["geneID", "transcriptID"])[
-                "transcript_pos"
-            ].transform(np.min)
-        ) // int(read_length)
-        df_overlapped = (
-            df_overlapped.sort_values("totalCount", ascending=False)
-            .groupby(["geneID", "transcriptID", "snp_window"])
-            .nth(0)
-        )
-        df_overlapped.reset_index(inplace=True)
-        df_overlapped.to_csv(out2, index=False, sep="\t", header=True)
-
-        df_overlapped = df_overlapped.drop(
-            ["snp_window", "transcript_pos", "transcriptID"], axis=1
-        )
-        df_overlapped = df_overlapped.drop_duplicates()
-        df_overlapped.sort_values(
-            ["chrN", "pos", "geneID"], ascending=[True, True, True], inplace=True
-        )
-        df_overlapped_uni = df_overlapped.groupby(["chr", "pos"]).first().reset_index()
-        df_overlapped_uni.to_csv(
-            hetSNP_intersect_unique, index=False, sep="\t", header=True
-        )
+            df_overlapped = df_overlapped.drop(
+                ["snp_window", "transcript_pos", "transcriptID"], axis=1
+            )
+            df_overlapped = df_overlapped.drop_duplicates()
+            df_overlapped.sort_values(
+                ["chrN", "pos", "geneID"], ascending=[True, True, True], inplace=True
+            )
+            df_overlapped_uni = (
+                df_overlapped.groupby(["chr", "pos"]).first().reset_index()
+            )
+            df_overlapped_uni.to_csv(
+                hetSNP_intersect_unique, index=False, sep="\t", header=True
+            )
 
 
 def summary_statistics(data, title):
