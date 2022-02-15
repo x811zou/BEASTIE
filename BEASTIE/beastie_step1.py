@@ -7,9 +7,8 @@ import sys
 import logging
 import pandas as pd
 from pathlib import Path
-
 from pkg_resources import resource_filename
-from . import annotation
+from .annotation import annotateAF
 from .extractHets import count_all_het_sites
 from .helpers import runhelper
 from .intersect_hets import Intersect_exonicHetSnps
@@ -139,7 +138,7 @@ def run(
     in_path,
     output_path,
     tmp_path,
-    gencode_file,
+    gencode_path,
     model,
     vcf,
     ref_dir,
@@ -173,19 +172,6 @@ def run(
         chr_start,
         chr_end,
     )
-    #####
-    ##### 0.0 simulate data from BAM file
-    #####
-
-    # if not os.path.exists(simulated_folder) and os.path.isfile(fastq1) and os.path.isfile(fastq2):
-    #     logging.info("=================")
-    #     logging.info("================= Starting common step 0.0")
-    #     logging.info("....... start simulating reads")
-    #     simulate_reads(simulated_folder,fastq1,fastq2,depth,config)
-    # else:
-    #     logging.info("=================")
-    #     logging.info("================= Skipping common step 0.0")
-    # samtools view -h -o $SAM $BAM
 
     #####
     ##### 1.1 Generate hetSNP file: extract heterozygous bi-allelic SNPs for specific chromosomes from all gencode transcripts
@@ -201,7 +187,7 @@ def run(
             hetSNP,
             int(chr_start),
             int(chr_end),
-            gencode_file,
+            gencode_path,
         )
     else:
         logging.info("=================")
@@ -222,6 +208,7 @@ def run(
                 os.path.basename(hetSNP), os.path.dirname(hetSNP)
             )
         )
+
     #####
     ##### 1.2 Generate parsed pileup file: parse samtools mpile up output files
     #####
@@ -264,7 +251,7 @@ def run(
         logging.info("=================")
         logging.info("================= Starting common step 1.3")
         logging.info("..... start annotating hetSNP from 1.1 with AF from 1000 Genome")
-        annotation.annotateAF(ancestry, hetSNP, hetSNP_AF)
+        annotateAF(ancestry, hetSNP, hetSNP_AF)
 
     data13 = pd.read_csv(hetSNP_AF, sep="\t", header=0, index_col=False)
     logging.debug(
@@ -297,6 +284,7 @@ def run(
             )
         )
         Intersect_exonicHetSnps(
+            prefix,
             parsed_pileup,
             hetSNP_AF,
             read_length,
@@ -329,5 +317,8 @@ def run(
             )
         )
     logging.info("================= finish step1! ")
-    sys.exit()
+    if "simulator" in prefix:
+        logging.info("....... skipping step2 for simulated data")
+        sys.exit()
+
     return hetSNP_intersect_unique
