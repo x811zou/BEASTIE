@@ -143,21 +143,21 @@ def add_simulationData(prefix, p_cutoff):
         ),
         axis=1,
     )
-    simulator_df_biased = simulator_df[simulator_df["alt_binomial_p"] <= p_cutoff]
-    logging.debug(
-        "{0} has {1} het SNPs, {2} het SNPs did not pass alignment bias filtering p-val<= {3}".format(
-            os.path.basename(sim_filename),
-            simulator_df.shape[0],
-            simulator_df_biased.shape[0],
-            p_cutoff,
-        )
-    )
-    simulator_df_biased = simulator_df_biased[["chr", "pos"]]
+    # simulator_df_biased = simulator_df[simulator_df["alt_binomial_p"] <= p_cutoff]
+    # logging.debug(
+    #     "{0} has {1} het SNPs, {2} het SNPs did not pass alignment bias filtering p-val<= {3}".format(
+    #         os.path.basename(sim_filename),
+    #         simulator_df.shape[0],
+    #         simulator_df_biased.shape[0],
+    #         p_cutoff,
+    #     )
+    # )
+    simulator_df = simulator_df[["chr", "pos", "alt_binomial_p"]]
 
-    return simulator_df_biased
+    return simulator_df
 
 
-def generate_modelCount(filename, simulator_df_biased=None, shapeit2_input=None):
+def generate_modelCount(prefix, filename, simulator_df=None, shapeit2_input=None):
     base_out = os.path.splitext(filename)[0]
 
     if shapeit2_input is None:
@@ -200,20 +200,39 @@ def generate_modelCount(filename, simulator_df_biased=None, shapeit2_input=None)
                 "altRatio",
             ]
         ]
-    if simulator_df_biased is not None:
-        overlapped_variants = data.merge(
-            simulator_df_biased, on=["chr", "pos"], how="inner"
-        )
+    if simulator_df is not None:
+        overlapped_variants = data.merge(simulator_df, on=["chr", "pos"], how="inner")
         logging.debug(
             "{0} het SNPs with alignment bias found in real data".format(
                 overlapped_variants.shape[0],
             )
         )
-        merged = data.merge(
-            simulator_df_biased, on=["chr", "pos"], how="left", indicator=True
+        p_cutoff = 0.05
+        simulator_df_biased = overlapped_variants[
+            overlapped_variants["alt_binomial_p"] > p_cutoff
+        ]
+        name = prefix.split("_")[0] + "_splice_simulator"
+        sim_path = (
+            "/Users/scarlett/allenlab/BEASTIE_other_example/"
+            + name
+            + "/output/s0.5_a0.05_sinCov0_totCov1_W1000K1000/tmp/"
         )
-        merged = merged[merged["_merge"] == "left_only"]
-        gene_df_filtered = merged[
+        sim_filename = os.path.join(
+            sim_path, f"TEMP.{name}_hetSNP_intersected_filtered.tsv"
+        )
+        logging.debug(
+            "{0} has {1} het SNPs, {2} het SNPs did not pass alignment bias filtering p-val<= {3}".format(
+                os.path.basename(sim_filename),
+                simulator_df.shape[0],
+                simulator_df_biased.shape[0],
+                p_cutoff,
+            )
+        )
+        # merged = data.merge(
+        #    simulator_df_biased, on=["chr", "pos"], how="left", indicator=True
+        # )
+        # merged = merged[merged["_merge"] == "left_only"]
+        gene_df_filtered = simulator_df_biased[
             [
                 "chr",
                 "chrN",

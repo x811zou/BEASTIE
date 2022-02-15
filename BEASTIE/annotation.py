@@ -9,7 +9,6 @@ import multiprocessing
 import os
 import pandas as pd
 from pkg_resources import resource_filename
-
 from .helpers import runhelper
 
 ANNOTATION_ALGORITH = "parallel_join"  #'constant_memory'
@@ -20,10 +19,10 @@ def annotateAF(ancestry, hetSNP, out_AF):
     if ANNOTATION_ALGORITH == "parallel_join":
         annotateAFConstantMemoryParallel(ancestry, hetSNP, out_AF)
     elif ANNOTATION_ALGORITH == "constant_memory":
-        AF_file = resource_filename("BEASTIE", "reference/AF_1_22_trimmed2.csv.gz")
+        AF_file = resource_filename("BEASTIE", "reference/AF/AF_1_22_trimmed2.csv.gz")
         annotateAFConstantMemory(ancestry, hetSNP, out_AF, AF_file)
     else:
-        AF_file = resource_filename("BEASTIE", "reference/AF_1_22_trimmed2.csv")
+        AF_file = resource_filename("BEASTIE", "reference/AF/AF_1_22_trimmed2.csv")
         annotateAFPandas(ancestry, hetSNP, out_AF, AF_file)
 
     logging.info("..... finish annotating AF for SNPs, file save at {0}".format(out_AF))
@@ -55,7 +54,7 @@ def annotateAFPandas(ancestry, hetSNP, out_AF, AF_file):
 
 
 def annotateCHRLines(hetSNP_lines, chr, ancestry, hetSNP_chr_index, hetSNP_pos_index):
-    AF_filename = resource_filename("BEASTIE", f"reference/AF_{chr}.csv.gz")
+    AF_filename = resource_filename("BEASTIE", f"reference/AF/AF_{chr}.csv.gz")
     with gzip.open(AF_filename, mode="rt", newline="") as AF_file:
         af_reader = csv.reader(AF_file, delimiter=",", dialect="unix")
         af_header = next(af_reader)

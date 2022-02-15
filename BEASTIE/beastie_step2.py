@@ -133,7 +133,9 @@ def run(
         file_for_lambda,
         base_modelin,
         base_modelin_error,
-    ) = generate_modelCount(hetSNP_intersect_unique, biased_variant, shapeit2_input)
+    ) = generate_modelCount(
+        prefix, hetSNP_intersect_unique, biased_variant, shapeit2_input
+    )
 
     data21 = pd.read_csv(file_for_lambda, sep="\t", header=0, index_col=False)
     logging.debug(
