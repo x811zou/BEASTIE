@@ -75,6 +75,7 @@ def create_file_name(prefix, tmp_path, shapeit2_input):
 def run(
     shapeit2_input,
     hetSNP_intersect_unique,
+    hetSNP_intersect_unique_sim,
     prefix,
     alpha,
     model,
@@ -121,12 +122,12 @@ def run(
         logging.info(
             "....... shapeit2 phasing is NOT provided, we take ALT as maternal, REF as paternal"
         )
-    if "simulator" in prefix:
+    if hetSNP_intersect_unique_sim is None:
         logging.info("....... simulator data is NOT provided")
         biased_variant = None
     else:
         logging.info("....... simulator data is provided")
-        biased_variant = add_simulationData(prefix, p_cutoff)
+        biased_variant = add_simulationData(hetSNP_intersect_unique_sim)
 
     (
         file_for_LDannotation,

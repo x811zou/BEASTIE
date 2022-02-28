@@ -122,17 +122,7 @@ def add_shapepit2(
         )
 
 
-def add_simulationData(prefix, p_cutoff):
-
-    name = prefix.split("_")[0] + "_splice_simulator"
-    sim_path = (
-        "/Users/scarlett/allenlab/BEASTIE_other_example/"
-        + name
-        + "/output/s0.5_a0.05_sinCov0_totCov1_W1000K1000/tmp/"
-    )
-    sim_filename = os.path.join(
-        sim_path, f"TEMP.{name}_hetSNP_intersected_filtered.tsv"
-    )
+def add_simulationData(sim_filename):
     simulator_df = pd.read_csv(sim_filename, sep="\t", header=0, index_col=False)
     simulator_df["alt_binomial_p"] = simulator_df.apply(
         lambda x: binom_test(
@@ -152,8 +142,8 @@ def add_simulationData(prefix, p_cutoff):
     #         p_cutoff,
     #     )
     # )
+    simulator_df.to_csv(sim_filename, index=False, sep="\t", header=True)
     simulator_df = simulator_df[["chr", "pos", "alt_binomial_p"]]
-
     return simulator_df
 
 
@@ -166,64 +156,62 @@ def generate_modelCount(prefix, filename, simulator_df=None, shapeit2_input=None
         data = gene_df
         data["patCount"] = data["refCount"]
         data["matCount"] = data["altCount"]
-        data = data[
-            [
-                "chr",
-                "chrN",
-                "pos",
-                "rsid",
-                "AF",
-                "geneID",
-                "genotype",
-                "patCount",
-                "matCount",
-                "totalCount",
-                "altRatio",
-            ]
-        ]
     else:
         filename = f"{base_out}.shapeit2.dropNA.tsv"
         gene_df = pd.read_csv(filename, sep="\t", header=0, index_col=False)
         data = gene_df
-        data = data[
-            [
-                "chr",
-                "chrN",
-                "pos",
-                "rsid",
-                "AF",
-                "geneID",
-                "genotype",
-                "patCount",
-                "matCount",
-                "totalCount",
-                "altRatio",
-            ]
+    data = data[
+        [
+            "chr",
+            "chrN",
+            "pos",
+            "patCount",
+            "matCount",
+            "totalCount",
+            "altRatio",
+            "rsid",
+            "AF",
+            "geneID",
+            "genotype",
         ]
+    ]
     if simulator_df is not None:
         overlapped_variants = data.merge(simulator_df, on=["chr", "pos"], how="inner")
+        base_out = os.path.splitext(filename)[0]
+        beforeFilter_filename = f"{base_out}_alignBiasbeforeFilter.tsv"
+        overlapped_variants.to_csv(
+            beforeFilter_filename, index=False, sep="\t", header=True
+        )
+        Notoverlapped_variants = data.drop_duplicates().merge(
+            simulator_df.drop_duplicates(),
+            on=["chr", "pos"],
+            how="left",
+            indicator=True,
+        )
+        Notoverlapped_variants = Notoverlapped_variants[
+            Notoverlapped_variants["_merge"] == "left_only"
+        ]
+        base_out = os.path.splitext(filename)[0]
+        Notoverlapped_variants_filename = f"{base_out}_notoverlapped.tsv"
+        Notoverlapped_variants.to_csv(
+            Notoverlapped_variants_filename, index=False, sep="\t", header=True
+        )
+
         logging.debug(
-            "{0} het SNPs with alignment bias found in real data".format(
+            "{0} het SNPs in input data, {1} het SNPs in simulation data, overlapped het SNPs {2} in real data, not overlapped {3}".format(
+                data.shape[0],
+                simulator_df.shape[0],
                 overlapped_variants.shape[0],
+                Notoverlapped_variants.shape[0],
             )
         )
         p_cutoff = 0.05
         simulator_df_biased = overlapped_variants[
             overlapped_variants["alt_binomial_p"] > p_cutoff
         ]
-        name = prefix.split("_")[0] + "_splice_simulator"
-        sim_path = (
-            "/Users/scarlett/allenlab/BEASTIE_other_example/"
-            + name
-            + "/output/s0.5_a0.05_sinCov0_totCov1_W1000K1000/tmp/"
-        )
-        sim_filename = os.path.join(
-            sim_path, f"TEMP.{name}_hetSNP_intersected_filtered.tsv"
-        )
+
         logging.debug(
-            "{0} has {1} het SNPs, {2} het SNPs did not pass alignment bias filtering p-val<= {3}".format(
-                os.path.basename(sim_filename),
-                simulator_df.shape[0],
+            "{0} overlapped het SNPs pass alignment bias filtering p-val > {1}".format(
                 simulator_df_biased.shape[0],
                 p_cutoff,
             )
@@ -237,14 +225,15 @@ def generate_modelCount(prefix, filename, simulator_df=None, shapeit2_input=None
                 "chr",
                 "chrN",
                 "pos",
-                "rsid",
-                "AF",
-                "geneID",
-                "genotype",
                 "patCount",
                 "matCount",
                 "totalCount",
                 "altRatio",
+                "alt_binomial_p",
+                "rsid",
+                "AF",
+                "geneID",
+                "genotype",
             ]
         ]
         logging.debug(

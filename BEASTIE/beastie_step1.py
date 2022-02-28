@@ -5,6 +5,7 @@
 import os
 import sys
 import logging
+from unittest.mock import NonCallableMagicMock
 import pandas as pd
 from pathlib import Path
 from pkg_resources import resource_filename
@@ -16,18 +17,7 @@ from .parse_mpileup import Parse_mpileup_allChr
 
 
 def check_file_existence(
-    prefix,
-    in_path,
-    output_path,
-    tmp_path,
-    model,
-    vcf,
-    ref_dir,
-    pileup,
-    hetSNP,
-    parsed_pileup,
-    chr_start,
-    chr_end,
+    in_path, model, vcf, ref_dir, pileup, simulation_pileup, shapeit2
 ):
     ##### STAN model
     if not os.path.exists(model):
@@ -35,6 +25,8 @@ def check_file_existence(
             "Oops! STAN model {0} doesn't exist. Please try again ...".format(model)
         )
         sys.exit(1)
+    else:
+        logging.info("Great! STAN model {0} exists.".format(model))
     ##### vcf & vcfgz
     vcfgz = "{0}.gz".format(vcf)
     vcfgztbi = "{0}.tbi".format(vcfgz)
@@ -61,6 +53,8 @@ def check_file_existence(
         runhelper(cmd)
         cmd = "tabix -fp vcf %s" % (vcfgz)
         runhelper(cmd)
+    else:
+        logging.info("Great! VCF {0} & VCF.GZ {1} exists.".format(vcf, vcfgz))
     ##### reference directory : AF file and gencode directory
     ref_dir = resource_filename("BEASTIE", "reference/")
     if not os.path.exists(ref_dir):
@@ -70,6 +64,8 @@ def check_file_existence(
             )
         )
         sys.exit(1)
+    else:
+        logging.info("Great! REFERENCE path {0} exists.".format(ref_dir))
     ##### pileup_file
     pileup_file = os.path.join(in_path, pileup)
     if not os.path.isfile(pileup_file):
@@ -78,58 +74,73 @@ def check_file_existence(
                 pileup, in_path
             )
         )
-    ##### hetSNP_file
-    if hetSNP is not None:
-        hetSNP_file = in_path + hetSNP
-        if not os.path.isfile(hetSNP_file):
-            logging.warning(
-                "Alright, hetSNP file {0} doesn't exist in {1}. We will generate that for you ...".format(
-                    hetSNP, in_path
+    else:
+        logging.info("Great! pileup file {0} exists.".format(pileup))
+    ##### simulation pileup_file
+    if simulation_pileup is not None:
+        simulation_pileup_file = os.path.join(in_path, simulation_pileup)
+        if not os.path.isfile(simulation_pileup_file):
+            logging.error(
+                "Oops!  simulation pileup file {0} doesn't exist in {1}. Please try again ...".format(
+                    simulation_pileup, in_path
                 )
             )
         else:
-            logging.warning(
-                "Found existed hetSNP file {0} doesn't exist in {1}.".format(
-                    hetSNP, in_path
+            logging.info("Great! simulation pileup file {0} exists.".format(pileup))
+
+    ##### shapeit2_file
+    if shapeit2 is not None:
+        shapeit2_file = os.path.join(in_path, shapeit2)
+        if not os.path.isfile(shapeit2_file):
+            logging.error(
+                "Oops!  shapeit2 file {0} doesn't exist in {1}. Please try again ...".format(
+                    shapeit2, in_path
                 )
             )
-    else:
-        hetSNP_file = os.path.join(
-            output_path, f"{prefix}_hetSNP_chr{chr_start}-{chr_end}.tsv"
-        )
-        logging.info("We will generate {0} for you ...".format(hetSNP_file))
-    ##### TEMP output generation: hetSNP_file
-    hetSNP_intersect_unique_file = os.path.join(
-        tmp_path, f"TEMP.{prefix}_hetSNP_intersected_filtered.tsv"
-    )
+        else:
+            logging.info("Great! shapeit2 file {0} exists.".format(shapeit2_file))
+    # ##### TEMP output generation: hetSNP_file
+    # hetSNP_intersect_unique_file = os.path.join(
+    #     tmp_path, f"TEMP.{prefix}_hetSNP_intersected_filtered.tsv"
+    # )
 
-    logging.info(
-        "We will generate intermediate file {0} ...".format(
-            hetSNP_intersect_unique_file
-        )
-    )
+    # logging.info(
+    #     "We will generate intermediate file {0} ...".format(
+    #         hetSNP_intersect_unique_file
+    #     )
+    # )
 
-    ##### parsed_pileup_file
-    if parsed_pileup is not None:
-        parsed_pileup_file = os.path.join(in_path, parsed_pileup)
-        if not os.path.isfile(parsed_pileup_file):
-            logging.warning(
-                "Alright, parsed_pileup file {0} doesn't exist in {1}. We will generate that for you ...".format(
-                    parsed_pileup, in_path
-                )
-            )
-    else:
-        parsed_pileup_file = os.path.join(
-            output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv"
-        )
-        logging.info("We will generate {0} for you ...".format(parsed_pileup_file))
-    return (
-        vcfgz,
-        pileup_file,
-        hetSNP_file,
-        hetSNP_intersect_unique_file,
-        parsed_pileup_file,
-    )
+    # ##### parsed_pileup_file
+    # if parsed_pileup is not None:
+    #     parsed_pileup_file = os.path.join(in_path, parsed_pileup)
+    #     if not os.path.isfile(parsed_pileup_file):
+    #         logging.warning(
+    #             "Alright, parsed_pileup file {0} doesn't exist in {1}. We will generate that for you ...".format(
+    #                 parsed_pileup, in_path
+    #             )
+    #         )
+    # else:
+    #     parsed_pileup_file = os.path.join(
+    #         output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv"
+    #     )
+    #     logging.info("We will generate {0} for you ...".format(parsed_pileup_file))
+
+    # ##### parsed_pileup_file for simulation data
+    # if simulation_pileup is not None:
+    #     simulation_parsed_pileup_file = os.path.join(in_path, simulation_parsed_pileup)
+    #     if not os.path.isfile(simulation_parsed_pileup_file):
+    #         logging.warning(
+    #             "Alright, parsed_pileup file for simulation data {0} doesn't exist in {1}. We will generate that for you ...".format(
+    #                 simulation_parsed_pileup, in_path
+    #             )
+    #         )
+    # else:
+    #     parsed_pileup_file = os.path.join(
+    #         output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv"
+    #     )
+    #     logging.info("We will generate {0} for you ...".format(parsed_pileup_file))
+
+    return (vcfgz, pileup_file)
 
 
 def run(
@@ -149,37 +160,23 @@ def run(
     min_single_cov,
     read_length,
     pileup,
-    hetSNP,
-    parsed_pileup,
+    simulation_pileup,
+    shapeit2_file,
 ):
-    (
-        vcfgz,
-        pileup,
-        hetSNP,
-        hetSNP_intersect_unique,
-        parsed_pileup,
-    ) = check_file_existence(
-        prefix,
-        in_path,
-        output_path,
-        tmp_path,
-        model,
-        vcf,
-        ref_dir,
-        pileup,
-        hetSNP,
-        parsed_pileup,
-        chr_start,
-        chr_end,
+    #####
+    ##### 0.0 Check input file existence
+    #####
+    (vcfgz, pileup) = check_file_existence(
+        in_path, model, vcf, ref_dir, pileup, simulation_pileup, shapeit2_file
     )
 
     #####
     ##### 1.1 Generate hetSNP file: extract heterozygous bi-allelic SNPs for specific chromosomes from all gencode transcripts
     #####
-
+    hetSNP = os.path.join(output_path, f"{prefix}_hetSNP_chr{chr_start}-{chr_end}.tsv")
+    logging.info("=================")
+    logging.info("================= Starting common step 1.1")
     if not os.path.exists(hetSNP):
-        logging.info("=================")
-        logging.info("================= Starting common step 1.1")
         logging.info("....... start extracting heterozygous bi-allelic SNPs from VCF")
         count_all_het_sites(
             prefix,
@@ -190,8 +187,8 @@ def run(
             gencode_path,
         )
     else:
-        logging.info("=================")
         logging.info("================= Skipping common step 1.1")
+        logging.info("=================")
     data11 = pd.read_csv(hetSNP, sep="\t", header=0, index_col=False)
     logging.debug(
         "output {0} has {1} het SNPs from VCF file".format(
@@ -210,46 +207,15 @@ def run(
         )
 
     #####
-    ##### 1.2 Generate parsed pileup file: parse samtools mpile up output files
+    ##### 1.2 Annotation: AF
     #####
-    if not os.path.exists(parsed_pileup):
-        logging.info("=================")
-        logging.info("================= Starting common step 1.2")
-        logging.info("....... start parsing samtools pileup result")
-        Parse_mpileup_allChr(
-            vcf_sample_name, vcfgz, pileup, min_total_cov, min_single_cov, parsed_pileup
-        )
-    else:
-        logging.info("=================")
-        logging.info("================= Skipping common step 1.2")
-    data12 = pd.read_csv(parsed_pileup, sep="\t", header=0, index_col=False)
-    logging.debug(
-        "output {0} has {1} variants from parsing pileup file".format(
-            os.path.basename(parsed_pileup), data12.shape[0]
-        )
-    )
-    if data12.shape[1] < 2:
-        os.remove(parsed_pileup)
-        logging.error("....... existed parsed pileup file is empty, please try again!")
-        sys.exit(1)
-    else:
-        logging.info(
-            "....... {0} save to {1}".format(
-                os.path.basename(parsed_pileup), os.path.dirname(parsed_pileup)
-            )
-        )
-
-    #####
-    ##### 1.3 Annotation: AF
-    #####
+    logging.info("=================")
+    logging.info("================= Starting common step 1.2")
     hetSNP_AF = f"{os.path.splitext(hetSNP)[0]}_AF.tsv"
     if os.path.isfile(hetSNP_AF):
+        logging.info("================= Skipping common step 1.2")
         logging.info("=================")
-        logging.info("================= Skipping common step 1.3")
-
     else:
-        logging.info("=================")
-        logging.info("================= Starting common step 1.3")
         logging.info("..... start annotating hetSNP from 1.1 with AF from 1000 Genome")
         annotateAF(ancestry, hetSNP, hetSNP_AF)
 
@@ -273,28 +239,135 @@ def run(
         )
 
     #####
+    ##### 1.3 Generate parsed pileup file : parse samtools mpile up output files
+    #####
+    parsed_pileup = os.path.join(
+        output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv"
+    )
+    logging.info("=================")
+    logging.info("================= Starting common step 1.3")
+    # required data
+    if simulation_pileup is None:
+        simulation_parsed_pileup = None
+        if not os.path.exists(parsed_pileup):
+            logging.info("....... start parsing samtools pileup result for input data")
+            Parse_mpileup_allChr(
+                vcf_sample_name,
+                vcfgz,
+                pileup,
+                min_total_cov,
+                min_single_cov,
+                parsed_pileup,
+            )
+        else:
+            logging.info("================= Skipping common step 1.3")
+            logging.info("=================")
+    # required data + simulation data
+    else:
+        simulation_parsed_pileup = os.path.join(
+            output_path,
+            f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.simulation.tsv",
+        )
+        if not os.path.exists(parsed_pileup):
+            logging.info("....... start parsing samtools pileup result for input data")
+            Parse_mpileup_allChr(
+                vcf_sample_name,
+                vcfgz,
+                pileup,
+                min_total_cov,
+                min_single_cov,
+                parsed_pileup,
+            )
+        if not os.path.exists(simulation_parsed_pileup):
+            logging.info(
+                "....... start parsing samtools pileup result for simulation data"
+            )
+            Parse_mpileup_allChr(
+                vcf_sample_name,
+                vcfgz,
+                simulation_pileup,
+                min_total_cov,
+                min_single_cov,
+                simulation_parsed_pileup,
+            )
+        if os.path.exists(parsed_pileup) and os.path.exists(simulation_parsed_pileup):
+            logging.info("================= Skipping common step 1.3")
+            logging.info("=================")
+
+    data12 = pd.read_csv(parsed_pileup, sep="\t", header=0, index_col=False)
+    logging.debug(
+        "output {0} has {1} variants from parsing pileup file".format(
+            os.path.basename(parsed_pileup), data12.shape[0]
+        )
+    )
+    if data12.shape[1] < 2:
+        os.remove(parsed_pileup)
+        logging.error("....... existed parsed pileup file is empty, please try again!")
+        sys.exit(1)
+    else:
+        logging.info(
+            "....... {0} save to {1}".format(
+                os.path.basename(parsed_pileup), os.path.dirname(parsed_pileup)
+            )
+        )
+
+    if simulation_pileup is not None:
+        data122 = pd.read_csv(
+            simulation_parsed_pileup, sep="\t", header=0, index_col=False
+        )
+        logging.debug(
+            "output {0} has {1} variants from parsing pileup file".format(
+                os.path.basename(simulation_parsed_pileup), data122.shape[0]
+            )
+        )
+        if data122.shape[1] < 2:
+            os.remove(simulation_parsed_pileup)
+            logging.error(
+                "....... existed parsed pileup file for simulation data is empty, please try again!"
+            )
+            sys.exit(1)
+        else:
+            logging.info(
+                "....... {0} save to {1}".format(
+                    os.path.basename(simulation_parsed_pileup),
+                    os.path.dirname(simulation_parsed_pileup),
+                )
+            )
+
+    #####
     ##### 1.4 Combine hetSNPs and parsed mpileup & thinning reads: one reads only count once
     #####
+    hetSNP_intersect_unique = os.path.join(
+        tmp_path, f"TEMP.{prefix}_hetSNP_intersected_filtered.tsv"
+    )
+    logging.info("=================")
+    logging.info("================= Starting specific step 1.4")
+    if simulation_pileup is not None:
+        hetSNP_intersect_unique_sim = os.path.join(
+            tmp_path, f"TEMP.{prefix}_hetSNP_intersected_filtered.simulation.tsv"
+        )
+    else:
+        hetSNP_intersect_unique_sim = None
+
     if not os.path.exists(hetSNP_intersect_unique):
-        logging.info("=================")
-        logging.info("================= Starting specific step 1.4")
         logging.info(
             "....... start filtering variants with min total counts {0}, and min single allele counts {1}, each read of read length {2} only count for each variant".format(
                 min_total_cov, min_single_cov, read_length
             )
         )
         Intersect_exonicHetSnps(
-            prefix,
             parsed_pileup,
+            simulation_parsed_pileup,
             hetSNP_AF,
             read_length,
             min_total_cov,
             min_single_cov,
             hetSNP_intersect_unique,
+            hetSNP_intersect_unique_sim,
         )
     else:
-        logging.info("=================")
         logging.info("================= Skipping specific step 1.4")
+        logging.info("=================")
     data14 = pd.read_csv(hetSNP_intersect_unique, sep="\t", header=0, index_col=False)
     logging.debug(
         "output {0} has {1} het SNPs with AF annotation after taking intersection between output from 1.2 and 1.3".format(
@@ -316,9 +389,30 @@ def run(
                 os.path.dirname(hetSNP_intersect_unique),
             )
         )
+    if hetSNP_intersect_unique_sim is not None:
+        data144 = pd.read_csv(
+            hetSNP_intersect_unique_sim, sep="\t", header=0, index_col=False
+        )
+        logging.debug(
+            "output {0} has {1} het SNPs with AF annotation after taking intersection between output from 1.2 and 1.3".format(
+                os.path.basename(hetSNP_intersect_unique_sim), data144.shape[0]
+            )
+        )
+        if data144.shape[1] < 2:
+            os.remove(hetSNP_intersect_unique_sim)
+            logging.error(
+                "....... existed {0} with filtered sites file is empty, please try again!".format(
+                    os.path.basename(hetSNP_intersect_unique_sim)
+                )
+            )
+            sys.exit(1)
+        else:
+            logging.info(
+                "....... {0} save to {1}".format(
+                    os.path.basename(hetSNP_intersect_unique_sim),
+                    os.path.dirname(hetSNP_intersect_unique_sim),
+                )
+            )
     logging.info("================= finish step1! ")
-    if "simulator" in prefix:
-        logging.info("....... skipping step2 for simulated data")
-        sys.exit()
 
-    return hetSNP_intersect_unique
+    return hetSNP_intersect_unique, hetSNP_intersect_unique_sim
