@@ -21,6 +21,7 @@ ConfigurationData = namedtuple(
         "vcf_file_name",
         "vcf_sample_name",
         "pileup_file_name",
+        "simulation_pileup_file_name",
         "shapeit2",
         "gencode_path",
         "ancestry",
@@ -77,6 +78,7 @@ def load_configuration(config_file):
         vcf_sample_name=inputs["vcf_sample_name"],
         pileup_file_name=inputs["pileup_file_name"],
         shapeit2=inputs.get("shapeit2", None),
+        simulation_pileup_file_name=inputs.get("simulation_pileup_file_name", None),
         gencode_path=inputs.get("gencode_path", None),
         ancestry=inputs["ancestry"],
         min_total_cov=int(inputs.get("min_total_cov", 0)),
@@ -115,6 +117,11 @@ def run(config):
     pileup_file = os.path.join(in_path, config.pileup_file_name)
     shapeit2_file = (
         os.path.join(in_path, config.shapeit2) if config.shapeit2 is not None else None
+    )
+    simulation_pileup_file = (
+        os.path.join(in_path, config.simulation_pileup_file_name)
+        if config.simulation_pileup_file_name is not None
+        else None
     )
     gencode_path = (
         config.gencode_path
@@ -162,7 +169,7 @@ def run(config):
         "======================================== step1: Processing raw data & annotating LD and AF information"
     )
     logging.info("======================================== ")
-    hetSNP_intersect_unique = beastie_step1.run(
+    hetSNP_intersect_unique, hetSNP_intersect_unique_sim = beastie_step1.run(
         config.prefix,
         config.vcf_sample_name,
         in_path,
@@ -179,8 +186,8 @@ def run(config):
         config.min_single_cov,
         config.read_length,
         pileup_file,
-        None,  # hetSNP
-        None,  # parsed_pileup
+        simulation_pileup_file,
+        shapeit2_file,
     )
     logging.info("======================================== ")
     logging.info(
@@ -190,6 +197,7 @@ def run(config):
     beastie_step2.run(
         shapeit2_file,
         hetSNP_intersect_unique,
+        hetSNP_intersect_unique_sim,
         config.prefix,
         config.alpha,
         model,
