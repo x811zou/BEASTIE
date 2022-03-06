@@ -9,8 +9,8 @@ import sys
 import pandas as pd
 from pkg_resources import resource_filename
 import gzip
-from BEASTIE.misc_tools.GffTranscriptReader import GffTranscriptReader
-from BEASTIE.misc_tools.Pipe import Pipe
+from .misc_tools.GffTranscriptReader import GffTranscriptReader
+from .misc_tools.Pipe import Pipe
 
 
 def chunk_iter(iter, n):
@@ -50,8 +50,15 @@ def isHeterozygous(genotype):
 
 
 def count_all_het_sites(
-    sample, vcfFilename, outputFilename, chr_start, chr_end, gencode_path
+    sample,
+    vcfFilename,
+    outputFilename,
+    chr_start,
+    chr_end,
+    gencode_path,
+    DEBUG_GENES=None,
 ):
+
     logging.info("..... We are looking at individual: {0}".format(sample))
     filename = os.path.splitext(str(outputFilename))[0]
     count = 0
@@ -69,9 +76,15 @@ def count_all_het_sites(
                     Num, len(geneList)
                 )
             )
+
             byGene = {}
             total_biSNP = 0
             region_str_to_transcripts = {}
+            if DEBUG_GENES is not None:
+                print(f"Debugging specific genes: {DEBUG_GENES}")
+                geneList = list(filter(lambda x: x.getId() in DEBUG_GENES, geneList))
+            # else:
+            #     print("Not debugging mode")
             for gene in geneList:
                 # print(gene.getSubstrate().strip("chr"))
                 if str(gene.getSubstrate().strip("chr")) == str(Num):
@@ -82,12 +95,15 @@ def count_all_het_sites(
                         byGene[geneID] = byGene.get(geneID, set())
                         chrom = transcript.getSubstrate()  # column 1
                         chromN = chrom.strip("chr")
+                        # rawExons = transcript.UTR
                         rawExons = transcript.getRawExons()
+                        # rawExons = transcript.exons
                         for exon in rawExons:
                             begin = exon.getBegin()  # column 7
                             end = exon.getEnd()  # column 8
-
                             region_str = f"{chromN}:{begin}-{end}"
+                            #
+                            # print(f"transcript {n} {chromN}:{begin}-{end}")
                             if not region_str in region_str_to_transcripts:
                                 region_str_to_transcripts[region_str] = []
                             # uncomment to debug duplicate transcript IDs as a possible optimization
@@ -95,7 +111,7 @@ def count_all_het_sites(
                             #     for existing in region_str_to_transcripts[region_str]:
                             #         print(f"existing transcript @ {region_str} {existing.getTranscriptId()} != {transcript.getTranscriptId()}")
                             region_str_to_transcripts[region_str].append(transcript)
-
+            # print(region_str_to_transcripts)
             CHUNK_SIZE = 1000
             outputs = []
             for x in chunk_iter(iter(region_str_to_transcripts.keys()), CHUNK_SIZE):
@@ -130,6 +146,7 @@ def count_all_het_sites(
                         continue
 
                     pos = int(fields[1])
+                    # print(f"pos: {pos} region_str: {region_str}")
                     rs = fields[2]
 
                     for transcript in transcripts:
@@ -138,30 +155,33 @@ def count_all_het_sites(
                         chromN = int(chrom.strip("chr"))
                         total_biSNP += 1
                         chr_pos = f"{chromN}_{pos}"
-                        byGene[geneID].add(chr_pos)
-                        data.append(
-                            [
-                                chrom,
-                                chromN,
-                                transcript.getGeneId(),
-                                pos,
-                                transcript.getTranscriptId(),
-                                transcriptCoord,
-                                rs,
-                                genotype,
-                            ]
-                        )
+                        if not chr_pos in byGene[geneID]:
+                            # print(chr_pos)
+                            byGene[geneID].add(chr_pos)
+                            data.append(
+                                [
+                                    chrom,
+                                    chromN,
+                                    pos,
+                                    transcript.getGeneId(),
+                                    transcript.getTranscriptId(),
+                                    transcriptCoord,
+                                    rs,
+                                    genotype,
+                                ]
+                            )
+                            # break
 
             data.sort(key=lambda r: (r[1], r[3]))
+            # print(data)
 
             out_stream = open(outputFile, "w")
             out_stream.write(
-                "chr\tchrN\tgeneID\tpos\ttranscriptID\ttranscript_pos\tSNP_id\tgenotype\n"
+                "chr\tchrN\tpos\tgeneID\ttranscriptID\ttranscript_pos\tSNP_id\tgenotype\n"
             )
             for r in data:
                 out_stream.write("\t".join(map(str, r)))
                 out_stream.write("\n")
-
             out_stream.close()
         else:
             logging.info("..... chr{0} existed".format(Num))
@@ -172,7 +192,9 @@ def count_all_het_sites(
         else:
             data = pd.read_csv(outputFile, sep="\t", header=0, index_col=False)
             data0 = pd.concat([data0, data])
-
+    # data0 = data0[
+    #     ["chr", "chrN", "pos", "transcriptID"，"transcript_pos", "geneID", "SNP_id", "genotype"]
+    # ]
     data0.drop_duplicates()
     data0.to_csv(outputFilename, sep="\t", header=True, index=False)
     for files in os.listdir(os.path.dirname(outputFilename)):
