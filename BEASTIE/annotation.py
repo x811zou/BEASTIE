@@ -278,7 +278,7 @@ def annotateLD_cache(input_path, out_path, pop, ldlink_token):
     df[["pair_pos", "r2", "d"]] = "NA"
 
     for info in ldlink_infos:
-        df.loc[info.pair[0], "pair_pos"] = info.pair[1]
+        df.loc[info.pair[0], "pair_pos"] = info.pair[1].split(":")[1]
         df.loc[info.pair[0], "r2"] = info.r2
         df.loc[info.pair[0], "d"] = info.d
 
