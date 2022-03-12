@@ -72,10 +72,37 @@ if (!file.exists(out_data)) {
   print("lambda prediction file exists!")
 }
 
-################################################ 2.1 predict phasing error ###################################
+################################################ 2 predict phasing error ###################################
 if (!file.exists(meta_error)) {
   print("meta file with phasing error not exists, has to run logistic reg!")
   sample_info<-read.delim(file.path(meta),header=TRUE,sep="\t")
+  data <- sample_info
+  data$chr<-factor(data$chr,levels = c("chr1","chr2", "chr3", "chr4","chr5","chr6","chr7","chr8","chr9","chr10","chr11","chr12", "chr13", "chr14","chr15","chr16","chr17","chr18","chr19","chr20","chr21","chr22"))   
+  data$pos<-as.integer(data$pos)
+  data$lag_pos=lag(data$pos)
+  data<-data%>%group_by(chr)%>%dplyr::mutate(lag_pos=ifelse(pos==dplyr::first(pos),NA,lag_pos))%>%ungroup()
+  data<-data%>%group_by(geneID)%>%dplyr::mutate(lag_pos=ifelse(pos==dplyr::first(pos),NA,lag_pos))%>%ungroup()
+  # data<-data%>%group_by(chr,pos)%>%slice(1)
+  #data_w_LD<-left_join(processed_exon,data_LD)
+  data_final_reginput<-data%>%
+      mutate(distance=pos-lag_pos)%>%
+      mutate(log10_distance=log10(distance))%>%
+      mutate(MAF=ifelse(AF>0.5,1-AF,AF))                 # the minimum AF for the current variant
+
+  data_final_reginput$lag_MAF=lag(data_final_reginput$MAF)
+
+  data_final_reginput<-data_final_reginput%>%            # MAF for the previous variant
+      mutate(min_MAF=ifelse(MAF>lag_MAF,lag_MAF,MAF))%>% # the mininum between the pair
+      mutate(diff_MAF=abs(MAF-lag_MAF))                  # the difference between the pair
+
+  data_final_reginput<-data_final_reginput%>%
+      group_by(geneID)%>%
+      arrange(chr,pos)%>%
+      mutate(diff_pos=pos-lag_pos)%>%
+      ungroup()
+
+  sample_info<-data_final_reginput%>%select(geneID,chr,pos,pair_pos,lag_pos,rsid,log10_distance,d,r2,MAF,lag_MAF,min_MAF,diff_MAF)
+
   cv.glmnet.fit.GIAB<- readRDS(file.path(beastie_wd, "LogisticReg_GIAB_fitted_phasing_error.rds"))
   x.test<-as.matrix(sample_info%>%dplyr::select(min_MAF,diff_MAF,log10_distance,r2,d)%>%
                       dplyr::mutate(min_MAF_diff_MAF=min_MAF*diff_MAF)%>%
