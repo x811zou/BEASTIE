@@ -324,12 +324,16 @@ def fetch_ldpairs(pairs, pop, ldlink_token, chrpos_to_rsid):
 
     if len(fetched_ldpairs):
         logging.debug(f"inserting {len(fetched_ldpairs)} values into cache")
-        cur = db.cursor()
-        cur.executemany(
-            "INSERT INTO ldpairs VALUES (?, ?, ?, ?)",
-            [(info.pair[0], info.pair[1], info.r2, info.d) for info in fetched_ldpairs],
-        )
-        cur.close()
+        with db:
+            cur = db.cursor()
+            cur.executemany(
+                "INSERT OR IGNORE INTO ldpairs VALUES (?, ?, ?, ?)",
+                [
+                    (info.pair[0], info.pair[1], info.r2, info.d)
+                    for info in fetched_ldpairs
+                ],
+            )
+            logging.debug(f"Inserted {cur.rowcount} rows into cache")
 
     db.close()
     return ldlink_infos
@@ -338,12 +342,20 @@ def fetch_ldpairs(pairs, pop, ldlink_token, chrpos_to_rsid):
 def get_cache_con(db_path):
     con = sqlite3.connect(db_path)
 
-    cur = con.cursor()
-    cur.execute(
-        "CREATE TABLE IF NOT EXISTS ldpairs (chrpos1 TEXT, chrpos2 TEXT, r2 REAL, d REAL)"
-    )
-    con.commit()
-    cur.close()
+    with con:
+        cur = con.cursor()
+        cur.execute(
+            """
+    CREATE TABLE IF NOT EXISTS ldpairs (
+        chrpos1 TEXT,
+        chrpos2 TEXT,
+        r2 REAL,
+        d REAL,
+
+        CONSTRAINT pair_pk PRIMARY KEY (chrpos1, chrpos2)
+    )"""
+        )
+        cur.close()
 
     return con
 
