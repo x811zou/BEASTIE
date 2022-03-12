@@ -236,7 +236,7 @@ def annotateLD(
     chr_end,
     meta,
 ):
-    USE_PYTHON_LD = False
+    USE_PYTHON_LD = True
     if USE_PYTHON_LD:
         annotateLD_cache(file_for_LDannotation, meta, ancestry, LD_token)
     else:
@@ -294,8 +294,8 @@ def fetch_ldpairs(pairs, pop, ldlink_token, chrpos_to_rsid):
     cur = db.cursor()
     for pair in pairs:
         cur.execute(
-            "SELECT r2, d FROM ldpairs WHERE chrpos1 = ? AND chrpos2 = ?",
-            (pair[0], pair[1]),
+            "SELECT r2, d FROM ldpairs WHERE chrpos1 = ? AND chrpos2 = ? AND ancestry = ?",
+            (pair[0], pair[1], pop),
         )
         row = cur.fetchone()
         if not row:
@@ -325,9 +325,9 @@ def fetch_ldpairs(pairs, pop, ldlink_token, chrpos_to_rsid):
         with db:
             cur = db.cursor()
             cur.executemany(
-                "INSERT OR IGNORE INTO ldpairs VALUES (?, ?, ?, ?)",
+                "INSERT OR IGNORE INTO ldpairs VALUES (?, ?, ?, ?, ?)",
                 [
-                    (info.pair[0], info.pair[1], info.r2, info.d)
+                    (info.pair[0], info.pair[1], pop, info.r2, info.d)
                     for info in fetched_ldpairs
                 ],
             )
@@ -347,10 +347,11 @@ def get_cache_con(db_path):
     CREATE TABLE IF NOT EXISTS ldpairs (
         chrpos1 TEXT,
         chrpos2 TEXT,
+        ancestry TEXT,
         r2 REAL,
         d REAL,
 
-        CONSTRAINT pair_pk PRIMARY KEY (chrpos1, chrpos2)
+        CONSTRAINT pair_pk PRIMARY KEY (chrpos1, chrpos2, ancestry)
     )"""
         )
         cur.close()
