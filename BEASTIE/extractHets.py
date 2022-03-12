@@ -102,8 +102,11 @@ def count_all_het_sites(
                             begin = exon.getBegin()  # column 7
                             end = exon.getEnd()  # column 8
                             region_str = f"{chromN}:{begin}-{end}"
+                            print(region_str)
                             #
-                            # print(f"transcript {n} {chromN}:{begin}-{end}")
+                            print(
+                                f"{geneID}-transcript {n} {transcript.getId()} {chromN}:{begin}-{end}"
+                            )
                             if not region_str in region_str_to_transcripts:
                                 region_str_to_transcripts[region_str] = []
                             # uncomment to debug duplicate transcript IDs as a possible optimization
@@ -155,8 +158,9 @@ def count_all_het_sites(
                         chromN = int(chrom.strip("chr"))
                         total_biSNP += 1
                         chr_pos = f"{chromN}_{pos}"
+                        # currently we are not includeing the variants that are already covered by genes processed before to ensure that not two genes share same variants
                         if not chr_pos in byGene[geneID]:
-                            # print(chr_pos)
+                            print(f"{transcript.getGeneId()} - {chr_pos}")
                             byGene[geneID].add(chr_pos)
                             data.append(
                                 [
