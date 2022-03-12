@@ -275,9 +275,10 @@ def annotateLD_cache(input_path, out_path, pop, ldlink_token):
 
     ldlink_infos = fetch_ldpairs(pairs, pop, ldlink_token, chrpos_to_rsid)
 
-    df[["r2", "d"]] = "NA"
+    df[["pair_pos", "r2", "d"]] = "NA"
 
     for info in ldlink_infos:
+        df.loc[info.pair[0], "pair_pos"] = info.pair[1]
         df.loc[info.pair[0], "r2"] = info.r2
         df.loc[info.pair[0], "d"] = info.d
 
