@@ -289,53 +289,49 @@ LDPairInfo = namedtuple("LDPairInfo", ["pair", "r2", "d"])
 
 
 def fetch_ldpairs(pairs, pop, ldlink_token, chrpos_to_rsid):
-    with get_cache_con("test_cache.db") as db:
-        ldlink_infos = []
-        pairs_to_fetch = []
+    db = get_cache_con("test_cache.db")
+    ldlink_infos = []
+    pairs_to_fetch = []
+    cur = db.cursor()
+    for pair in pairs:
+        cur.execute(
+            "SELECT r2, d FROM ldpairs WHERE chrpos1 = ? AND chrpos2 = ?",
+            (pair[0], pair[1]),
+        )
+        row = cur.fetchone()
+        if not row:
+            pairs_to_fetch.append(pair)
+        else:
+            ldlink_infos.append(LDPairInfo(pair, row[0], row[1]))
+    cur.close()
+
+    logging.debug(
+        f"Got {len(ldlink_infos)} hits and {len(pairs_to_fetch)} misses from {len(pairs)} pairs"
+    )
+
+    BATCH_SIZE = 400
+    batches = get_batches(pairs_to_fetch, BATCH_SIZE)
+    logging.debug(f"{len(batches)} batches to fetch run for {len(pairs)} pairs")
+
+    fetched_ldpairs = []
+    for i, batch in enumerate(batches):
+        logging.debug(f"Fetching batch {i+1} / {len(batches)} - {len(batch)} pairs")
+        batch_pairs = fetch_ldpairs_from_api(batch, pop, ldlink_token, chrpos_to_rsid)
+        fetched_ldpairs.extend(batch_pairs)
+        for pair in batch_pairs:
+            ldlink_infos.append(pair)
+
+    if len(fetched_ldpairs):
+        logging.debug(f"inserting {len(fetched_ldpairs)} values into cache")
         cur = db.cursor()
-        for pair in pairs:
-            cur.execute(
-                "SELECT r2, d FROM ldpairs WHERE chrpos1 = ? AND chrpos2 = ?",
-                (pair[0], pair[1]),
-            )
-            row = cur.fetchone()
-            if not row:
-                pairs_to_fetch.append(pair)
-            else:
-                ldlink_infos.append(LDPairInfo(pair, row[0], row[1]))
+        cur.executemany(
+            "INSERT INTO ldpairs VALUES (?, ?, ?, ?)",
+            [(info.pair[0], info.pair[1], info.r2, info.d) for info in fetched_ldpairs],
+        )
         cur.close()
 
-        logging.debug(
-            f"Got {len(ldlink_infos)} hits and {len(pairs_to_fetch)} misses from {len(pairs)} pairs"
-        )
-
-        BATCH_SIZE = 400
-        batches = get_batches(pairs_to_fetch, BATCH_SIZE)
-        logging.debug(f"{len(batches)} batches to fetch run for {len(pairs)} pairs")
-
-        fetched_ldpairs = []
-        for i, batch in enumerate(batches):
-            logging.debug(f"Fetching batch {i+1} / {len(batches)} - {len(batch)} pairs")
-            batch_pairs = fetch_ldpairs_from_api(
-                batch, pop, ldlink_token, chrpos_to_rsid
-            )
-            fetched_ldpairs.extend(batch_pairs)
-            for pair in batch_pairs:
-                ldlink_infos.append(pair)
-
-        if len(fetched_ldpairs):
-            logging.debug(f"inserting {len(fetched_ldpairs)} values into cache")
-            cur = db.cursor()
-            cur.executemany(
-                "INSERT INTO ldpairs VALUES (?, ?, ?, ?)",
-                [
-                    (info.pair[0], info.pair[1], info.r2, info.d)
-                    for info in fetched_ldpairs
-                ],
-            )
-            cur.close()
-
-        return ldlink_infos
+    db.close()
+    return ldlink_infos
 
 
 def get_cache_con(db_path):
