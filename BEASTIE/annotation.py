@@ -258,7 +258,6 @@ def annotateLD_cache(input_path, out_path, pop, ldlink_token):
 
     pairs = []
     chrpos_to_rsid = {}
-    rsid_to_chrpos = {}
     # TODO make this part faster?
     prev = df.iloc[0]
     for i in range(1, len(df)):
@@ -267,8 +266,6 @@ def annotateLD_cache(input_path, out_path, pop, ldlink_token):
             pairs.append([cur.name, prev.name])
             chrpos_to_rsid[cur.name] = cur.rsid
             chrpos_to_rsid[prev.name] = prev.rsid
-            rsid_to_chrpos[cur.rsid] = cur.name
-            rsid_to_chrpos[prev.rsid] = prev.name
         prev = cur
 
     ldlink_infos = fetch_ldpairs(pairs, pop, ldlink_token, chrpos_to_rsid)
@@ -280,7 +277,6 @@ def annotateLD_cache(input_path, out_path, pop, ldlink_token):
         df.loc[info.pair[0], "r2"] = info.r2
         df.loc[info.pair[0], "d"] = info.d
 
-    df.reset_index()
     df.to_csv(out_path, index=False, sep="\t")
 
 
