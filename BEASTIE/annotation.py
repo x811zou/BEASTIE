@@ -8,6 +8,7 @@ import gzip
 import logging
 import multiprocessing
 import os
+from pathlib import Path
 import sqlite3
 import pandas as pd
 from pkg_resources import resource_filename
@@ -235,10 +236,13 @@ def annotateLD(
     chr_start,
     chr_end,
     meta,
+    ldlink_cache_dir,
 ):
     USE_PYTHON_LD = True
     if USE_PYTHON_LD:
-        annotateLD_cache(file_for_LDannotation, meta, ancestry, LD_token)
+        annotateLD_cache(
+            file_for_LDannotation, meta, ancestry, LD_token, ldlink_cache_dir
+        )
     else:
         annotate_ld_new = resource_filename("BEASTIE", "annotate_LD_new.R")
         beastie_wd = resource_filename("BEASTIE", ".")
@@ -249,7 +253,7 @@ def annotateLD(
     logging.info(f"..... finish annotating LD for SNP pairs, file save at {meta}")
 
 
-def annotateLD_cache(input_path, out_path, pop, ldlink_token):
+def annotateLD_cache(input_path, out_path, pop, ldlink_token, cache_dir):
     logging.info(f"Using annotateLD with python API and sqlite cache")
 
     df = pandas.read_csv(input_path, sep="\t", header=0)
@@ -268,7 +272,7 @@ def annotateLD_cache(input_path, out_path, pop, ldlink_token):
             chrpos_to_rsid[prev.name] = prev.rsid
         prev = cur
 
-    ldlink_infos = fetch_ldpairs(pairs, pop, ldlink_token, chrpos_to_rsid)
+    ldlink_infos = fetch_ldpairs(pairs, pop, chrpos_to_rsid, ldlink_token, cache_dir)
 
     df[["pair_pos", "r2", "d"]] = "NA"
 
@@ -283,8 +287,9 @@ def annotateLD_cache(input_path, out_path, pop, ldlink_token):
 LDPairInfo = namedtuple("LDPairInfo", ["pair", "r2", "d"])
 
 
-def fetch_ldpairs(pairs, pop, ldlink_token, chrpos_to_rsid):
-    db = get_cache_con("test_cache.db")
+def fetch_ldpairs(pairs, pop, chrpos_to_rsid, ldlink_token, cache_dir):
+    Path(cache_dir).mkdir(parents=True, exist_ok=True)
+    db = get_cache_con(os.path.join(cache_dir, "ldlink_cache.db"))
     ldlink_infos = []
     pairs_to_fetch = []
     cur = db.cursor()
@@ -334,6 +339,7 @@ def fetch_ldpairs(pairs, pop, ldlink_token, chrpos_to_rsid):
 
 
 def get_cache_con(db_path):
+    logging.debug(f"Loading LDLink cache from {db_path}")
     con = sqlite3.connect(db_path)
 
     with con:

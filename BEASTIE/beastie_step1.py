@@ -20,7 +20,7 @@ def check_file_existence(
     in_path, model, vcf, ref_dir, pileup, simulation_pileup, shapeit2
 ):
     ##### STAN model
-    if not os.path.exists(model):
+    if False and not os.path.exists(model):
         logging.error(
             "Oops! STAN model {0} doesn't exist. Please try again ...".format(model)
         )

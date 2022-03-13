@@ -42,6 +42,7 @@ ConfigurationData = namedtuple(
         "WARMUP",
         "KEEPER",
         "output_dir",
+        "ldlink_cache_dir",
     ],
 )
 
@@ -98,6 +99,7 @@ def load_configuration(config_file):
         WARMUP=int(inputs.get("WARMUP", 1000)),
         KEEPER=int(inputs.get("KEEPER", 1000)),
         output_dir=outputs["out_path"],
+        ldlink_cache_dir=inputs.get("ldlink_cache_dir", "~/.beastie"),
     )
 
     # ======== Pre-requisite: pre-defined directories and input files and reference files/directories
@@ -214,6 +216,7 @@ def run(config):
         config.LD_token,
         config.chr_start,
         config.chr_end,
+        config.ldlink_cache_dir,
     )
 
 
