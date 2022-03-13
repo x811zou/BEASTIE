@@ -34,17 +34,19 @@ def incorporate_shapeit2(
     shapeit2,
     hetSNP_intersect_unique,
     filename,
-    version="V2",
+    version="V1",
 ):
+    # print(hetSNP_intersect_unique)
     hetSNP_shapeit2 = pd.merge(
-        hetSNP_intersect_unique, shapeit2, how="left", on=["chr", "pos"]
+        hetSNP_intersect_unique, shapeit2, how="inner", on=["chr", "pos"]
     )
+
     hetSNP_shapeit2 = hetSNP_shapeit2[
         [
             "chr",
             "chrN",
             "pos",
-            "rsid",
+            "SNP_id",
             "AF",
             "geneID",
             "genotype",
@@ -56,10 +58,11 @@ def incorporate_shapeit2(
             "e_maternal",
         ]
     ]
+
     base_out = os.path.splitext(filename)[0]
     hetSNP_intersect_unique_shapeit2 = f"{base_out}.shapeit2.tsv"
-    hetSNP_intersect_unique_shapeit2_dropNA = f"{base_out}.shapeit2.dropNA.tsv"
-    #### version1
+    hetSNP_intersect_unique_shapeit2_dropNA = f"{base_out}.shapeit2.keepfewcol.tsv"
+    #### version1: with shapeit2 phasing
     if version == "V1":
         geneIDs = hetSNP_shapeit2["geneID"].unique()
         new_df = pd.DataFrame()
@@ -69,31 +72,32 @@ def incorporate_shapeit2(
             edited_selected_gene = change_phasing(selected_gene)
             new_df = new_df.append(edited_selected_gene)
 
-    #### version2
-    else:
-        new_df = hetSNP_shapeit2
-        row_n = new_df.shape[0]
-        s = new_df["e_paternal"] == 1
-        new_df["patCount"] = new_df["refCount"]
-        new_df["matCount"] = new_df["altCount"]
-        new_df.loc[s, ["patCount", "matCount"]] = new_df.loc[
-            s, ["altCount", "refCount"]
-        ].values
+    #### version2: without shapeit phasing
+    # else:
+    #     new_df = hetSNP_shapeit2
+    #     row_n = new_df.shape[0]
+    #     s = new_df["e_paternal"] == 1
+    #     new_df["patCount"] = new_df["refCount"]
+    #     new_df["matCount"] = new_df["altCount"]
+    #     new_df.loc[s, ["patCount", "matCount"]] = new_df.loc[
+    #         s, ["altCount", "refCount"]
+    #     ].values
     new_df.to_csv(hetSNP_intersect_unique_shapeit2, sep="\t", header=True, index=False)
+
     # drop NAN
-    new_df_dropNA = new_df.dropna()
-    new_df_dropNA = new_df_dropNA.drop(
+    # new_df_dropNA = new_df.dropna()
+    # print(new_df_dropNA)
+    new_df_dropNA = new_df.drop(
         ["refCount", "altCount", "e_paternal", "e_maternal"], axis=1
     )
     logging.debug(
-        "size of hetSNP unique is {0} ; size of shapeit2 phased variants is {1}; leftjoin size is {2}; leftjoin dropNA size is {3}".format(
+        "size of hetSNP unique is {0} ; size of shapeit2 phased variants is {1}; innerjoin size is {2}; innerjoin keepfew size is {3}".format(
             len(hetSNP_intersect_unique), len(shapeit2), len(new_df), len(new_df_dropNA)
         )
     )
     new_df_dropNA.to_csv(
         hetSNP_intersect_unique_shapeit2_dropNA, sep="\t", header=True, index=False
     )
-    # return new_df_dropNA
 
 
 def add_shapepit2(
@@ -102,24 +106,12 @@ def add_shapepit2(
 ):
     hetSNP_intersect_unique_shapeit2 = f"{os.path.splitext(filename)[0]}.shapeit2.tsv"
     hetSNP_intersect_unique_shapeit2_dropNA = (
-        f"{os.path.splitext(filename)[0]}.shapeit2.dropNA.tsv"
+        f"{os.path.splitext(filename)[0]}.shapeit2.keepfewcol.tsv"
     )
     if not os.path.isfile(hetSNP_intersect_unique_shapeit2_dropNA):
         gene_df = pd.read_csv(filename, sep="\t", header=0, index_col=False)
         shapeit2_df = pd.read_csv(shapeit2_input, sep="\t", header=0, index_col=False)
         incorporate_shapeit2(shapeit2_df, gene_df, filename)
-
-        logging.info(
-            "output {0} has hetSNP data with shapeit2 phasing".format(
-                os.path.basename(hetSNP_intersect_unique_shapeit2_dropNA)
-            )
-        )
-    else:
-        logging.info(
-            "....... {0} existed has hetSNP data with shapeit2 phasing".format(
-                os.path.basename(hetSNP_intersect_unique_shapeit2_dropNA)
-            )
-        )
 
 
 def add_simulationData(sim_filename):
@@ -157,9 +149,10 @@ def generate_modelCount(prefix, filename, simulator_df=None, shapeit2_input=None
         data["patCount"] = data["refCount"]
         data["matCount"] = data["altCount"]
     else:
-        filename = f"{base_out}.shapeit2.dropNA.tsv"
+        filename = f"{base_out}.shapeit2.keepfewcol.tsv"
         gene_df = pd.read_csv(filename, sep="\t", header=0, index_col=False)
         data = gene_df
+    data["rsid"] = data["SNP_id"]
     data = data[
         [
             "chr",

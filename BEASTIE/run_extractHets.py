@@ -51,5 +51,5 @@ extractHets.count_all_het_sites(
 )
 
 print("done!")
-
+# [“ENG…”, “ENG…”]
 # python run_extractHets.py HG00099 /Users/scarlett/allenlab/BEASTIE_other_example/HG00099_50M/HG00099.remove_chr.content.SNPs.hets.header.vcf.gz /Users/scarlett/allenlab/BEASTIE_other_example/HG00099_50M/HG00099_hetsnp 10 10 /Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE/reference/gencode_chr ENSG00000237399.3

@@ -25,14 +25,50 @@ MAX_WORKERS = 4
 
 
 def annotateAF(ancestry, hetSNP, out_AF):
+    ancestry_map = {
+        "EUR": "EUR",
+        "CEU": "EUR",
+        "TSI": "EUR",
+        "FIN": "EUR",
+        "GBR": "EUR",
+        "IBS": "EUR",
+        "AFR": "AFR",
+        "YRI": "AFR",
+        "LWK": "AFR",
+        "GWD": "AFR",
+        "MSL": "AFR",
+        "ESN": "AFR",
+        "ASW": "AFR",
+        "ACB": "AFR",
+        "SAS": "SAS",
+        "GIH": "SAS",
+        "PJL": "SAS",
+        "BEB": "SAS",
+        "STU": "SAS",
+        "ITU": "SAS",
+        "EAS": "EAS",
+        "CHB": "EAS",
+        "JPT": "EAS",
+        "CHS": "EAS",
+        "CDX": "EAS",
+        "KHV": "EAS",
+        "AMR": "AMR",
+        "MXL": "AMR",
+        "PUR": "AMR",
+        "CLM": "AMR",
+        "PEL": "AMR",
+    }
+
+    ancestry_group = ancestry_map[ancestry]
+
     if ANNOTATION_ALGORITH == "parallel_join":
-        annotateAFConstantMemoryParallel(ancestry, hetSNP, out_AF)
+        annotateAFConstantMemoryParallel(ancestry_group, hetSNP, out_AF)
     elif ANNOTATION_ALGORITH == "constant_memory":
         AF_file = resource_filename("BEASTIE", "reference/AF/AF_1_22_trimmed2.csv.gz")
-        annotateAFConstantMemory(ancestry, hetSNP, out_AF, AF_file)
+        annotateAFConstantMemory(ancestry_group, hetSNP, out_AF, AF_file)
     else:
         AF_file = resource_filename("BEASTIE", "reference/AF/AF_1_22_trimmed2.csv")
-        annotateAFPandas(ancestry, hetSNP, out_AF, AF_file)
+        annotateAFPandas(ancestry_group, hetSNP, out_AF, AF_file)
 
     logging.info("..... finish annotating AF for SNPs, file save at {0}".format(out_AF))
 
