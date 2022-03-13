@@ -258,7 +258,7 @@ def run(
     )
     logging.debug(
         "output {0} has {1} het SNPs with switching error prediction".format(
-            os.path.basename(meta_error), data23_2.shape[0]
+            os.path.basename(meta_error), data23_2.shape[0] - 1
         )
     )
 

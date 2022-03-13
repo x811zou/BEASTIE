@@ -102,11 +102,11 @@ def count_all_het_sites(
                             begin = exon.getBegin()  # column 7
                             end = exon.getEnd()  # column 8
                             region_str = f"{chromN}:{begin}-{end}"
-                            print(region_str)
+                            # print(region_str)
                             #
-                            print(
-                                f"{geneID}-transcript {n} {transcript.getId()} {chromN}:{begin}-{end}"
-                            )
+                            # print(
+                            #    f"{geneID}-transcript {n} {transcript.getId()} {chromN}:{begin}-{end}"
+                            # )
                             if not region_str in region_str_to_transcripts:
                                 region_str_to_transcripts[region_str] = []
                             # uncomment to debug duplicate transcript IDs as a possible optimization
@@ -176,7 +176,7 @@ def count_all_het_sites(
                             )
                             # break
 
-            data.sort(key=lambda r: (r[1], r[3]))
+            data.sort(key=lambda r: (r[1], r[2]))
             # print(data)
 
             out_stream = open(outputFile, "w")
