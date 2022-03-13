@@ -3,3 +3,4 @@ numpy == 1.21.0
 Cython == 0.29.24
 cyvcf2 == 0.30.11
 scipy == 1.5.4
+requests == 2.27.1

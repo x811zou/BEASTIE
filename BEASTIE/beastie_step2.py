@@ -92,6 +92,7 @@ def run(
     LD_token,
     chr_start,
     chr_end,
+    ldlink_cache_dir,
 ):
     (
         meta,
@@ -163,7 +164,8 @@ def run(
     #####
     ##### 2.2 Annotation LD
     #####
-    if not os.path.isfile(meta):
+    FORCE_ANNOTATE_LD = False
+    if FORCE_ANNOTATE_LD or not os.path.isfile(meta):
         logging.info("=================")
         logging.info("================= Starting specific step 2.2")
         logging.info("....... start annotating LD information")
@@ -177,6 +179,7 @@ def run(
             chr_start,
             chr_end,
             meta,
+            ldlink_cache_dir,
         )
     else:
         logging.info("=================")

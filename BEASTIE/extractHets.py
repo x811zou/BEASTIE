@@ -58,7 +58,6 @@ def count_all_het_sites(
     gencode_path,
     DEBUG_GENES=None,
 ):
-
     logging.info("..... We are looking at individual: {0}".format(sample))
     filename = os.path.splitext(str(outputFilename))[0]
     count = 0
