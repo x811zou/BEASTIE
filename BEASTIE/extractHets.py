@@ -110,7 +110,7 @@ def count_all_het_sites(
             for gene in geneList:
                 # gene.getSubstrate() chr21
                 # gene.getSubstrate().strip("chr")) 21
-                print(f">>>> {gene.getID()}")
+                # print(f">>>> {gene.getID()}")
                 if str(gene.getSubstrate().strip("chr")) == str(Num):
                     Num_transcript = gene.getNumTranscripts()
                     chrom = gene.getSubstrate()  # column 1 --> chr21
@@ -127,9 +127,9 @@ def count_all_het_sites(
                             if not exon_region in exon_region_to_transcripts:
                                 exon_region_to_transcripts[exon_region] = []
                             exon_region_to_transcripts[exon_region].append(transcript)
-                            print(
-                                f"{gene.getID()}-transcript {n} {transcript.getId()} {chromN}:{begin}-{end}"
-                            )
+                            # print(
+                            #     f"{gene.getID()}-transcript {n} {transcript.getId()} {chromN}:{begin}-{end}"
+                            # )
                             # uncomment to debug duplicate transcript IDs as a possible optimization
                             #     for existing in region_str_to_transcripts[region_str]:
                             #         print(f"existing transcript @ {region_str} {existing.getTranscriptId()} != {transcript.getTranscriptId()}")
@@ -161,14 +161,14 @@ def count_all_het_sites(
                         variant_to_transcript_info[chr_pos].append(
                             (transcript, pos, rsid, genotype)
                         )
-            print(">> dict variant_to_transcript_info")
-            print(f"len of dic: {len(variant_to_transcript_info)}")
-            print(">> print")
+            # print(">> dict variant_to_transcript_info")
+            # print(f"len of dic: {len(variant_to_transcript_info)}")
+            # print(">> print")
             for chr_pos in variant_to_transcript_info:
                 gene_ids = set(
                     [x[0].getGeneId() for x in variant_to_transcript_info[chr_pos]]
                 )
-                print(f"{chr_pos} ---- {gene_ids}")
+                #print(f"{chr_pos} ---- {gene_ids}")
                 if len(gene_ids) == 1:
                     transcript, pos, rsid, genotype = variant_to_transcript_info[
                         chr_pos
@@ -176,9 +176,9 @@ def count_all_het_sites(
                     # chrom = transcript.getSubstrate()
                     # chromN = chrom.strip("chr")
                     transcriptCoord = transcript.mapToTranscript(int(pos))
-                    print(
-                        f"......... write {transcript.getId()},{transcript.getGeneId()},{rsid}, {genotype}"
-                    )
+                    # print(
+                    #     f"......... write {transcript.getId()},{transcript.getGeneId()},{rsid}, {genotype}"
+                    # )
                     data.append(
                         [
                             chrom,
@@ -191,8 +191,8 @@ def count_all_het_sites(
                             genotype,
                         ]
                     )
-                else:
-                    print("......... SKIPPING")
+                # else:
+                #     print("......... SKIPPING")
             data.sort(key=lambda r: (r[1], r[2]))
             out_stream = open(outputFile, "w")
             out_stream.write(
