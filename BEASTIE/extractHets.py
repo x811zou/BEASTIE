@@ -9,6 +9,8 @@ import sys
 import pandas as pd
 from pkg_resources import resource_filename
 import gzip
+
+from BEASTIE.helpers import tabix_regions
 from .misc_tools.GffTranscriptReader import GffTranscriptReader
 from .misc_tools.Pipe import Pipe
 
@@ -49,6 +51,24 @@ def isHeterozygous(genotype):
     return not genotype in HOMOZYGOUS_GENOTYPES
 
 
+def line_processor(line):
+    fields = line.split("\t")
+    assert len(fields) >= 10
+
+    if fields[6] != "PASS":
+        return None
+
+    genotype = fields[9].split(":")[0]
+
+    if not isHeterozygous(genotype):
+        return None
+
+    pos = int(fields[1])
+    rs = fields[2]
+
+    return (pos, rs, genotype)
+
+
 def count_all_het_sites(
     sample,
     vcfFilename,
@@ -76,108 +96,104 @@ def count_all_het_sites(
                 )
             )
 
-            byGene = {}
-            total_biSNP = 0
-            region_str_to_transcripts = {}
+            """
+            construct a dict with unique exon region with transcript {exon_region:transcript list} 
+            potential issue: 
+            within the same gene, multiple transcript may cover the same exon region
+            between genes, different transcripts may cover the same exon region
+            """
+            exon_region_to_transcripts = {}
             if DEBUG_GENES is not None:
                 print(f"Debugging specific genes: {DEBUG_GENES}")
                 geneList = list(filter(lambda x: x.getId() in DEBUG_GENES, geneList))
-            # else:
-            #     print("Not debugging mode")
+
             for gene in geneList:
-                # print(gene.getSubstrate().strip("chr"))
+                # gene.getSubstrate() chr21
+                # gene.getSubstrate().strip("chr")) 21
+                print(f">>>> {gene.getID()}")
                 if str(gene.getSubstrate().strip("chr")) == str(Num):
                     Num_transcript = gene.getNumTranscripts()
+                    chrom = gene.getSubstrate()  # column 1 --> chr21
+                    chromN = Num
                     for n in range(Num_transcript):
                         transcript = gene.getIthTranscript(n)
-                        geneID = transcript.getGeneId()  # column 5
-                        byGene[geneID] = byGene.get(geneID, set())
-                        chrom = transcript.getSubstrate()  # column 1
-                        chromN = chrom.strip("chr")
                         # rawExons = transcript.UTR
-                        rawExons = transcript.getRawExons()
                         # rawExons = transcript.exons
+                        rawExons = transcript.getRawExons()
                         for exon in rawExons:
                             begin = exon.getBegin()  # column 7
                             end = exon.getEnd()  # column 8
-                            region_str = f"{chromN}:{begin}-{end}"
-                            # print(region_str)
-                            #
-                            # print(
-                            #    f"{geneID}-transcript {n} {transcript.getId()} {chromN}:{begin}-{end}"
-                            # )
-                            if not region_str in region_str_to_transcripts:
-                                region_str_to_transcripts[region_str] = []
+                            exon_region = f"{chromN}:{begin}-{end}"
+                            if not exon_region in exon_region_to_transcripts:
+                                exon_region_to_transcripts[exon_region] = []
+                            exon_region_to_transcripts[exon_region].append(transcript)
+                            print(
+                                f"{gene.getID()}-transcript {n} {transcript.getId()} {chromN}:{begin}-{end}"
+                            )
                             # uncomment to debug duplicate transcript IDs as a possible optimization
-                            # else:
                             #     for existing in region_str_to_transcripts[region_str]:
                             #         print(f"existing transcript @ {region_str} {existing.getTranscriptId()} != {transcript.getTranscriptId()}")
-                            region_str_to_transcripts[region_str].append(transcript)
-            # print(region_str_to_transcripts)
-            CHUNK_SIZE = 1000
-            outputs = []
-            for x in chunk_iter(iter(region_str_to_transcripts.keys()), CHUNK_SIZE):
-                regions = " ".join(x)
-                cmd = f"tabix --separate-regions {vcfFilename} {regions}"
-                output = Pipe.run(cmd)
-                if len(output) > 0:
-                    outputs.append(output)
 
+            """
+            construct a dict with unique exon region with VCF records {exon_region:VCF records}
+            """
+            # byGene = {}
+            # total_biSNP = 0
+            # print(region_str_to_snp_infos)
+            # byGene[geneID] = byGene.get(geneID, set())
+            exon_region_to_snp_infos = tabix_regions(
+                exon_region_to_transcripts.keys(), line_processor, vcfFilename
+            )
             data = []
-            for output in outputs:
-                lines = output.split("\n")
-                transcripts = None
-                for line in lines:
-                    if line.startswith("#"):
-                        region_str = line[1:]
-                        assert region_str in region_str_to_transcripts
-                        transcripts = region_str_to_transcripts[region_str]
-                        continue
-
-                    assert transcripts is not None
-
-                    fields = line.split("\t")
-                    assert len(fields) >= 10
-
-                    if fields[6] != "PASS":
-                        continue
-
-                    genotype = fields[9].split(":")[0]
-
-                    if not isHeterozygous(genotype):
-                        continue
-
-                    pos = int(fields[1])
-                    # print(f"pos: {pos} region_str: {region_str}")
-                    rs = fields[2]
-
+            variant_to_transcript_info = {}
+            for exon_region in exon_region_to_snp_infos:
+                snp_infos = exon_region_to_snp_infos[exon_region]
+                transcripts = exon_region_to_transcripts[exon_region]
+                # transcript list contains transcripts from the same gene or different genes
+                for snp_info in snp_infos:  # loop through each variant record
+                    pos, rsid, genotype = snp_info
                     for transcript in transcripts:
-                        transcriptCoord = transcript.mapToTranscript(pos)
-                        chrom = transcript.getSubstrate()
-                        chromN = int(chrom.strip("chr"))
-                        total_biSNP += 1
-                        chr_pos = f"{chromN}_{pos}"
-                        # currently we are not includeing the variants that are already covered by genes processed before to ensure that not two genes share same variants
-                        if not chr_pos in byGene[geneID]:
-                            print(f"{transcript.getGeneId()} - {chr_pos}")
-                            byGene[geneID].add(chr_pos)
-                            data.append(
-                                [
-                                    chrom,
-                                    chromN,
-                                    pos,
-                                    transcript.getGeneId(),
-                                    transcript.getTranscriptId(),
-                                    transcriptCoord,
-                                    rs,
-                                    genotype,
-                                ]
-                            )
-                            # break
-
+                        # geneID = transcript.getGeneId()
+                        assert chr == transcript.getSubstrate()
+                        chr_pos = f"{chr}_{pos}"
+                        if chr_pos not in variant_to_transcript_info:
+                            variant_to_transcript_info[chr_pos] = []
+                        variant_to_transcript_info[chr_pos].append(
+                            (transcript, pos, rsid, genotype)
+                        )
+            print(">> dict variant_to_transcript_info")
+            print(f"len of dic: {len(variant_to_transcript_info)}")
+            print(">> print")
+            for chr_pos in variant_to_transcript_info:
+                gene_ids = set(
+                    [x[0].getGeneId() for x in variant_to_transcript_info[chr_pos]]
+                )
+                print(f"{chr_pos} ---- {gene_ids}")
+                if len(gene_ids) == 1:
+                    transcript, pos, rsid, genotype = variant_to_transcript_info[
+                        chr_pos
+                    ][0]
+                    # chrom = transcript.getSubstrate()
+                    # chromN = chrom.strip("chr")
+                    transcriptCoord = transcript.mapToTranscript(int(pos))
+                    print(
+                        f"......... write {transcript.getId()},{transcript.getGeneId()},{rsid}, {genotype}"
+                    )
+                    data.append(
+                        [
+                            chrom,
+                            chromN,
+                            pos,
+                            transcript.getGeneId(),
+                            transcript.getId(),
+                            transcriptCoord,
+                            rsid,
+                            genotype,
+                        ]
+                    )
+                else:
+                    print("......... SKIPPING")
             data.sort(key=lambda r: (r[1], r[2]))
-            # print(data)
-
             out_stream = open(outputFile, "w")
             out_stream.write(
                 "chr\tchrN\tpos\tgeneID\ttranscriptID\ttranscript_pos\tSNP_id\tgenotype\n"
