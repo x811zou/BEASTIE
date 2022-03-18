@@ -227,7 +227,7 @@ def run(config):
     today = date.today()
 
     specification = f"s{config.sigma}_a{config.alpha}_sinCov{config.min_single_cov}_totCov{config.min_total_cov}_W{config.WARMUP}K{config.KEEPER}"
-    output_path = os.path.join(out_dir, "output")
+    output_path = out_dir
     specification_path = os.path.join(output_path, specification)
     log_path = os.path.join(specification_path, "log")
     tmp_path = os.path.join(specification_path, "tmp")

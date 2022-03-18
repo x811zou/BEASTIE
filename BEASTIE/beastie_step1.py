@@ -25,17 +25,25 @@ def check_file_existence(model, vcfgz, ref_dir, pileup, simulation_pileup, shape
         sys.exit(1)
     else:
         logging.info("Great! STAN model {0} exists.".format(model))
+
+    ##### VCFGZ file
     vcfgztbi = "{0}.tbi".format(vcfgz)
     if not os.path.isfile(vcfgz):
         logging.error(
             "Oops! vcfgz file {0} doesn't exist. Please try again ...".format(vcfgz)
         )
         exit(1)
-    if not os.path.isfile(vcfgztbi):
-        logging.warning("We will generate vcfgz index for you ...")
+    if os.path.isfile(vcfgz) and (
+        not os.path.isfile(vcfgztbi)
+        or os.path.getmtime(vcfgztbi) < os.path.getmtime(vcfgz)
+    ):
+        logging.warning("We will generate the latest vcfgz index for you ...")
         cmd = "tabix -fp vcf %s" % (vcfgz)
         runhelper(cmd)
-
+    if os.path.isfile(vcfgz) and os.path.isfile(vcfgztbi):
+        logging.info(
+            "Great! VCFGZ file {0} and index {1} exists.".format(vcfgz, vcfgztbi)
+        )
     ##### reference directory : AF file and gencode directory
     ref_dir = resource_filename("BEASTIE", "reference/")
     if not os.path.exists(ref_dir):
