@@ -16,7 +16,7 @@ from .intersect_hets import Intersect_exonicHetSnps
 from .parse_mpileup import Parse_mpileup_allChr
 
 
-def check_file_existence(model, vcf, ref_dir, pileup, simulation_pileup, shapeit2):
+def check_file_existence(model, vcfgz, ref_dir, pileup, simulation_pileup, shapeit2):
     ##### STAN model
     if False and not os.path.exists(model):
         logging.error(
@@ -25,34 +25,17 @@ def check_file_existence(model, vcf, ref_dir, pileup, simulation_pileup, shapeit
         sys.exit(1)
     else:
         logging.info("Great! STAN model {0} exists.".format(model))
-    ##### vcf & vcfgz
-    vcfgz = "{0}.gz".format(vcf)
     vcfgztbi = "{0}.tbi".format(vcfgz)
-    if not os.path.isfile(vcf) and not os.path.isfile(vcfgz):
+    if not os.path.isfile(vcfgz):
         logging.error(
-            "Oops! vcf file {0} or vcf.gz file {1} doesn't exist. Please try again ...".format(
-                vcf, vcfgz
-            )
+            "Oops! vcfgz file {0} doesn't exist. Please try again ...".format(vcfgz)
         )
         exit(1)
-    elif os.path.isfile(vcf) and (not os.path.isfile(vcfgz)):
-        logging.warning("We will generate vcfgz for you ...".format(vcfgz))
-        cmd = "bgzip -c %s > %s" % (vcf, vcfgz)
-        runhelper(cmd)
+    if not os.path.isfile(vcfgztbi):
+        logging.warning("We will generate vcfgz index for you ...")
         cmd = "tabix -fp vcf %s" % (vcfgz)
         runhelper(cmd)
-    elif (os.path.isfile(vcfgz)) and (not os.path.isfile(vcf)):
-        logging.warning(
-            "Oops! VCF file {0} not found. We will generate that for you ...".format(
-                vcf
-            )
-        )
-        cmd = "gunzip -k %s" % (vcfgz)
-        runhelper(cmd)
-        cmd = "tabix -fp vcf %s" % (vcfgz)
-        runhelper(cmd)
-    else:
-        logging.info("Great! VCF {0} & VCF.GZ {1} exists.".format(vcf, vcfgz))
+
     ##### reference directory : AF file and gencode directory
     ref_dir = resource_filename("BEASTIE", "reference/")
     if not os.path.exists(ref_dir):
@@ -93,8 +76,6 @@ def check_file_existence(model, vcf, ref_dir, pileup, simulation_pileup, shapeit
         else:
             logging.info("Great! shapeit2 file {0} exists.".format(shapeit2))
 
-    return vcfgz
-
 
 def run(
     prefix,
@@ -103,7 +84,7 @@ def run(
     tmp_path,
     gencode_path,
     model,
-    vcf,
+    vcfgz,
     ref_dir,
     ancestry,
     chr_start,
@@ -118,8 +99,8 @@ def run(
     #####
     ##### 0.0 Check input file existence
     #####
-    vcfgz = check_file_existence(
-        model, vcf, ref_dir, pileup, simulation_pileup, shapeit2_file
+    check_file_existence(
+        model, vcfgz, ref_dir, pileup, simulation_pileup, shapeit2_file
     )
 
     #####

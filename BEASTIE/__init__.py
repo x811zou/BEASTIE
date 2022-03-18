@@ -18,7 +18,7 @@ ConfigurationData = namedtuple(
     "ConfigurationData",
     [
         "prefix",
-        "vcf_file",
+        "vcfgz_file",
         "vcf_sample_name",
         "pileup_file",
         "simulation_pileup_file",
@@ -56,8 +56,8 @@ def check_arguments():
         help="Prefix for output files, default is --vcf-sample-name value.",
     )
     parser.add_argument(
-        "--vcf-file",
-        help="Path to VCF file",
+        "--vcfgz-file",
+        help="Path to VCFGZ file",
         required=True,
     )
     parser.add_argument(
@@ -175,7 +175,7 @@ def check_arguments():
 def load_config_from_args(args):
     return ConfigurationData(
         prefix=args.prefix if args.prefix is not None else args.vcf_sample_name,
-        vcf_file=args.vcf_file,
+        vcfgz_file=args.vcfgz_file,
         vcf_sample_name=args.vcf_sample_name,
         pileup_file=args.pileup_file,
         shapeit2=args.shapeit2_phasing_file,
@@ -213,7 +213,7 @@ def load_config_from_args(args):
 
 def run(config):
     out_dir = config.output_dir
-    vcf_file = config.vcf_file
+    vcfgz_file = config.vcfgz_file
     pileup_file = config.pileup_file
     shapeit2_file = config.shapeit2
     simulation_pileup_file = config.simulation_pileup_file
@@ -270,7 +270,7 @@ def run(config):
         tmp_path,
         gencode_path,
         model,
-        vcf_file,
+        vcfgz_file,
         config.ref_dir,
         config.ancestry,
         config.chr_start,
