@@ -53,6 +53,8 @@ def isHeterozygous(genotype):
 
 def line_processor(line):
     fields = line.split("\t")
+    if len(fields) < 10:
+        print(f"bad field line: '{line}'")
     assert len(fields) >= 10
 
     if fields[6] != "PASS":
