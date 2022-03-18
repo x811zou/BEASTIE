@@ -15,3 +15,9 @@ BEASTIE/run_config*
 BEASTIE/parameters*
 *.icloud
 *.pptx
+~/.beastie/ldlink_cache.db
+BEASTIE_example/HG00096/HG00096_pileup.tsv
+BEASTIE_example/HG00096/HG00096.remove_chr.content.SNPs.hets.header.vcf
+BEASTIE_example/HG00096/HG00096.remove_chr.content.SNPs.hets.header.vcf.gz
+BEASTIE_example/HG00096/HG00096.remove_chr.content.SNPs.hets.header.vcf.gz.tbi
+BEASTIE_example/HG00096/parameters_HG_python.cfg

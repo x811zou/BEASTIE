@@ -16,9 +16,7 @@ from .intersect_hets import Intersect_exonicHetSnps
 from .parse_mpileup import Parse_mpileup_allChr
 
 
-def check_file_existence(
-    in_path, model, vcf, ref_dir, pileup, simulation_pileup, shapeit2
-):
+def check_file_existence(model, vcf, ref_dir, pileup, simulation_pileup, shapeit2):
     ##### STAN model
     if False and not os.path.exists(model):
         logging.error(
@@ -67,22 +65,18 @@ def check_file_existence(
     else:
         logging.info("Great! REFERENCE path {0} exists.".format(ref_dir))
     ##### pileup_file
-    pileup_file = os.path.join(in_path, pileup)
-    if not os.path.isfile(pileup_file):
+    if not os.path.isfile(pileup):
         logging.error(
-            "Oops!  pileup file {0} doesn't exist in {1}. Please try again ...".format(
-                pileup, in_path
-            )
+            "Oops!  pileup file {0} doesn't exist. Please try again ...".format(pileup)
         )
     else:
         logging.info("Great! pileup file {0} exists.".format(pileup))
     ##### simulation pileup_file
     if simulation_pileup is not None:
-        simulation_pileup_file = os.path.join(in_path, simulation_pileup)
-        if not os.path.isfile(simulation_pileup_file):
+        if not os.path.isfile(simulation_pileup):
             logging.error(
-                "Oops!  simulation pileup file {0} doesn't exist in {1}. Please try again ...".format(
-                    simulation_pileup, in_path
+                "Oops!  simulation pileup file {0} doesn't exist. Please try again ...".format(
+                    simulation_pileup
                 )
             )
         else:
@@ -90,63 +84,21 @@ def check_file_existence(
 
     ##### shapeit2_file
     if shapeit2 is not None:
-        shapeit2_file = os.path.join(in_path, shapeit2)
-        if not os.path.isfile(shapeit2_file):
+        if not os.path.isfile(shapeit2):
             logging.error(
-                "Oops!  shapeit2 file {0} doesn't exist in {1}. Please try again ...".format(
-                    shapeit2, in_path
+                "Oops!  shapeit2 file {0} doesn't exist. Please try again ...".format(
+                    shapeit2
                 )
             )
         else:
-            logging.info("Great! shapeit2 file {0} exists.".format(shapeit2_file))
-    # ##### TEMP output generation: hetSNP_file
-    # hetSNP_intersect_unique_file = os.path.join(
-    #     tmp_path, f"TEMP.{prefix}_hetSNP_intersected_filtered.tsv"
-    # )
+            logging.info("Great! shapeit2 file {0} exists.".format(shapeit2))
 
-    # logging.info(
-    #     "We will generate intermediate file {0} ...".format(
-    #         hetSNP_intersect_unique_file
-    #     )
-    # )
-
-    # ##### parsed_pileup_file
-    # if parsed_pileup is not None:
-    #     parsed_pileup_file = os.path.join(in_path, parsed_pileup)
-    #     if not os.path.isfile(parsed_pileup_file):
-    #         logging.warning(
-    #             "Alright, parsed_pileup file {0} doesn't exist in {1}. We will generate that for you ...".format(
-    #                 parsed_pileup, in_path
-    #             )
-    #         )
-    # else:
-    #     parsed_pileup_file = os.path.join(
-    #         output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv"
-    #     )
-    #     logging.info("We will generate {0} for you ...".format(parsed_pileup_file))
-
-    # ##### parsed_pileup_file for simulation data
-    # if simulation_pileup is not None:
-    #     simulation_parsed_pileup_file = os.path.join(in_path, simulation_parsed_pileup)
-    #     if not os.path.isfile(simulation_parsed_pileup_file):
-    #         logging.warning(
-    #             "Alright, parsed_pileup file for simulation data {0} doesn't exist in {1}. We will generate that for you ...".format(
-    #                 simulation_parsed_pileup, in_path
-    #             )
-    #         )
-    # else:
-    #     parsed_pileup_file = os.path.join(
-    #         output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv"
-    #     )
-    #     logging.info("We will generate {0} for you ...".format(parsed_pileup_file))
-
-    return (vcfgz, pileup_file)
+    return vcfgz
 
 
 def run(
     prefix,
     vcf_sample_name,
-    in_path,
     output_path,
     tmp_path,
     gencode_path,
@@ -166,8 +118,8 @@ def run(
     #####
     ##### 0.0 Check input file existence
     #####
-    (vcfgz, pileup) = check_file_existence(
-        in_path, model, vcf, ref_dir, pileup, simulation_pileup, shapeit2_file
+    vcfgz = check_file_existence(
+        model, vcf, ref_dir, pileup, simulation_pileup, shapeit2_file
     )
 
     #####

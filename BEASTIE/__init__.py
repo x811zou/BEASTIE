@@ -18,10 +18,10 @@ ConfigurationData = namedtuple(
     "ConfigurationData",
     [
         "prefix",
-        "vcf_file_name",
+        "vcf_file",
         "vcf_sample_name",
-        "pileup_file_name",
-        "simulation_pileup_file_name",
+        "pileup_file",
+        "simulation_pileup_file",
         "shapeit2",
         "gencode_path",
         "ancestry",
@@ -37,7 +37,6 @@ ConfigurationData = namedtuple(
         "modelName",
         "STAN",
         "ref_dir",
-        "input_dir",
         "SAVE_INT",
         "WARMUP",
         "KEEPER",
@@ -53,154 +52,130 @@ def check_arguments():
         description="Bayesian Estimation of Allele Specific Transcription Integrating across Exons",
     )
     parser.add_argument(
-        "--prefix",
-        help="Input is read from <input_dir>/<prefix> and output written to <output_dir>/<prefix>.",
+        "--vcf-file",
+        help="Path to VCF file",
         required=True,
     )
     parser.add_argument(
-        "--vcf-filename",
-        help="Name of VCF file in <input_dir>/<prefix>.",
-        required=True,
-    )
-    parser.add_argument(
-        '--vcf-sample-name',
+        "--vcf-sample-name",
         help="Name of sample in VCF file (ex HG00096).",
         required=True,
     )
     parser.add_argument(
-        '--pileup-filename',
-        help="Name of pileup file in <input_dir>/<prefix>.",
+        "--pileup-file",
+        help="Path to pileup file.",
         required=True,
     )
     parser.add_argument(
-        '--shapeit2-phasing-filename',
-        help="Name of the shapeit2 generated phasing data in <input_dir>/<prefix>.",
+        "--shapeit2-phasing-file",
+        help="Path to shapeit2 generated phasing data.",
     )
     parser.add_argument(
-        '--simulation-pileup-filename',
-        help="Name of simulated data pileup file in <input_dir>/<prefix>.",
+        "--simulation-pileup-file",
+        help="Path to simulated data pileup file.",
     )
     parser.add_argument(
-        '--gencode-dir',
+        "--gencode-dir",
         help="Path to gencode reference directory.",
         default=None,
     )
     parser.add_argument(
-        '--ancestry',
+        "--ancestry",
         help="Ancestry abbreviation (ex GBR, YRI, CEU, ...).",
-        required=True
+        required=True,
     )
     parser.add_argument(
         "--min-total-cov",
         help="Minimum coverage requirement for total read counts on one site.",
         default=1,
-        type=int
+        type=int,
     )
     parser.add_argument(
         "--min-single-cov",
         help="Minimum coverage requirement for each REF/ALT allele.",
         default=0,
-        type=int
+        type=int,
     )
     parser.add_argument(
         "--sigma",
         help="Dispersion parameter for BEASTIE STAN model.",
         default=0.5,
-        type=float
+        type=float,
     )
     parser.add_argument(
-        "--cutoff",
-        help="Binomial test p-value cutoff.",
-        default=0.05,
-        type=float
+        "--cutoff", help="Binomial test p-value cutoff.", default=0.05, type=float
     )
     parser.add_argument(
         "--alpha",
         help="Type-1 error rate for lambda prediction model.",
         default=0.05,
-        type=float
+        type=float,
     )
     parser.add_argument(
-        '--chr-start',
-        help='Starting chromosome number',
-        default=1,
-        type=int
+        "--chr-start", help="Starting chromosome number", default=1, type=int
     )
     parser.add_argument(
-        '--chr-end',
-        help='Ending chromosome number',
-        default=22,
-        type=int
+        "--chr-end", help="Ending chromosome number", default=22, type=int
     )
     parser.add_argument(
-        '--read-length',
+        "--read-length",
         help="Average length of reads for input fastq data.",
         type=int,
-        required=True
-    )
-    parser.add_argument(
-        '--ld-token',
-        help='LDlink API Token.  Register at https://ldlink.nci.nih.gov/?tab=apiaccess',
         required=True,
     )
     parser.add_argument(
-        '--model-name',
-        help='Name of stan model to use.',
-        default='iBEASTIE2',
+        "--ld-token",
+        help="LDlink API Token.  Register at https://ldlink.nci.nih.gov/?tab=apiaccess",
+        required=True,
     )
     parser.add_argument(
-        '--STAN',
-        help='Path to STAN model.',
-        required=True
+        "--model-name",
+        help="Name of stan model to use.",
+        default="iBEASTIE2",
     )
+    parser.add_argument("--STAN", help="Path to STAN model.", required=True)
     parser.add_argument(
-        '--ref-dir',
-        help='Path to reference directory containing AF annotation and gencode',
+        "--ref-dir",
+        help="Path to reference directory containing AF annotation and gencode",
         default="UNSET_REF_DIR",
     )
     parser.add_argument(
-        '--input-dir',
-        help='Path to directory containing input files',
-        required=True,
+        "--save-intermediate", help="Keep intermediate files.", action="store_true"
     )
     parser.add_argument(
-        '--save-intermediate',
-        help='Keep intermediate files.',
-        action='store_true'
-    )
-    parser.add_argument(
-        '--warmup',
-        help='Number of warmup estimates to burn in STAN model.',
+        "--warmup",
+        help="Number of warmup estimates to burn in STAN model.",
         default=1000,
-        type=int
+        type=int,
     ),
     parser.add_argument(
-        '--keeper',
-        help='Number of estimates to keep from STAN model.',
+        "--keeper",
+        help="Number of estimates to keep from STAN model.",
         default=1000,
         type=int,
     )
     parser.add_argument(
-        '--output-dir',
-        help='Path to directory where output will be placed.',
-        required=True
+        "--output-dir",
+        help="Path to directory where output will be placed.",
+        required=True,
     )
     parser.add_argument(
-        '--ldlink-cache-dir',
-        help='Path to directory to save ldlink cache database.',
-        default='~/.beastie',
+        "--ldlink-cache-dir",
+        help="Path to directory to save ldlink cache database.",
+        default="~/.beastie",
     )
 
     return parser.parse_args()
 
+
 def load_config_from_args(args):
     return ConfigurationData(
-        prefix=args.prefix,
-        vcf_file_name=args.vcf_filename,
+        prefix=args.vcf_sample_name,
+        vcf_file=args.vcf_file,
         vcf_sample_name=args.vcf_sample_name,
-        pileup_file_name=args.pileup_filename,
-        shapeit2=args.shapeit2_phasing_filename,
-        simulation_pileup_file_name=args.simulation_pileup_filename,
+        pileup_file=args.pileup_file,
+        shapeit2=args.shapeit2_phasing_file,
+        simulation_pileup_file=args.simulation_pileup_file,
         gencode_path=args.gencode_dir,
         ancestry=args.ancestry,
         min_total_cov=args.min_total_cov,
@@ -215,56 +190,11 @@ def load_config_from_args(args):
         modelName=args.model_name,
         STAN=args.STAN,
         ref_dir=args.ref_dir,
-        input_dir=args.input_dir,
         SAVE_INT=args.save_intermediate,
         WARMUP=args.warmup,
         KEEPER=args.keeper,
         output_dir=args.output_dir,
-        ldlink_cache_dir=os.path.expanduser(
-            args.ldlink_cache_dir
-        ),
-    )
-
-def load_configuration(config_file):
-    # If you do not change names of parameters config file, you do not need to modify this run_config.py
-    # ====================================================
-    config = configparser.ConfigParser()
-    config.read(
-        config_file
-    )  # read in parameters defined in the config you want: parameters_HG_chr20.cfg
-
-    # ==================================================== Nothing has to be changed below this line
-    inputs = config["inputs"]
-    outputs = config["outputs"]
-    config = ConfigurationData(
-        prefix=inputs["prefix"],
-        vcf_file_name=inputs["vcf_file_name"],
-        vcf_sample_name=inputs["vcf_sample_name"],
-        pileup_file_name=inputs["pileup_file_name"],
-        shapeit2=inputs.get("shapeit2", None),
-        simulation_pileup_file_name=inputs.get("simulation_pileup_file_name", None),
-        gencode_path=inputs.get("gencode_path", None),
-        ancestry=inputs["ancestry"],
-        min_total_cov=int(inputs.get("min_total_cov", 1)),
-        min_single_cov=int(inputs.get("min_single_cov", 0)),
-        sigma=float(inputs.get("sigma", 0.5)),
-        cutoff=float(inputs.get("cutoff", 0.5)),
-        alpha=float(inputs.get("alpha", 0.05)),
-        chr_start=inputs["chr_start"],
-        chr_end=inputs["chr_end"],
-        read_length=inputs["read_length"],
-        LD_token=inputs["LD_token"],
-        modelName=inputs["modelName"],
-        STAN=inputs["STAN"],
-        ref_dir=inputs["ref_dir"],
-        input_dir=inputs["input_dir"],
-        SAVE_INT=bool(inputs.get("SAVE_INT", False)),
-        WARMUP=int(inputs.get("WARMUP", 1000)),
-        KEEPER=int(inputs.get("KEEPER", 1000)),
-        output_dir=outputs["out_path"],
-        ldlink_cache_dir=os.path.expanduser(
-            inputs.get("ldlink_cache_dir", "~/.beastie")
-        ),
+        ldlink_cache_dir=os.path.expanduser(args.ldlink_cache_dir),
     )
 
     # ======== Pre-requisite: pre-defined directories and input files and reference files/directories
@@ -278,18 +208,11 @@ def load_configuration(config_file):
 
 
 def run(config):
-    in_path = os.path.join(config.input_dir, config.prefix)
-    out_dir = os.path.join(config.output_dir, config.prefix)
-    vcf_file = os.path.join(in_path, config.vcf_file_name)
-    pileup_file = os.path.join(in_path, config.pileup_file_name)
-    shapeit2_file = (
-        os.path.join(in_path, config.shapeit2) if config.shapeit2 is not None else None
-    )
-    simulation_pileup_file = (
-        os.path.join(in_path, config.simulation_pileup_file_name)
-        if config.simulation_pileup_file_name is not None
-        else None
-    )
+    out_dir = config.output_dir
+    vcf_file = config.vcf_file
+    pileup_file = config.pileup_file
+    shapeit2_file = config.shapeit2
+    simulation_pileup_file = config.simulation_pileup_file
     gencode_path = (
         config.gencode_path
         if config.gencode_path is not None
@@ -339,7 +262,6 @@ def run(config):
     hetSNP_intersect_unique, hetSNP_intersect_unique_sim = beastie_step1.run(
         config.prefix,
         config.vcf_sample_name,
-        in_path,
         output_path,
         tmp_path,
         gencode_path,
