@@ -103,6 +103,7 @@ def run(
     pileup,
     simulation_pileup,
     shapeit2_file,
+    het_snp_file,
 ):
     #####
     ##### 0.0 Check input file existence
@@ -114,7 +115,13 @@ def run(
     #####
     ##### 1.1 Generate hetSNP file: extract heterozygous bi-allelic SNPs for specific chromosomes from all gencode transcripts
     #####
-    hetSNP = os.path.join(output_path, f"{prefix}_hetSNP_chr{chr_start}-{chr_end}.tsv")
+
+    if not het_snp_file or not os.path.exists(het_snp_file):
+        hetSNP = os.path.join(
+            output_path, f"{prefix}_hetSNP_chr{chr_start}-{chr_end}.tsv"
+        )
+    else:
+        hetSNP = het_snp_file
     logging.info("=================")
     logging.info("================= Starting common step 1.1")
     if not os.path.exists(hetSNP):
@@ -129,6 +136,7 @@ def run(
     else:
         logging.info("================= Skipping common step 1.1")
         logging.info("=================")
+
     data11 = pd.read_csv(hetSNP, sep="\t", header=0, index_col=False)
     logging.debug(
         "output {0} has {1} het SNPs from VCF file".format(

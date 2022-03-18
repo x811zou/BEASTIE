@@ -23,6 +23,7 @@ ConfigurationData = namedtuple(
         "pileup_file",
         "simulation_pileup_file",
         "shapeit2",
+        "het_snp_file",
         "gencode_path",
         "ancestry",
         "min_total_cov",
@@ -79,13 +80,17 @@ def check_arguments():
         help="Path to simulated data pileup file.",
     )
     parser.add_argument(
+        "--het-snp-file",
+        help="Path to pre-generated het snps file.",
+    )
+    parser.add_argument(
         "--gencode-dir",
         help="Path to gencode reference directory.",
         default=None,
     )
     parser.add_argument(
         "--ancestry",
-        help="Ancestry abbreviation (ex YRI, CEU, FIN ..).",
+        help="Ancestry abbreviation (ex EUR, CEU, TSI, FIN, AFR, YRI, LWK, ...).",
         required=True,
     )
     parser.add_argument(
@@ -180,6 +185,7 @@ def load_config_from_args(args):
         pileup_file=args.pileup_file,
         shapeit2=args.shapeit2_phasing_file,
         simulation_pileup_file=args.simulation_pileup_file,
+        het_snp_file=args.het_snp_file,
         gencode_path=args.gencode_dir,
         ancestry=args.ancestry,
         min_total_cov=args.min_total_cov,
@@ -281,6 +287,7 @@ def run(config):
         pileup_file,
         simulation_pileup_file,
         shapeit2_file,
+        config.het_snp_file,
     )
     logging.info("======================================== ")
     logging.info(
