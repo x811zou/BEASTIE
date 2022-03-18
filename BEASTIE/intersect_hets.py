@@ -69,7 +69,7 @@ def Intersect_exonicHetSnps(
         )
         df_overlapped = df_overlapped.drop_duplicates()
         df_overlapped.sort_values(
-            ["chrN", "transcript_pos", "geneID", "transcriptID"],
+            ["chrN", "geneID", "transcript_pos", "transcriptID"],
             ascending=[True, True, True, True],
             inplace=True,
         )
