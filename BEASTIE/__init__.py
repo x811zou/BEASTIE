@@ -53,14 +53,177 @@ def check_arguments():
         description="Bayesian Estimation of Allele Specific Transcription Integrating across Exons",
     )
     parser.add_argument(
-        "-c",
-        "--config",
-        help="File containing parameters for running BEASTIE",
+        "--prefix",
+        help="Input is read from <input_dir>/<prefix> and output written to <output_dir>/<prefix>.",
         required=True,
+    )
+    parser.add_argument(
+        "--vcf-filename",
+        help="Name of VCF file in <input_dir>/<prefix>.",
+        required=True,
+    )
+    parser.add_argument(
+        '--vcf-sample-name',
+        help="Name of sample in VCF file (ex HG00096).",
+        required=True,
+    )
+    parser.add_argument(
+        '--pileup-filename',
+        help="Name of pileup file in <input_dir>/<prefix>.",
+        required=True,
+    )
+    parser.add_argument(
+        '--shapeit2-phasing-filename',
+        help="Name of the shapeit2 generated phasing data in <input_dir>/<prefix>.",
+    )
+    parser.add_argument(
+        '--simulation-pileup-filename',
+        help="Name of simulated data pileup file in <input_dir>/<prefix>.",
+    )
+    parser.add_argument(
+        '--gencode-dir',
+        help="Path to gencode reference directory.",
+        default=None,
+    )
+    parser.add_argument(
+        '--ancestry',
+        help="Ancestry abbreviation (ex GBR, YRI, CEU, ...).",
+        required=True
+    )
+    parser.add_argument(
+        "--min-total-cov",
+        help="Minimum coverage requirement for total read counts on one site.",
+        default=1,
+        type=int
+    )
+    parser.add_argument(
+        "--min-single-cov",
+        help="Minimum coverage requirement for each REF/ALT allele.",
+        default=0,
+        type=int
+    )
+    parser.add_argument(
+        "--sigma",
+        help="Dispersion parameter for BEASTIE STAN model.",
+        default=0.5,
+        type=float
+    )
+    parser.add_argument(
+        "--cutoff",
+        help="Binomial test p-value cutoff.",
+        default=0.05,
+        type=float
+    )
+    parser.add_argument(
+        "--alpha",
+        help="Type-1 error rate for lambda prediction model.",
+        default=0.05,
+        type=float
+    )
+    parser.add_argument(
+        '--chr-start',
+        help='Starting chromosome number',
+        default=1,
+        type=int
+    )
+    parser.add_argument(
+        '--chr-end',
+        help='Ending chromosome number',
+        default=22,
+        type=int
+    )
+    parser.add_argument(
+        '--read-length',
+        help="Average length of reads for input fastq data.",
+        type=int,
+        required=True
+    )
+    parser.add_argument(
+        '--ld-token',
+        help='LDlink API Token.  Register at https://ldlink.nci.nih.gov/?tab=apiaccess',
+        required=True,
+    )
+    parser.add_argument(
+        '--model-name',
+        help='Name of stan model to use.',
+        default='iBEASTIE2',
+    )
+    parser.add_argument(
+        '--STAN',
+        help='Path to STAN model.',
+        required=True
+    )
+    parser.add_argument(
+        '--ref-dir',
+        help='Path to reference directory containing AF annotation and gencode',
+        default="UNSET_REF_DIR",
+    )
+    parser.add_argument(
+        '--input-dir',
+        help='Path to directory containing input files',
+        required=True,
+    )
+    parser.add_argument(
+        '--save-intermediate',
+        help='Keep intermediate files.',
+        action='store_true'
+    )
+    parser.add_argument(
+        '--warmup',
+        help='Number of warmup estimates to burn in STAN model.',
+        default=1000,
+        type=int
+    ),
+    parser.add_argument(
+        '--keeper',
+        help='Number of estimates to keep from STAN model.',
+        default=1000,
+        type=int,
+    )
+    parser.add_argument(
+        '--output-dir',
+        help='Path to directory where output will be placed.',
+        required=True
+    )
+    parser.add_argument(
+        '--ldlink-cache-dir',
+        help='Path to directory to save ldlink cache database.',
+        default='~/.beastie',
     )
 
     return parser.parse_args()
 
+def load_config_from_args(args):
+    return ConfigurationData(
+        prefix=args.prefix,
+        vcf_file_name=args.vcf_filename,
+        vcf_sample_name=args.vcf_sample_name,
+        pileup_file_name=args.pileup_filename,
+        shapeit2=args.shapeit2_phasing_filename,
+        simulation_pileup_file_name=args.simulation_pileup_filename,
+        gencode_path=args.gencode_dir,
+        ancestry=args.ancestry,
+        min_total_cov=args.min_total_cov,
+        min_single_cov=args.min_single_cov,
+        sigma=args.sigma,
+        cutoff=args.cutoff,
+        alpha=args.alpha,
+        chr_start=args.chr_start,
+        chr_end=args.chr_end,
+        read_length=args.read_length,
+        LD_token=args.ld_token,
+        modelName=args.model_name,
+        STAN=args.STAN,
+        ref_dir=args.ref_dir,
+        input_dir=args.input_dir,
+        SAVE_INT=args.save_intermediate,
+        WARMUP=args.warmup,
+        KEEPER=args.keeper,
+        output_dir=args.output_dir,
+        ldlink_cache_dir=os.path.expanduser(
+            args.ldlink_cache_dir
+        ),
+    )
 
 def load_configuration(config_file):
     # If you do not change names of parameters config file, you do not need to modify this run_config.py
@@ -220,9 +383,3 @@ def run(config):
         config.chr_end,
         config.ldlink_cache_dir,
     )
-
-
-if __name__ == "__main__":
-    args = check_arguments()
-    config = load_configuration(args.config)
-    run(config)
