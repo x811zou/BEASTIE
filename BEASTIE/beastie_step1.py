@@ -121,7 +121,19 @@ def run(
             output_path, f"{prefix}_hetSNP_chr{chr_start}-{chr_end}.tsv"
         )
     else:
-        hetSNP = het_snp_file
+        provided_hetsnp = pd.read_csv(het_snp_file, sep="\t", header=0, index_col=False)
+        filtered_hetsnp = provided_hetsnp[
+            (provided_hetsnp["chrN"] <= chr_end)
+            & (provided_hetsnp["chrN"] >= chr_start)
+        ]
+        hetSNP = os.path.join(output_path, f"{prefix}_hetSNP_filtered.tsv")
+        filtered_hetsnp.to_csv(
+            hetSNP,
+            sep="\t",
+            header=True,
+            index=False,
+        )
+
     logging.info("=================")
     logging.info("================= Starting common step 1.1")
     if not os.path.exists(hetSNP):
@@ -159,7 +171,7 @@ def run(
     #####
     logging.info("=================")
     logging.info("================= Starting common step 1.2")
-    hetSNP_AF = f"{os.path.splitext(hetSNP)[0]}_AF.tsv"
+    hetSNP_AF = os.path.join(output_path, f"{prefix}_hetSNP_AF.tsv")
     if os.path.isfile(hetSNP_AF):
         logging.info("================= Skipping common step 1.2")
         logging.info("=================")
