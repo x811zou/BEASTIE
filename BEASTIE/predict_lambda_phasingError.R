@@ -23,7 +23,6 @@ if (length(args)==0) {
 suppressMessages(library("pasilla"))
 suppressMessages(library("readr"))
 suppressMessages(library("dplyr"))
-suppressMessages(library("LDlinkR"))
 library(glmnetUtils)
 
 
@@ -39,7 +38,6 @@ meta_error=args[9]
 beastie_wd=args[10]
 
 source(file.path(beastie_wd, "Get_phasing_error_rate.R"))
-source(file.path(beastie_wd, "Get_LD.R"))
 
 predict_lambda_realdata <- function(alpha,in_data,out_data,model){
   #colnames(in_data)<-c("gene_ID","total_reads","num_hets")

@@ -171,13 +171,9 @@ def run(
         logging.info("....... start annotating LD information")
         logging.debug("input {0} ".format(os.path.basename(file_for_LDannotation)))
         annotation.annotateLD(
-            prefix,
             ancestry,
             file_for_LDannotation,
-            tmp_path,
             LD_token,
-            chr_start,
-            chr_end,
             meta,
             ldlink_cache_dir,
         )
