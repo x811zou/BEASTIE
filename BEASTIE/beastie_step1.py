@@ -131,7 +131,6 @@ def run(
     if not os.path.exists(hetSNP):
         logging.info("....... start extracting heterozygous bi-allelic SNPs from VCF")
         count_all_het_sites(
-            prefix,
             vcfgz,
             hetSNP,
             int(chr_start),

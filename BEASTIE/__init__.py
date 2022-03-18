@@ -52,6 +52,10 @@ def check_arguments():
         description="Bayesian Estimation of Allele Specific Transcription Integrating across Exons",
     )
     parser.add_argument(
+        "--prefix",
+        help="Prefix for output files, default is --vcf-sample-name value.",
+    )
+    parser.add_argument(
         "--vcf-file",
         help="Path to VCF file",
         required=True,
@@ -81,7 +85,7 @@ def check_arguments():
     )
     parser.add_argument(
         "--ancestry",
-        help="Ancestry abbreviation (ex GBR, YRI, CEU, ...).",
+        help="Ancestry abbreviation (ex YRI, CEU, FIN ..).",
         required=True,
     )
     parser.add_argument(
@@ -170,7 +174,7 @@ def check_arguments():
 
 def load_config_from_args(args):
     return ConfigurationData(
-        prefix=args.vcf_sample_name,
+        prefix=args.prefix if args.prefix is not None else args.vcf_sample_name,
         vcf_file=args.vcf_file,
         vcf_sample_name=args.vcf_sample_name,
         pileup_file=args.pileup_file,

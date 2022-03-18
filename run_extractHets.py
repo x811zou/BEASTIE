@@ -41,7 +41,6 @@ if debug_gene == "None":
     debug_gene = None
 
 extractHets.count_all_het_sites(
-    sample,
     vcfgz_path_filename,
     output_path_filename,
     chr_start,
