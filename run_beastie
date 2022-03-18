@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+
+import BEASTIE
+
+if __name__ == "__main__":
+    args = BEASTIE.check_arguments()
+
+    config = BEASTIE.load_config_from_args(args)
+    BEASTIE.run(config)
