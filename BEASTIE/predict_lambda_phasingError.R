@@ -20,7 +20,6 @@ if (length(args)==0) {
 }
 
 #### call library
-suppressMessages(library("pasilla"))
 suppressMessages(library("readr"))
 suppressMessages(library("dplyr"))
 library(glmnetUtils)
