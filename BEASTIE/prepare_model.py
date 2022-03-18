@@ -36,7 +36,6 @@ def incorporate_shapeit2(
     filename,
     version="V1",
 ):
-    # print(hetSNP_intersect_unique)
     hetSNP_shapeit2 = pd.merge(
         hetSNP_intersect_unique, shapeit2, how="inner", on=["chr", "pos"]
     )
