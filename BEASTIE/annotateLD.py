@@ -15,18 +15,8 @@ from BEASTIE.ldlink_token_db import acquire_ldlink_token
 
 
 def annotateLD(
-    ancestry,
-    file_for_LDannotation,
-    LD_token,
-    meta,
-    ldlink_cache_dir,
+    ancestry, input_path, ldlink_token, out_path, ldlink_cache_dir, ldlink_token_db
 ):
-    annotateLD_cache(file_for_LDannotation, meta, ancestry, LD_token, ldlink_cache_dir)
-
-    logging.info(f"..... finish annotating LD for SNP pairs, file save at {meta}")
-
-
-def annotateLD_cache(input_path, out_path, pop, ldlink_token, cache_dir):
     logging.info(f"Using annotateLD with python API and sqlite cache")
 
     df = pandas.read_csv(input_path, sep="\t", header=0)
@@ -45,11 +35,13 @@ def annotateLD_cache(input_path, out_path, pop, ldlink_token, cache_dir):
             chrpos_to_rsid[prev.name] = prev.rsid
         prev = cur
 
-    with acquire_ldlink_token(
-        ldlink_token, os.path.join(cache_dir, "ldlink_tokens.db")
-    ) as acquired_token:
+    with acquire_ldlink_token(ldlink_token, ldlink_token_db) as acquired_token:
         ldlink_infos = fetch_ldpairs(
-            pairs, pop, chrpos_to_rsid, acquired_token, cache_dir
+            pairs,
+            ancestry,
+            chrpos_to_rsid,
+            acquired_token,
+            ldlink_cache_dir,
         )
 
     df[["pair_pos", "r2", "d"]] = "NA"

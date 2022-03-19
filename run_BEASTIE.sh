@@ -35,4 +35,5 @@ PYTHONPATH='.' python3 bin/beastie \
     --chr-end $2 \
     --STAN /usr/local/bin \
     --output-dir $output_dir \
-    --ldlink-cache-dir $base_dir
+    --ldlink-cache-dir $base_dir \
+    --ldlink-token-db /mnt/ldlink_tokens.db

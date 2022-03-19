@@ -93,6 +93,7 @@ def run(
     chr_start,
     chr_end,
     ldlink_cache_dir,
+    ldlink_token_db,
 ):
     (
         meta,
@@ -178,6 +179,7 @@ def run(
             LD_token,
             meta,
             ldlink_cache_dir,
+            ldlink_token_db,
         )
     else:
         logging.info("=================")

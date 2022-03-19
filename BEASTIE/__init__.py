@@ -43,6 +43,7 @@ ConfigurationData = namedtuple(
         "KEEPER",
         "output_dir",
         "ldlink_cache_dir",
+        "ldlink_token_db",
     ],
 )
 
@@ -173,6 +174,11 @@ def check_arguments():
         help="Path to directory to save ldlink cache database.",
         default="~/.beastie",
     )
+    parser.add_argument(
+        "--ldlink-token-db",
+        help="Path to database containing ldlink tokens for running parallel jobs.",
+        default="~/.beastie/ldlink_token.db",
+    )
 
     return parser.parse_args()
 
@@ -205,11 +211,8 @@ def load_config_from_args(args):
         KEEPER=args.keeper,
         output_dir=args.output_dir,
         ldlink_cache_dir=os.path.expanduser(args.ldlink_cache_dir),
+        ldlink_token_db=os.path.expanduser(args.ldlink_token_db),
     )
-
-    # ======== Pre-requisite: pre-defined directories and input files and reference files/directories
-
-    return config
 
 
 ###############################################
@@ -315,4 +318,5 @@ def run(config):
         config.chr_start,
         config.chr_end,
         config.ldlink_cache_dir,
+        config.ldlink_token_db,
     )
