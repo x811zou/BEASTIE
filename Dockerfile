@@ -14,7 +14,14 @@ COPY BEASTIE/iBEASTIE2.stan .
 RUN make iBEASTIE2
 
 
-
+FROM ubuntu:20.04 AS sqlite
+RUN apt-get update && apt-get install --no-install-recommends -qq wget ca-certificates make gcc g++ libbz2-1.0 libbz2-dev lbzip2 zlib1g-dev liblzma-dev
+WORKDIR /
+RUN wget https://www.sqlite.org/2022/sqlite-autoconf-3380100.tar.gz
+RUN tar -xf sqlite-autoconf-3380100.tar.gz 
+RUN mv sqlite-autoconf-3380100 sqlite
+WORKDIR /sqlite 
+RUN export CFLAGS='-DSQLITE_ENABLE_UPDATE_DELETE_LIMIT=1'; ./configure && make
 
 
 
@@ -58,9 +65,9 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV CYTHONIZE 1
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-    r-base-core r-base-dev libicu66 libstdc++6 openssl libxml2 libcurl4 zlib1g \
-    libbz2-1.0 lzma libhts3 vcftools samtools pipenv python3.8-venv libtbb2 \
-    r-cran-dplyr r-cran-readr krb5-user sssd-krb5
+  r-base-core r-base-dev libicu66 libstdc++6 openssl libxml2 libcurl4 zlib1g \
+  libbz2-1.0 lzma libhts3 vcftools samtools pipenv python3.8-venv libtbb2 \
+  r-cran-dplyr r-cran-readr krb5-user sssd-krb5
 
 RUN ln -s /usr/bin/python3.8 /usr/bin/python
 
@@ -68,10 +75,12 @@ COPY --from=CMDSTAN /cmdstan/iBEASTIE2 /usr/local/bin
 COPY --from=tabix /htslib/tabix /usr/local/bin
 
 COPY --from=rpackages /usr/local/lib/R/site-library /usr/local/lib/R/site-library
+COPY --from=sqlite /sqlite/.libs/libsqlite* /usr/local/lib
 
 COPY --from=beastie-py /usr/local/lib/python3.8/dist-packages /usr/local/lib/python3.8/dist-packages
 COPY --from=beastie-py /usr/local/bin/beastie /usr/local/bin/
 
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 
 

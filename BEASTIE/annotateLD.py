@@ -4,9 +4,14 @@ import logging
 import os
 import sqlite3
 from pathlib import Path
+import sys
+import time
+from contextlib import contextmanager
 
 import pandas
 import requests
+
+from BEASTIE.ldlink_token_db import acquire_ldlink_token
 
 
 def annotateLD(
@@ -40,7 +45,12 @@ def annotateLD_cache(input_path, out_path, pop, ldlink_token, cache_dir):
             chrpos_to_rsid[prev.name] = prev.rsid
         prev = cur
 
-    ldlink_infos = fetch_ldpairs(pairs, pop, chrpos_to_rsid, ldlink_token, cache_dir)
+    with acquire_ldlink_token(
+        ldlink_token, os.path.join(cache_dir, "ldlink_tokens.db")
+    ) as acquired_token:
+        ldlink_infos = fetch_ldpairs(
+            pairs, pop, chrpos_to_rsid, acquired_token, cache_dir
+        )
 
     df[["pair_pos", "r2", "d"]] = "NA"
 
