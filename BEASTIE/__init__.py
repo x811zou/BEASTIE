@@ -232,7 +232,7 @@ def run(config):
     model = os.path.join(config.STAN, config.modelName)
     today = date.today()
 
-    specification = f"s{config.sigma}_a{config.alpha}_sinCov{config.min_single_cov}_totCov{config.min_total_cov}_W{config.WARMUP}K{config.KEEPER}"
+    specification = f"chr{config.chr_start}-{config.chr_end}_s{config.sigma}_a{config.alpha}_sinCov{config.min_single_cov}_totCov{config.min_total_cov}_W{config.WARMUP}K{config.KEEPER}"
     output_path = out_dir
     specification_path = os.path.join(output_path, specification)
     log_path = os.path.join(specification_path, "log")
