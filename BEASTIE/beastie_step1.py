@@ -10,7 +10,7 @@ from unittest.mock import NonCallableMagicMock
 import pandas as pd
 from pathlib import Path
 from pkg_resources import resource_filename
-from .annotation import annotateAF
+from .annotationAF import annotateAF
 from .extractHets import count_all_het_sites
 from .helpers import runhelper
 from .intersect_hets import Intersect_exonicHetSnps
