@@ -2,6 +2,7 @@
 # =========================================================================
 # 2021 Xue Zou (xue.zou@duke.edu)
 # =========================================================================
+import multiprocessing
 import os
 import sys
 import logging
@@ -83,6 +84,45 @@ def check_file_existence(model, vcfgz, ref_dir, pileup, simulation_pileup, shape
             )
         else:
             logging.info("Great! shapeit2 file {0} exists.".format(shapeit2))
+
+
+def is_valid_parsed_pileup(filepath):
+    if not os.path.exists(filepath):
+        return False
+    parsed_pileup_data = pd.read_csv(filepath, sep="\t", header=0, index_col=False)
+    if parsed_pileup_data.shape[0] < 2:
+        os.remove(filepath)
+        logging.info("....... existed parsed pileup file is empty, removing")
+        return False
+    return True
+
+
+def parse_mpileup(
+    input_file, output_file, vcf_sample_name, vcfgz, min_total_cov, min_single_cov
+):
+    if not is_valid_parsed_pileup(output_file):
+        logging.info(
+            "....... start parsing samtools pileup result for {0}".format(output_file)
+        )
+        Parse_mpileup_allChr(
+            vcf_sample_name,
+            vcfgz,
+            input_file,
+            min_total_cov,
+            min_single_cov,
+            output_file,
+        )
+        parsed_pileup_data = pd.read_csv(
+            output_file, sep="\t", header=0, index_col=False
+        )
+        logging.debug(
+            "output {0} has {1} variants from parsing simulation mpileup file".format(
+                output_file, parsed_pileup_data.shape[0]
+            )
+        )
+    else:
+        logging.info(f"...... skipped parsing mpileup for {input_file}")
+    return "hello"
 
 
 def run(
@@ -201,98 +241,51 @@ def run(
     #####
     ##### 1.3 Generate parsed pileup file : parse samtools mpile up output files
     #####
-    parsed_pileup = os.path.join(
-        output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv"
-    )
     logging.info("=================")
     logging.info("================= Starting common step 1.3")
     # required data
-    if simulation_pileup is None:
-        simulation_parsed_pileup = None
-        if not os.path.exists(parsed_pileup):
-            logging.info("....... start parsing samtools pileup result for input data")
-            Parse_mpileup_allChr(
-                vcf_sample_name,
-                vcfgz,
-                pileup,
-                min_total_cov,
-                min_single_cov,
-                parsed_pileup,
-            )
-        else:
-            logging.info("================= Skipping common step 1.3")
-            logging.info("=================")
-    # required data + simulation data
-    else:
-        simulation_parsed_pileup = os.path.join(
-            output_path,
-            f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.simulation.tsv",
-        )
-        if not os.path.exists(parsed_pileup):
-            logging.info("....... start parsing samtools pileup result for input data")
-            Parse_mpileup_allChr(
-                vcf_sample_name,
-                vcfgz,
-                pileup,
-                min_total_cov,
-                min_single_cov,
-                parsed_pileup,
-            )
-        if not os.path.exists(simulation_parsed_pileup):
-            logging.info(
-                "....... start parsing samtools pileup result for simulation data"
-            )
-            Parse_mpileup_allChr(
-                vcf_sample_name,
-                vcfgz,
-                simulation_pileup,
-                min_total_cov,
-                min_single_cov,
-                simulation_parsed_pileup,
-            )
-        if os.path.exists(parsed_pileup) and os.path.exists(simulation_parsed_pileup):
-            logging.info("================= Skipping common step 1.3")
-            logging.info("=================")
 
-    data12 = pd.read_csv(parsed_pileup, sep="\t", header=0, index_col=False)
-    logging.debug(
-        "output {0} has {1} variants from parsing pileup file".format(
-            os.path.basename(parsed_pileup), data12.shape[0]
+    with multiprocessing.Pool(1) as pool:
+        handles = []
+        parsed_pileup = os.path.join(
+            output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv"
         )
-    )
-    if data12.shape[1] < 2:
-        os.remove(parsed_pileup)
-        logging.error("....... existed parsed pileup file is empty, please try again!")
-        sys.exit(1)
-    else:
-        logging.info(
-            "....... {0} save to {1}".format(
-                os.path.basename(parsed_pileup), os.path.dirname(parsed_pileup)
-            )
+        handle = pool.apply_async(
+            parse_mpileup,
+            (
+                pileup,
+                parsed_pileup,
+                vcf_sample_name,
+                vcfgz,
+                min_total_cov,
+                min_single_cov,
+            ),
         )
+        handles.append(handle)
 
-    if simulation_pileup is not None:
-        data122 = pd.read_csv(
-            simulation_parsed_pileup, sep="\t", header=0, index_col=False
-        )
-        logging.debug(
-            "output {0} has {1} variants from parsing pileup file".format(
-                os.path.basename(simulation_parsed_pileup), data122.shape[0]
+        if simulation_pileup is not None:
+            simulation_parsed_pileup = os.path.join(
+                output_path,
+                f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.simulation.tsv",
             )
-        )
-        if data122.shape[1] < 2:
-            os.remove(simulation_parsed_pileup)
-            logging.error(
-                "....... existed parsed pileup file for simulation data is empty, please try again!"
+            handle = pool.apply_async(
+                parse_mpileup,
+                (
+                    simulation_pileup,
+                    simulation_parsed_pileup,
+                    vcf_sample_name,
+                    vcfgz,
+                    min_total_cov,
+                    min_single_cov,
+                ),
             )
-            sys.exit(1)
-        else:
-            logging.info(
-                "....... {0} save to {1}".format(
-                    os.path.basename(simulation_parsed_pileup),
-                    os.path.dirname(simulation_parsed_pileup),
-                )
-            )
+            handles.append(handle)
+
+        pool.close()
+        pool.join()
+
+        for handle in handles:
+            handle.get()
 
     #####
     ##### 1.4 Combine hetSNPs and parsed mpileup & thinning reads: one reads only count once
