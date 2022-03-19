@@ -1,23 +1,25 @@
 #!/bin/bash
 
-input_dir=/Users/scarlett/allenlab/BEASTIE_other_example/NA06984
+base_dir=/mnt
+sample=NA06984
+input_dir=$base_dir/$sample
 
-input_vcfgz=$input_dir/VCF/NA06984.no_chr.content.SNPs.hets.vcf.gz
-sample_name_in_vcf=NA06984
-input_pileup=$input_dir/mpileup/NA06984.pileup
-input_simulation_pileup=$input_dir/simulation/mpileup/NA06984.pileup
-input_shapeit2=$input_dir/shapeit2/NA06984.shapeit.tsv
-input_hetsnp=$input_dir/hetSNP/NA06984_hetSNP.tsv
+input_vcfgz=$input_dir/$sample.no_chr.content.SNPs.hets.vcf.gz
+sample_name_in_vcf=$sample
+input_pileup=$input_dir/$sample.pileup
+input_simulation_pileup=$input_dir/$sample.simulation.pileup
+input_shapeit2=$input_dir/$sample.shapeit.tsv
+input_hetsnp=$input_dir/{$sample}_hetSNP.tsv
 ancestry=GBR
 read_length=75
-LD_token=08685d209c72
-output_dir=/Users/scarlett/allenlab/BEASTIE_other_example/NA06984/beastie
+LD_token=c313799c13c3
+output_dir=$base_dir/$sample/beastie
 
 ### in cluster
 #beastie \
 
 ### in local
-PYTHONPATH='.' python bin/beastie \
+PYTHONPATH='.' python3 bin/beastie \
     --prefix test \
     --vcfgz-file $input_vcfgz \
     --vcf-sample-name $sample_name_in_vcf \
@@ -30,5 +32,5 @@ PYTHONPATH='.' python bin/beastie \
     --ld-token $LD_token \
     --chr-start 21 \
     --chr-end 22 \
-    --STAN /Users/scarlett/allenlab/software/cmdstan/examples/iBEASTIE2 \
+    --STAN /usr/local/bin \
     --output-dir $output_dir

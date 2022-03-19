@@ -86,6 +86,45 @@ def check_file_existence(model, vcfgz, ref_dir, pileup, simulation_pileup, shape
             logging.info("Great! shapeit2 file {0} exists.".format(shapeit2))
 
 
+def is_valid_parsed_pileup(filepath):
+    if not os.path.exists(filepath):
+        return False
+    parsed_pileup_data = pd.read_csv(filepath, sep="\t", header=0, index_col=False)
+    if parsed_pileup_data.shape[1] < 2:
+        os.remove(filepath)
+        logging.info("....... existed parsed pileup file is empty, removing")
+        return False
+    return True
+
+
+def parse_mpileup(
+    input_file, output_file, vcf_sample_name, vcfgz, min_total_cov, min_single_cov
+):
+    if not is_valid_parsed_pileup(output_file):
+        logging.info(
+            "....... start parsing samtools pileup result for {0}".format(output_file)
+        )
+        Parse_mpileup_allChr(
+            vcf_sample_name,
+            vcfgz,
+            input_file,
+            min_total_cov,
+            min_single_cov,
+            output_file,
+        )
+        parsed_pileup_data = pd.read_csv(
+            output_file, sep="\t", header=0, index_col=False
+        )
+        logging.debug(
+            "output {0} has {1} variants from parsing simulation mpileup file".format(
+                output_file, parsed_pileup_data.shape[0]
+            )
+        )
+    else:
+        logging.info(f"...... skipped parsing mpileup for {input_file}")
+    return "hello"
+
+
 def run(
     prefix,
     vcf_sample_name,
@@ -206,55 +245,41 @@ def run(
     logging.info("================= Starting common step 1.3")
     # required data
 
-    def is_valid_parsed_pileup(filepath):
-        if not os.path.exists(filepath):
-            return False
-        parsed_pileup_data = pd.read_csv(parsed_pileup, sep="\t", header=0, index_col=False)
-        if parsed_pileup_data.shape[1] < 2:
-            os.remove(parsed_pileup)
-            logging.info("....... existed parsed pileup file is empty, removing")
-            return False
-        return True
-    
-    def parse_mpileup(input_file, output_file):
-        if not is_valid_parsed_pileup(output_file):
-            logging.info(
-                    "....... start parsing samtools pileup result for {0}".format(output_file)
-                )
-            Parse_mpileup_allChr(
-                vcf_sample_name,
-                vcfgz,
-                input_file,
-                min_total_cov,
-                min_single_cov,
-                output_file,
-            )
-            parsed_pileup_data = pd.read_csv(output_file, sep="\t", header=0, index_col=False)
-            logging.debug(
-                "output {0} has {1} variants from parsing simulation mpileup file".format(
-                    output_file, parsed_pileup_data.shape[0]
-                )
-            )
-        else:
-            logging.info(f"...... skipped parsing mpileup for {input_file}")
-
-    with multiprocessing.Pool(2) as pool:
+    with multiprocessing.Pool(1) as pool:
         parsed_pileup = os.path.join(
             output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv"
         )
-        pool.apply_async(parse_mpileup, (pileup, parsed_pileup))
+        pool.apply_async(
+            parse_mpileup,
+            (
+                pileup,
+                parsed_pileup,
+                vcf_sample_name,
+                vcfgz,
+                min_total_cov,
+                min_single_cov,
+            ),
+        )
 
         if simulation_pileup is not None:
             simulation_parsed_pileup = os.path.join(
                 output_path,
                 f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.simulation.tsv",
             )
-            pool.apply_async(parse_mpileup, (simulation_pileup, simulation_parsed_pileup))
+            pool.apply_async(
+                parse_mpileup,
+                (
+                    simulation_pileup,
+                    simulation_parsed_pileup,
+                    vcf_sample_name,
+                    vcfgz,
+                    min_total_cov,
+                    min_single_cov,
+                ),
+            )
 
         pool.close()
         pool.join()
-        
-
 
     #####
     ##### 1.4 Combine hetSNPs and parsed mpileup & thinning reads: one reads only count once
