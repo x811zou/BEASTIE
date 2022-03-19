@@ -2,7 +2,9 @@
 # =========================================================================
 # 2021 Xue Zou (xue.zou@duke.edu)
 # =========================================================================
+import gzip
 import logging
+import os
 
 from cyvcf2 import VCF
 
@@ -188,7 +190,10 @@ def Parse_mpileup_allChr(
     out_stream.write(
         "contig\tposition\tvariantID\trefAllele\trefCount\taltAllele\taltCount\ttotalCount\taltRatio\tif_Indel\tif_SV\tif_SNP\tif_biallelic\tlowMAPQDepth\tlowBaseQDepth\trawDepth\totherCount\n"
     )
-    with open(pileup_file, "r") as stream_in:
+
+    with gzip.open(pileup_file, "rt") if os.path.splitext(pileup_file)[
+        1
+    ] == ".gz" else open(pileup_file, "r") as stream_in:
         for i, line in enumerate(
             stream_in
         ):  # start reading in my pileup results line by line

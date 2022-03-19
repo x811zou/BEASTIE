@@ -90,7 +90,7 @@ def is_valid_parsed_pileup(filepath):
     if not os.path.exists(filepath):
         return False
     parsed_pileup_data = pd.read_csv(filepath, sep="\t", header=0, index_col=False)
-    if parsed_pileup_data.shape[1] < 2:
+    if parsed_pileup_data.shape[0] < 2:
         os.remove(filepath)
         logging.info("....... existed parsed pileup file is empty, removing")
         return False
@@ -246,10 +246,11 @@ def run(
     # required data
 
     with multiprocessing.Pool(1) as pool:
+        handles = []
         parsed_pileup = os.path.join(
             output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv"
         )
-        pool.apply_async(
+        handle = pool.apply_async(
             parse_mpileup,
             (
                 pileup,
@@ -260,13 +261,14 @@ def run(
                 min_single_cov,
             ),
         )
+        handles.append(handle)
 
         if simulation_pileup is not None:
             simulation_parsed_pileup = os.path.join(
                 output_path,
                 f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.simulation.tsv",
             )
-            pool.apply_async(
+            handle = pool.apply_async(
                 parse_mpileup,
                 (
                     simulation_pileup,
@@ -277,9 +279,13 @@ def run(
                     min_single_cov,
                 ),
             )
+            handles.append(handle)
 
         pool.close()
         pool.join()
+
+        for handle in handles:
+            handle.get()
 
     #####
     ##### 1.4 Combine hetSNPs and parsed mpileup & thinning reads: one reads only count once

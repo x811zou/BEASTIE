@@ -6,10 +6,10 @@ input_dir=$base_dir/$sample
 
 input_vcfgz=$input_dir/$sample.no_chr.content.SNPs.hets.vcf.gz
 sample_name_in_vcf=$sample
-input_pileup=$input_dir/$sample.pileup
-input_simulation_pileup=$input_dir/$sample.simulation.pileup
+input_pileup=$input_dir/$sample.pileup.gz
+input_simulation_pileup=$input_dir/$sample.simulation.pileup.gz
 input_shapeit2=$input_dir/$sample.shapeit.tsv
-input_hetsnp=$input_dir/{$sample}_hetSNP.tsv
+input_hetsnp=$input_dir/${sample}_hetSNP.tsv
 ancestry=GBR
 read_length=75
 LD_token=c313799c13c3
