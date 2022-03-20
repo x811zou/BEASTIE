@@ -170,7 +170,7 @@ def run(
             & (provided_hetsnp["chrN"] >= chr_start)
         ]
         hetSNP = os.path.join(output_path, f"{prefix}_hetSNP_filtered{chr_suffix}.tsv")
-        logging.info("....... filtering input hetSNP file to {hetSNP}")
+        logging.info(f"....... filtering input hetSNP file to {hetSNP}")
         filtered_hetsnp.to_csv(
             hetSNP,
             sep="\t",
