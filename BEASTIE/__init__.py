@@ -177,7 +177,6 @@ def check_arguments():
     parser.add_argument(
         "--ldlink-token-db",
         help="Path to database containing ldlink tokens for running parallel jobs.",
-        default="~/.beastie/ldlink_token.db",
     )
 
     return parser.parse_args()
