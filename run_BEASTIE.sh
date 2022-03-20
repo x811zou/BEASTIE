@@ -30,10 +30,13 @@ PYTHONPATH='.' python3 bin/beastie \
     --simulation-pileup-file $input_simulation_pileup \
     --ancestry $ancestry \
     --read-length $read_length \
-    --ld-token $LD_token \
     --chr-start $1 \
     --chr-end $2 \
     --STAN /usr/local/bin \
     --output-dir $output_dir \
     --ldlink-cache-dir $base_dir \
     --ldlink-token-db /mnt/ldlink_tokens.db
+    
+    # --ld-token $LD_token \
+
+    # \
