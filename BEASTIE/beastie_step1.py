@@ -10,7 +10,7 @@ from unittest.mock import NonCallableMagicMock
 import pandas as pd
 from pathlib import Path
 from pkg_resources import resource_filename
-from .annotation import annotateAF
+from .annotationAF import annotateAF
 from .extractHets import count_all_het_sites
 from .helpers import runhelper
 from .intersect_hets import Intersect_exonicHetSnps
@@ -152,21 +152,25 @@ def run(
         model, vcfgz, ref_dir, pileup, simulation_pileup, shapeit2_file
     )
 
+    chr_suffix = f"_chr{chr_start}-{chr_end}"
+
     #####
     ##### 1.1 Generate hetSNP file: extract heterozygous bi-allelic SNPs for specific chromosomes from all gencode transcripts
     #####
 
+    logging.info("=================")
+    logging.info("================= Starting common step 1.1")
+
     if not het_snp_file or not os.path.exists(het_snp_file):
-        hetSNP = os.path.join(
-            output_path, f"{prefix}_hetSNP_chr{chr_start}-{chr_end}.tsv"
-        )
+        hetSNP = os.path.join(output_path, f"{prefix}_hetSNP{chr_suffix}.tsv")
     else:
         provided_hetsnp = pd.read_csv(het_snp_file, sep="\t", header=0, index_col=False)
         filtered_hetsnp = provided_hetsnp[
             (provided_hetsnp["chrN"] <= chr_end)
             & (provided_hetsnp["chrN"] >= chr_start)
         ]
-        hetSNP = os.path.join(output_path, f"{prefix}_hetSNP_filtered.tsv")
+        hetSNP = os.path.join(output_path, f"{prefix}_hetSNP_filtered{chr_suffix}.tsv")
+        logging.info(f"....... filtering input hetSNP file to {hetSNP}")
         filtered_hetsnp.to_csv(
             hetSNP,
             sep="\t",
@@ -174,8 +178,6 @@ def run(
             index=False,
         )
 
-    logging.info("=================")
-    logging.info("================= Starting common step 1.1")
     if not os.path.exists(hetSNP):
         logging.info("....... start extracting heterozygous bi-allelic SNPs from VCF")
         count_all_het_sites(
@@ -211,7 +213,7 @@ def run(
     #####
     logging.info("=================")
     logging.info("================= Starting common step 1.2")
-    hetSNP_AF = os.path.join(output_path, f"{prefix}_hetSNP_AF.tsv")
+    hetSNP_AF = os.path.join(output_path, f"{prefix}_hetSNP_AF{chr_suffix}.tsv")
     if os.path.isfile(hetSNP_AF):
         logging.info("================= Skipping common step 1.2")
         logging.info("=================")
@@ -245,10 +247,10 @@ def run(
     logging.info("================= Starting common step 1.3")
     # required data
 
-    with multiprocessing.Pool(1) as pool:
+    with multiprocessing.Pool(2) as pool:
         handles = []
         parsed_pileup = os.path.join(
-            output_path, f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.tsv"
+            output_path, f"{prefix}_parsed_pileup{chr_suffix}.tsv"
         )
         handle = pool.apply_async(
             parse_mpileup,
@@ -266,7 +268,7 @@ def run(
         if simulation_pileup is not None:
             simulation_parsed_pileup = os.path.join(
                 output_path,
-                f"{prefix}_parsed_pileup_chr{chr_start}-{chr_end}.simulation.tsv",
+                f"{prefix}_parsed_pileup{chr_suffix}.simulation.tsv",
             )
             handle = pool.apply_async(
                 parse_mpileup,
@@ -302,7 +304,10 @@ def run(
     else:
         hetSNP_intersect_unique_sim = None
 
-    if not os.path.exists(hetSNP_intersect_unique):
+    if not os.path.exists(hetSNP_intersect_unique) or (
+        hetSNP_intersect_unique_sim is not None
+        and not os.path.exists(hetSNP_intersect_unique_sim)
+    ):
         logging.info(
             "....... start filtering variants with min total counts {0}, and min single allele counts {1}, each read of read length {2} only count for each variant".format(
                 min_total_cov, min_single_cov, read_length
@@ -343,6 +348,7 @@ def run(
             )
         )
     if hetSNP_intersect_unique_sim is not None:
+        logging.debug(f"loading file {hetSNP_intersect_unique_sim}")
         data144 = pd.read_csv(
             hetSNP_intersect_unique_sim, sep="\t", header=0, index_col=False
         )

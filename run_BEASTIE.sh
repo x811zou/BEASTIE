@@ -12,8 +12,9 @@ input_shapeit2=$input_dir/$sample.shapeit.tsv
 input_hetsnp=$input_dir/${sample}_hetSNP.tsv
 ancestry=GBR
 read_length=75
-LD_token=c313799c13c3
+LD_token=410113891a71
 output_dir=$base_dir/$sample/beastie
+
 
 ### in cluster
 #beastie \
@@ -29,8 +30,13 @@ PYTHONPATH='.' python3 bin/beastie \
     --simulation-pileup-file $input_simulation_pileup \
     --ancestry $ancestry \
     --read-length $read_length \
-    --ld-token $LD_token \
-    --chr-start 21 \
-    --chr-end 22 \
+    --chr-start $1 \
+    --chr-end $2 \
     --STAN /usr/local/bin \
-    --output-dir $output_dir
+    --output-dir $output_dir \
+    --ldlink-cache-dir $base_dir \
+    --ldlink-token-db /mnt/ldlink_tokens.db
+    
+    # --ld-token $LD_token \
+
+    # \

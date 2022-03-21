@@ -43,6 +43,7 @@ ConfigurationData = namedtuple(
         "KEEPER",
         "output_dir",
         "ldlink_cache_dir",
+        "ldlink_token_db",
     ],
 )
 
@@ -133,11 +134,6 @@ def check_arguments():
         required=True,
     )
     parser.add_argument(
-        "--ld-token",
-        help="LDlink API Token.  Register at https://ldlink.nci.nih.gov/?tab=apiaccess",
-        required=True,
-    )
-    parser.add_argument(
         "--model-name",
         help="Name of stan model to use.",
         default="iBEASTIE2",
@@ -169,15 +165,27 @@ def check_arguments():
         required=True,
     )
     parser.add_argument(
+        "--ld-token",
+        help="LDlink API Token.  Register at https://ldlink.nci.nih.gov/?tab=apiaccess",
+    )
+    parser.add_argument(
         "--ldlink-cache-dir",
         help="Path to directory to save ldlink cache database.",
         default="~/.beastie",
+    )
+    parser.add_argument(
+        "--ldlink-token-db",
+        help="Path to database containing ldlink tokens for running parallel jobs.",
     )
 
     return parser.parse_args()
 
 
 def load_config_from_args(args):
+    if not args.ld_token and not args.ldlink_token_db:
+        print("ERROR: ld-token or ldlink-token-db required")
+        sys.exit(1)
+
     return ConfigurationData(
         prefix=args.prefix if args.prefix is not None else args.vcf_sample_name,
         vcfgz_file=args.vcfgz_file,
@@ -205,11 +213,10 @@ def load_config_from_args(args):
         KEEPER=args.keeper,
         output_dir=args.output_dir,
         ldlink_cache_dir=os.path.expanduser(args.ldlink_cache_dir),
+        ldlink_token_db=os.path.expanduser(args.ldlink_token_db)
+        if args.ldlink_token_db
+        else None,
     )
-
-    # ======== Pre-requisite: pre-defined directories and input files and reference files/directories
-
-    return config
 
 
 ###############################################
@@ -232,7 +239,7 @@ def run(config):
     model = os.path.join(config.STAN, config.modelName)
     today = date.today()
 
-    specification = f"s{config.sigma}_a{config.alpha}_sinCov{config.min_single_cov}_totCov{config.min_total_cov}_W{config.WARMUP}K{config.KEEPER}"
+    specification = f"chr{config.chr_start}-{config.chr_end}_s{config.sigma}_a{config.alpha}_sinCov{config.min_single_cov}_totCov{config.min_total_cov}_W{config.WARMUP}K{config.KEEPER}"
     output_path = out_dir
     specification_path = os.path.join(output_path, specification)
     log_path = os.path.join(specification_path, "log")
@@ -315,4 +322,5 @@ def run(config):
         config.chr_start,
         config.chr_end,
         config.ldlink_cache_dir,
+        config.ldlink_token_db,
     )

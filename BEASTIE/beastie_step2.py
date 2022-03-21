@@ -12,7 +12,7 @@ import BEASTIE.binomial_for_real_data as binomial_for_real_data
 import BEASTIE.run_model_stan_wrapper as run_model_stan_wrapper
 from pkg_resources import resource_filename
 from .helpers import runhelper
-from . import annotation
+from .annotateLD import annotateLD
 from .prepare_model import (
     add_shapepit2,
     add_simulationData,
@@ -93,6 +93,7 @@ def run(
     chr_start,
     chr_end,
     ldlink_cache_dir,
+    ldlink_token_db,
 ):
     (
         meta,
@@ -127,7 +128,9 @@ def run(
         logging.info("....... simulator data is NOT provided")
         biased_variant = None
     else:
-        logging.info("....... simulator data is provided")
+        logging.info(
+            f"....... simulator data is provided {hetSNP_intersect_unique_sim}"
+        )
         biased_variant = add_simulationData(hetSNP_intersect_unique_sim)
 
     (
@@ -170,12 +173,13 @@ def run(
         logging.info("================= Starting specific step 2.2")
         logging.info("....... start annotating LD information")
         logging.debug("input {0} ".format(os.path.basename(file_for_LDannotation)))
-        annotation.annotateLD(
+        annotateLD(
             ancestry,
             file_for_LDannotation,
             LD_token,
             meta,
             ldlink_cache_dir,
+            ldlink_token_db,
         )
     else:
         logging.info("=================")
