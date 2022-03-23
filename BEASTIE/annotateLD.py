@@ -110,7 +110,7 @@ def fetch_ldpairs(pairs, pop, chrpos_to_rsid, ldlink_token, cache_dir):
 
 def get_cache_con(db_path):
     logging.debug(f"Loading LDLink cache from {db_path}")
-    con = sqlite3.connect(db_path)
+    con = sqlite3.connect(db_path, timeout=120)
 
     with con:
         cur = con.cursor()
