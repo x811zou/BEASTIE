@@ -4,6 +4,7 @@
 usage: python run_config.py config_file.cfg
 """
 import argparse
+from cgitb import handler
 import configparser
 import logging
 import os.path
@@ -265,10 +266,12 @@ def run(config):
     if os.path.isfile(logname):
         os.remove(logname)
 
-    tee = Tee(logname, "a")
+    file_handler = logging.FileHandler(logname, mode="w", delay=False)
+    stream_handler = logging.StreamHandler(sys.stdout)
     logging.basicConfig(
         # filename=logname,
         # filemode="a",
+        handlers=[file_handler, stream_handler],
         format="%(asctime)-15s [%(levelname)s] %(message)s",
         level=logging.DEBUG,
     )
