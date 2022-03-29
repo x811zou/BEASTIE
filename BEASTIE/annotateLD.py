@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# =========================================================================
+# Copyright (C) Xue Zou (xue.zou@duke.edu)
+# =========================================================================
 from collections import namedtuple
 from io import StringIO
 import logging

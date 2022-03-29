@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # =========================================================================
-# 2021 Xue Zou (xue.zou@duke.edu)
+# Copyright (C) Xue Zou (xue.zou@duke.edu)
 # =========================================================================
 import logging
 import os

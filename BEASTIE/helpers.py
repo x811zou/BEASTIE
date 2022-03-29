@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# =========================================================================
+# Copyright (C) Xue Zou (xue.zou@duke.edu)
+# =========================================================================
 import logging
 import subprocess
 import sys

@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# =========================================================================
+# Copyright (C) Xue Zou (xue.zou@duke.edu)
+# =========================================================================
 import logging
 import os
 import os.path

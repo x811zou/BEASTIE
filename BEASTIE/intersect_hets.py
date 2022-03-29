@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# =========================================================================
+# Copyright (C) Xue Zou (xue.zou@duke.edu)
+# =========================================================================
 import os
 import logging
 import statistics

@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # =========================================================================
-# 2021 Xue Zou (xue.zou@duke.edu)
+# Copyright (C) Xue Zou (xue.zou@duke.edu)
 # =========================================================================
+from faulthandler import is_enabled
 import multiprocessing
 import os
 import sys
@@ -264,8 +265,9 @@ def run(
             ),
         )
         handles.append(handle)
-
-        if simulation_pileup is not None:
+        if simulation_pileup is None:
+            simulation_parsed_pileup = None
+        else:
             simulation_parsed_pileup = os.path.join(
                 output_path,
                 f"{prefix}_parsed_pileup{chr_suffix}.simulation.tsv",
@@ -305,7 +307,7 @@ def run(
         hetSNP_intersect_unique_sim = None
 
     if not os.path.exists(hetSNP_intersect_unique) or (
-        hetSNP_intersect_unique_sim is not None
+        simulation_pileup is not None
         and not os.path.exists(hetSNP_intersect_unique_sim)
     ):
         logging.info(
@@ -327,6 +329,7 @@ def run(
         logging.info("================= Skipping specific step 1.4")
         logging.info("=================")
     data14 = pd.read_csv(hetSNP_intersect_unique, sep="\t", header=0, index_col=False)
+
     logging.debug(
         "output {0} has {1} het SNPs with AF annotation after taking intersection between output from 1.2 and 1.3".format(
             os.path.basename(hetSNP_intersect_unique), data14.shape[0]
