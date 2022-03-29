@@ -51,7 +51,7 @@ def isHeterozygous(genotype):
     return not genotype in HOMOZYGOUS_GENOTYPES
 
 
-def line_processor(line):
+def vcfline_processor(line):
     fields = line.split("\t")
     if len(fields) < 10:
         print(f"bad field line: '{line}'")
@@ -137,13 +137,12 @@ def count_all_het_sites(
             """
             construct a dict with unique exon region with VCF records {exon_region:VCF records}
             """
-            # byGene = {}
-            # total_biSNP = 0
-            # print(region_str_to_snp_infos)
-            # byGene[geneID] = byGene.get(geneID, set())
+            # print(exon_region_to_transcripts.keys())
+            # print(vcfFilename)
             exon_region_to_snp_infos = tabix_regions(
-                exon_region_to_transcripts.keys(), line_processor, vcfFilename
+                exon_region_to_transcripts.keys(), vcfline_processor, vcfFilename
             )
+
             data = []
             variant_to_transcript_info = {}
             for exon_region in exon_region_to_snp_infos:
@@ -168,7 +167,7 @@ def count_all_het_sites(
                 gene_ids = set(
                     [x[0].getGeneId() for x in variant_to_transcript_info[chr_pos]]
                 )
-                #print(f"{chr_pos} ---- {gene_ids}")
+                # print(f"{chr_pos} ---- {gene_ids}")
                 if len(gene_ids) == 1:
                     transcript, pos, rsid, genotype = variant_to_transcript_info[
                         chr_pos
