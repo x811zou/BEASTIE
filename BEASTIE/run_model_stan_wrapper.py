@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # =========================================================================
-# 2021 Xue Zou (xue.zou@duke.edu)
+# Copyright (C) Xue Zou (xue.zou@duke.edu)
 # =========================================================================
 import os
 import pickle
@@ -191,7 +191,8 @@ def summarize(thetas, alpha):
     median = getMedian(thetas)
     variance = np.var(thetas)
     CI_left, CI_right = getCredibleInterval(thetas, alpha)
-    return median, variance, CI_left, CI_right
+    mad = getMedian([abs(x - median) for x in thetas])
+    return median, variance, CI_left, CI_right, mad
 
 
 def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
@@ -208,6 +209,7 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
     prob_sum_lambda = []
     model_theta_med = []  # 150
     model_theta_var = []  # 150
+    model_mad = []  # 150
     CI_left = []
     CI_right = []
     geneID = []
@@ -225,7 +227,7 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
             # log_lambda=(log(alpha/(1-alpha)) -(as.numeric(model$coefficients[1])+as.numeric(model$coefficients[3])*as.integer(totalCount)))/as.numeric(model$coefficients[2]))
             # predicted_lambda = exp(log_lambda)
             # predicted_lambda_plus1 = predicted_lambda_1+1)
-            median, variance, left_CI, right_CI = summarize(gene_thetas, 0.05)
+            median, variance, left_CI, right_CI, mad = summarize(gene_thetas, 0.05)
             max_prob = getMaxProb_RMSE(gene_thetas)
             max_prob_lambda, sum_prob_lambda = getMaxProb_lambda(
                 gene_thetas, lambdas_choice
@@ -236,9 +238,11 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
             CI_right.append(round(right_CI, 3))
             model_theta_med.append(round(median, 3))
             model_theta_var.append(variance)
+            model_mad.append(mad)
 
     df = {
         "geneID": geneID,
+        "median_abs_deviation": model_mad,
         "posterior_median": model_theta_med,
         "posterior_variance": model_theta_var,
         "CI_left": CI_left,
