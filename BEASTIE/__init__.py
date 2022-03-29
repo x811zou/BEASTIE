@@ -12,6 +12,8 @@ from pkg_resources import resource_filename
 from collections import namedtuple
 from pathlib import Path
 from datetime import date
+
+from BEASTIE.helpers import Tee
 from . import beastie_step1, beastie_step2
 
 ConfigurationData = namedtuple(
@@ -254,17 +256,19 @@ def run(config):
 
     log_filename = f"{config.prefix}-{today.strftime('%b-%d-%Y')}"
 
-    stdout_stderr_filepath = os.path.join(log_path, f"{log_filename}.output")
-    stdout_stderr_file = open(stdout_stderr_filepath, "w")
-    sys.stdout = stdout_stderr_file
-    sys.stderr = stdout_stderr_file
+    # stdout_stderr_filepath = os.path.join(log_path, f"{log_filename}.output")
+    # stdout_stderr_file = open(stdout_stderr_filepath, "w")
+    # sys.stdout = stdout_stderr_file
+    # sys.stderr = stdout_stderr_file
 
     logname = os.path.join(log_path, f"{log_filename}.log")
     if os.path.isfile(logname):
         os.remove(logname)
+
+    tee = Tee(logname, "a")
     logging.basicConfig(
-        filename=logname,
-        filemode="a",
+        # filename=logname,
+        # filemode="a",
         format="%(asctime)-15s [%(levelname)s] %(message)s",
         level=logging.DEBUG,
     )

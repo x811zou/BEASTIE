@@ -63,3 +63,28 @@ def tabix_regions(regions, line_processor, target_file_path, comment_char="#"):
     logging.info(f"Got {len(region_to_results)} / {len(regions)} regions with data")
 
     return region_to_results
+
+
+class Tee(object):
+    def __init__(self, name, mode):
+        self.file = open(name, mode)
+        self.stdout = sys.stdout
+        sys.stdout = self
+
+    def write(self, data):
+        self.file.write(data)
+        self.stdout.write(data)
+
+    def flush(self):
+        self.file.flush()
+        self.stdout.flush()
+
+    def fileno(self):
+        return self.stdout.fileno()
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, _type, _value, _traceback):
+        sys.stdout = self.stdout
+        self.file.close()
