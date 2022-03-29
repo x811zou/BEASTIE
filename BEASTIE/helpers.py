@@ -35,6 +35,7 @@ def tabix_regions(regions, line_processor, target_file_path, comment_char="#"):
             command = (
                 f"tabix --separate-regions {target_file_path} --regions {file.name}"
             )
+
             output = Pipe.run(command)
     else:
         region_batch = " ".join(regions)
@@ -70,6 +71,7 @@ class Tee(object):
         self.file = open(name, mode)
         self.stdout = sys.stdout
         sys.stdout = self
+        self.encoding = self.stdout.encoding
 
     def write(self, data):
         self.file.write(data)

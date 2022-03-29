@@ -61,7 +61,10 @@ def acquire_ldlink_token(given_token, db_path, timeout=60 * 60 * 2):
 
     if not db_path:
         logging.debug(f"Using passed ldlink token {given_token}")
-        return given_token
+        try:
+            yield given_token
+        finally:
+            return
 
     db = get_tokens_db(db_path)
     if given_token:
