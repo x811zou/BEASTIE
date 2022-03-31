@@ -14,7 +14,6 @@ from collections import namedtuple
 from pathlib import Path
 from datetime import date
 
-from BEASTIE.helpers import Tee
 from . import beastie_step1, beastie_step2
 
 ConfigurationData = namedtuple(
@@ -28,6 +27,7 @@ ConfigurationData = namedtuple(
         "shapeit2",
         "het_snp_file",
         "gencode_path",
+        "af_path",
         "ancestry",
         "min_total_cov",
         "min_single_cov",
@@ -40,7 +40,6 @@ ConfigurationData = namedtuple(
         "LD_token",
         "modelName",
         "STAN",
-        "ref_dir",
         "SAVE_INT",
         "WARMUP",
         "KEEPER",
@@ -89,8 +88,13 @@ def check_arguments():
     )
     parser.add_argument(
         "--gencode-dir",
-        help="Path to gencode reference directory.",
-        default=None,
+        help="Path to gencode reference directory.  Should contain files gencode.chr{1..22}.gtf.gz",
+        required=True,
+    )
+    parser.add_argument(
+        "--af-dir",
+        help="Path to AF reference directory.  Should contain files AF_chr{1..22}.csv.gz",
+        required=True,
     )
     parser.add_argument(
         "--ancestry",
@@ -143,11 +147,6 @@ def check_arguments():
     )
     parser.add_argument("--STAN", help="Path to STAN model.", required=True)
     parser.add_argument(
-        "--ref-dir",
-        help="Path to reference directory containing AF annotation and gencode",
-        default="UNSET_REF_DIR",
-    )
-    parser.add_argument(
         "--save-intermediate", help="Keep intermediate files.", action="store_true"
     )
     parser.add_argument(
@@ -198,6 +197,7 @@ def load_config_from_args(args):
         simulation_pileup_file=args.simulation_pileup_file,
         het_snp_file=args.het_snp_file,
         gencode_path=args.gencode_dir,
+        af_path=args.af_dir,
         ancestry=args.ancestry,
         min_total_cov=args.min_total_cov,
         min_single_cov=args.min_single_cov,
@@ -210,7 +210,6 @@ def load_config_from_args(args):
         LD_token=args.ld_token,
         modelName=args.model_name,
         STAN=args.STAN,
-        ref_dir=args.ref_dir,
         SAVE_INT=args.save_intermediate,
         WARMUP=args.warmup,
         KEEPER=args.keeper,
@@ -233,12 +232,8 @@ def run(config):
     pileup_file = config.pileup_file
     shapeit2_file = config.shapeit2
     simulation_pileup_file = config.simulation_pileup_file
-    gencode_path = (
-        config.gencode_path
-        if config.gencode_path is not None
-        else resource_filename("BEASTIE", "reference/gencode_chr")
-        # else config.ref_dir + "/gencode_chr"
-    )
+    gencode_path = config.gencode_path
+    af_path = config.af_path
     model = os.path.join(config.STAN, config.modelName)
     today = date.today()
 
@@ -289,9 +284,9 @@ def run(config):
         output_path,
         tmp_path,
         gencode_path,
+        af_path,
         model,
         vcfgz_file,
-        config.ref_dir,
         config.ancestry,
         config.chr_start,
         config.chr_end,

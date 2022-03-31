@@ -25,7 +25,6 @@ PYTHONPATH='.' python3 bin/beastie \
     --vcfgz-file $input_vcfgz \
     --vcf-sample-name $sample_name_in_vcf \
     --pileup-file $input_pileup \
-    --het-snp-file $input_hetsnp \
     --shapeit2-phasing-file $input_shapeit2 \
     --simulation-pileup-file $input_simulation_pileup \
     --ancestry $ancestry \
@@ -34,9 +33,13 @@ PYTHONPATH='.' python3 bin/beastie \
     --chr-end $2 \
     --STAN /usr/local/bin \
     --output-dir $output_dir \
+    --af-dir /mnt/reference/AF \
+    --gencode-dir /mnt/reference/gencode_chr \
     --ldlink-cache-dir $base_dir \
     --ldlink-token-db /mnt/ldlink_tokens.db
     
     # --ld-token $LD_token \
+
+    # --het-snp-file $input_hetsnp \
 
     # \
