@@ -18,7 +18,7 @@ from .intersect_hets import Intersect_exonicHetSnps
 from .parse_mpileup import Parse_mpileup_allChr
 
 
-def check_file_existence(model, vcfgz, ref_dir, pileup, simulation_pileup, shapeit2):
+def check_file_existence(model, vcfgz, pileup, simulation_pileup, shapeit2):
     ##### STAN model
     if False and not os.path.exists(model):
         logging.error(
@@ -46,17 +46,6 @@ def check_file_existence(model, vcfgz, ref_dir, pileup, simulation_pileup, shape
         logging.info(
             "Great! VCFGZ file {0} and index {1} exists.".format(vcfgz, vcfgztbi)
         )
-    ##### reference directory : AF file and gencode directory
-    ref_dir = resource_filename("BEASTIE", "reference/")
-    if not os.path.exists(ref_dir):
-        logging.error(
-            "Oops! REFERENCE path {0} doesn't exist. Please try again ...".format(
-                ref_dir
-            )
-        )
-        sys.exit(1)
-    else:
-        logging.info("Great! REFERENCE path {0} exists.".format(ref_dir))
     ##### pileup_file
     if not os.path.isfile(pileup):
         logging.error(
@@ -134,7 +123,6 @@ def run(
     gencode_path,
     model,
     vcfgz,
-    ref_dir,
     ancestry,
     chr_start,
     chr_end,
@@ -149,9 +137,7 @@ def run(
     #####
     ##### 0.0 Check input file existence
     #####
-    check_file_existence(
-        model, vcfgz, ref_dir, pileup, simulation_pileup, shapeit2_file
-    )
+    check_file_existence(model, vcfgz, pileup, simulation_pileup, shapeit2_file)
 
     chr_suffix = f"_chr{chr_start}-{chr_end}"
 

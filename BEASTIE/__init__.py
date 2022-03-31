@@ -14,7 +14,6 @@ from collections import namedtuple
 from pathlib import Path
 from datetime import date
 
-from BEASTIE.helpers import Tee
 from . import beastie_step1, beastie_step2
 
 ConfigurationData = namedtuple(
@@ -40,7 +39,6 @@ ConfigurationData = namedtuple(
         "LD_token",
         "modelName",
         "STAN",
-        "ref_dir",
         "SAVE_INT",
         "WARMUP",
         "KEEPER",
@@ -90,7 +88,7 @@ def check_arguments():
     parser.add_argument(
         "--gencode-dir",
         help="Path to gencode reference directory.",
-        default=None,
+        required=True,
     )
     parser.add_argument(
         "--ancestry",
@@ -142,11 +140,6 @@ def check_arguments():
         default="iBEASTIE2",
     )
     parser.add_argument("--STAN", help="Path to STAN model.", required=True)
-    parser.add_argument(
-        "--ref-dir",
-        help="Path to reference directory containing AF annotation and gencode",
-        default="UNSET_REF_DIR",
-    )
     parser.add_argument(
         "--save-intermediate", help="Keep intermediate files.", action="store_true"
     )
@@ -210,7 +203,6 @@ def load_config_from_args(args):
         LD_token=args.ld_token,
         modelName=args.model_name,
         STAN=args.STAN,
-        ref_dir=args.ref_dir,
         SAVE_INT=args.save_intermediate,
         WARMUP=args.warmup,
         KEEPER=args.keeper,
@@ -233,12 +225,7 @@ def run(config):
     pileup_file = config.pileup_file
     shapeit2_file = config.shapeit2
     simulation_pileup_file = config.simulation_pileup_file
-    gencode_path = (
-        config.gencode_path
-        if config.gencode_path is not None
-        else resource_filename("BEASTIE", "reference/gencode_chr")
-        # else config.ref_dir + "/gencode_chr"
-    )
+    gencode_path = config.gencode_path
     model = os.path.join(config.STAN, config.modelName)
     today = date.today()
 
@@ -291,7 +278,6 @@ def run(config):
         gencode_path,
         model,
         vcfgz_file,
-        config.ref_dir,
         config.ancestry,
         config.chr_start,
         config.chr_end,
