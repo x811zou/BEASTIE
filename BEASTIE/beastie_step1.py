@@ -121,6 +121,7 @@ def run(
     output_path,
     tmp_path,
     gencode_path,
+    af_path,
     model,
     vcfgz,
     ancestry,
@@ -206,7 +207,7 @@ def run(
         logging.info("=================")
     else:
         logging.info("..... start annotating hetSNP from 1.1 with AF from 1000 Genome")
-        annotateAF(ancestry, hetSNP, hetSNP_AF)
+        annotateAF(af_path, ancestry, hetSNP, hetSNP_AF)
 
     data13 = pd.read_csv(hetSNP_AF, sep="\t", header=0, index_col=False)
     logging.debug(

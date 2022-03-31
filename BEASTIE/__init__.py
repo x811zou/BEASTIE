@@ -27,6 +27,7 @@ ConfigurationData = namedtuple(
         "shapeit2",
         "het_snp_file",
         "gencode_path",
+        "af_path",
         "ancestry",
         "min_total_cov",
         "min_single_cov",
@@ -87,7 +88,12 @@ def check_arguments():
     )
     parser.add_argument(
         "--gencode-dir",
-        help="Path to gencode reference directory.",
+        help="Path to gencode reference directory.  Should contain files gencode.chr{1..22}.gtf.gz",
+        required=True,
+    )
+    parser.add_argument(
+        "--af-dir",
+        help="Path to AF reference directory.  Should contain files AF_chr{1..22}.csv.gz",
         required=True,
     )
     parser.add_argument(
@@ -191,6 +197,7 @@ def load_config_from_args(args):
         simulation_pileup_file=args.simulation_pileup_file,
         het_snp_file=args.het_snp_file,
         gencode_path=args.gencode_dir,
+        af_path=args.af_dir,
         ancestry=args.ancestry,
         min_total_cov=args.min_total_cov,
         min_single_cov=args.min_single_cov,
@@ -226,6 +233,7 @@ def run(config):
     shapeit2_file = config.shapeit2
     simulation_pileup_file = config.simulation_pileup_file
     gencode_path = config.gencode_path
+    af_path = config.af_path
     model = os.path.join(config.STAN, config.modelName)
     today = date.today()
 
@@ -276,6 +284,7 @@ def run(config):
         output_path,
         tmp_path,
         gencode_path,
+        af_path,
         model,
         vcfgz_file,
         config.ancestry,
