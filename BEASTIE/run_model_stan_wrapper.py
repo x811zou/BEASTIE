@@ -250,8 +250,8 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
                 prob_sum_lambda.append(sum_prob_lambda)
                 CI_left.append(round(left_CI, 3))
                 CI_right.append(round(right_CI, 3))
-                model_theta_med.append(round(median, 3))
-                model_theta_var.append(round(variance, 3))
+                model_theta_med.append(median)
+                model_theta_var.append(variance)
                 model_mad.append(round(mad, 3))
 
     df = {
@@ -264,12 +264,12 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
         "posterior_mass_support_ALT": prob_sum_lambda,
     }
     df = pd.DataFrame(df)
-    # df["posterior_median2"] = df["posterior_median"].apply(
-    #     lambda x: round(x, 3 - int(floor(log10(abs(x)))))
-    # )
-    # df["posterior_variance2"] = df["posterior_variance"].apply(
-    #     lambda x: round(x, 3 - int(floor(log10(abs(x)))))
-    # )
+    df["posterior_median"] = df["posterior_median"].apply(
+        lambda x: round(x, 3 - int(floor(log10(abs(x)))))
+    )
+    df["posterior_variance"] = df["posterior_variance"].apply(
+        lambda x: round(x, 3 - int(floor(log10(abs(x)))))
+    )
     df.to_csv(
         out + "/" + prefix + "_ASE_ibeastie.tsv", sep="\t", header=True, index=False
     )
