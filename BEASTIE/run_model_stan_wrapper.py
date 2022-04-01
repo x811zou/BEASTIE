@@ -198,7 +198,8 @@ def summarize(thetas, alpha):
     thetas.sort()
     # print(f"length of sorted thetas {len(thetas)}")
     CI_left, CI_right = getCredibleInterval(thetas, alpha, n)
-    mad = stats.median_absolute_deviation(thetas)
+    mad = stats.median_abs_deviation(thetas, scale="normal")
+    # mad = stats.median_absolute_deviation(thetas)
     return median, variance, CI_left, CI_right, mad
 
 
@@ -347,7 +348,7 @@ def run(
     init_file = os.path.join(out_path, initFile)
     stan_output_file = os.path.join(out_path, outFile)
     ###########################################################################################
-    outname1 = "stan1.pickle"
+    outname1 = "stan.pickle"
     out_path = os.path.join(out_path, "theta")
     if not os.path.exists(out_path):
         os.makedirs(out_path)
