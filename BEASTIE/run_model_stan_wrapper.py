@@ -11,6 +11,7 @@ import pandas as pd
 from math import floor, log10, log2
 from .misc_tools.StanParser import StanParser
 from .helpers import runhelper
+import scipy.stats as stats
 
 
 def writeInitializationFile(filename):
@@ -191,7 +192,7 @@ def summarize(thetas, alpha):
     median = getMedian(thetas)
     variance = np.var(thetas)
     CI_left, CI_right = getCredibleInterval(thetas, alpha)
-    mad = getMedian([abs(x - median) for x in thetas])
+    mad = stats.median_absolute_deviation(thetas)
     return median, variance, CI_left, CI_right, mad
 
 
