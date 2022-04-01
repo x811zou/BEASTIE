@@ -13,6 +13,7 @@ from .misc_tools.StanParser import StanParser
 from .helpers import runhelper
 import scipy.stats as stats
 import statistics
+import sys
 
 
 def writeInitializationFile(filename):
@@ -178,9 +179,8 @@ def parse_lambda_validation_simulation(thetas, alphas, lambdas_file, lm):
 #     return thetas[mid]
 
 
-def getCredibleInterval(thetas, alpha):
+def getCredibleInterval(thetas, alpha, n):
     halfAlpha = alpha / 2.0
-    n = len(thetas)
     leftIndex = int(halfAlpha * n)
     rightIndex = n - leftIndex
     left = thetas[leftIndex + 1]
@@ -189,10 +189,15 @@ def getCredibleInterval(thetas, alpha):
 
 
 def summarize(thetas, alpha):
-    thetas.sort()
     median = statistics.median(thetas)
+    # print(f"median {median}")
     variance = np.var(thetas)
-    CI_left, CI_right = getCredibleInterval(thetas, alpha)
+    # print(f"variance {variance}")
+    # print(f"length of thetas {len(thetas)}")
+    n = len(thetas)
+    thetas.sort()
+    # print(f"length of sorted thetas {len(thetas)}")
+    CI_left, CI_right = getCredibleInterval(thetas, alpha, n)
     mad = stats.median_absolute_deviation(thetas)
     return median, variance, CI_left, CI_right, mad
 
@@ -220,27 +225,34 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
         for line in IN:
             fields = line.rstrip().split()
             ID = fields[0]
-            geneID.append(ID)  # read the ith geneID
+            # read the ith geneID
             # j=i+int(KEEPER)-1
             gene_thetas = thetas.get(ID)
-            lambdas_choice = lambdas.loc[lambdas["geneID"] == ID].iloc[
-                0, 6
-            ]  # has to change here
-            # log_lambda=(log(alpha/(1-alpha)) -(as.numeric(model$coefficients[1])+as.numeric(model$coefficients[3])*as.integer(totalCount)))/as.numeric(model$coefficients[2]))
-            # predicted_lambda = exp(log_lambda)
-            # predicted_lambda_plus1 = predicted_lambda_1+1)
-            median, variance, left_CI, right_CI, mad = summarize(gene_thetas, 0.05)
-            max_prob = getMaxProb_RMSE(gene_thetas)
-            max_prob_lambda, sum_prob_lambda = getMaxProb_lambda(
-                gene_thetas, lambdas_choice
-            )
-            # i=i+int(KEEPER)
-            prob_sum_lambda.append(sum_prob_lambda)
-            CI_left.append(round(left_CI, 3))
-            CI_right.append(round(right_CI, 3))
-            model_theta_med.append(round(median, 3))
-            model_theta_var.append(round(variance, 3))
-            model_mad.append(round(mad, 3))
+            # print(gene_thetas)
+            # print(len(gene_thetas))
+            if len(gene_thetas) > 1:
+                # print(">>>> record")
+                geneID.append(ID)
+                lambdas_choice = lambdas.loc[lambdas["geneID"] == ID].iloc[
+                    0, 6
+                ]  # has to change here
+                # log_lambda=(log(alpha/(1-alpha)) -(as.numeric(model$coefficients[1])+as.numeric(model$coefficients[3])*as.integer(totalCount)))/as.numeric(model$coefficients[2]))
+                # predicted_lambda = exp(log_lambda)
+                # predicted_lambda_plus1 = predicted_lambda_1+1)
+
+                median, variance, left_CI, right_CI, mad = summarize(gene_thetas, 0.05)
+                # print(f"mad {mad}")
+                max_prob = getMaxProb_RMSE(gene_thetas)
+                max_prob_lambda, sum_prob_lambda = getMaxProb_lambda(
+                    gene_thetas, lambdas_choice
+                )
+                # i=i+int(KEEPER)
+                prob_sum_lambda.append(sum_prob_lambda)
+                CI_left.append(round(left_CI, 3))
+                CI_right.append(round(right_CI, 3))
+                model_theta_med.append(round(median, 3))
+                model_theta_var.append(round(variance, 3))
+                model_mad.append(round(mad, 3))
 
     df = {
         "geneID": geneID,
@@ -252,12 +264,12 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
         "posterior_mass_support_ALT": prob_sum_lambda,
     }
     df = pd.DataFrame(df)
-    df["posterior_median"] = df["posterior_median"].apply(
-        lambda x: round(x, 3 - int(floor(log10(abs(x)))))
-    )
-    df["posterior_variance"] = df["posterior_variance"].apply(
-        lambda x: round(x, 3 - int(floor(log10(abs(x)))))
-    )
+    # df["posterior_median2"] = df["posterior_median"].apply(
+    #     lambda x: round(x, 3 - int(floor(log10(abs(x)))))
+    # )
+    # df["posterior_variance2"] = df["posterior_variance"].apply(
+    #     lambda x: round(x, 3 - int(floor(log10(abs(x)))))
+    # )
     df.to_csv(
         out + "/" + prefix + "_ASE_ibeastie.tsv", sep="\t", header=True, index=False
     )
