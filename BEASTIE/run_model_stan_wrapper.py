@@ -12,6 +12,7 @@ from math import floor, log10, log2
 from .misc_tools.StanParser import StanParser
 from .helpers import runhelper
 import scipy.stats as stats
+import statistics
 
 
 def writeInitializationFile(filename):
@@ -167,14 +168,14 @@ def parse_lambda_validation_simulation(thetas, alphas, lambdas_file, lm):
                 )
 
 
-def getMedian(thetas):
-    # Precondition: thetas is already sorted
-    thetas.sort()
-    n = len(thetas)
-    mid = int(n / 2)
-    if n % 2 == 0:
-        return (thetas[mid - 1] + thetas[mid]) / 2.0
-    return thetas[mid]
+# def getMedian(thetas):
+#     # Precondition: thetas is already sorted
+#     thetas.sort()
+#     n = len(thetas)
+#     mid = int(n / 2)
+#     if n % 2 == 0:
+#         return (thetas[mid - 1] + thetas[mid]) / 2.0
+#     return thetas[mid]
 
 
 def getCredibleInterval(thetas, alpha):
@@ -189,7 +190,7 @@ def getCredibleInterval(thetas, alpha):
 
 def summarize(thetas, alpha):
     thetas.sort()
-    median = getMedian(thetas)
+    median = statistics.median(thetas)
     variance = np.var(thetas)
     CI_left, CI_right = getCredibleInterval(thetas, alpha)
     mad = stats.median_absolute_deviation(thetas)
@@ -238,8 +239,8 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
             CI_left.append(round(left_CI, 3))
             CI_right.append(round(right_CI, 3))
             model_theta_med.append(round(median, 3))
-            model_theta_var.append(variance)
-            model_mad.append(mad)
+            model_theta_var.append(round(variance, 3))
+            model_mad.append(round(mad, 3))
 
     df = {
         "geneID": geneID,
