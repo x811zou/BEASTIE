@@ -8,7 +8,7 @@ import time
 
 def get_tokens_db(db_path):
     logging.debug(f"Using LDlink token db {db_path}")
-    db = sqlite3.connect(db_path)
+    db = sqlite3.connect(db_path, timeout=120)
     db.execute(
         """
 CREATE TABLE IF NOT EXISTS ldlink_tokens (
@@ -57,7 +57,7 @@ WHERE token=?
 
 @contextmanager
 def acquire_ldlink_token(given_token, db_path, timeout=60 * 60 * 2):
-    interval = 5
+    interval = 10
 
     if not db_path:
         logging.debug(f"Using passed ldlink token {given_token}")
