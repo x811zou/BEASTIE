@@ -3,6 +3,7 @@
 # Copyright (C) Xue Zou (xue.zou@duke.edu)
 # =========================================================================
 
+import dataclasses
 import re
 import os
 import sys
@@ -19,98 +20,85 @@ def change_phasing(data):
     data["patCount"] = data["refCount"]
     data["matCount"] = data["altCount"]
     reference_row = data.iloc[0]
-    if not isnan(reference_row["e_paternal"]):
+    if not isnan(int(reference_row["e_paternal"])):
         for x in range(1, row_n):
             row = data.iloc[x]
-            if row["e_paternal"] != reference_row["e_paternal"] and not isnan(
-                row["e_paternal"]
+            if int(row["e_paternal"]) != int(reference_row["e_paternal"]) and not isnan(
+                int(row["e_paternal"])
             ):
                 data.at[x, "patCount"] = row["altCount"]
                 data.at[x, "matCount"] = row["refCount"]
     return data
 
 
-def incorporate_shapeit2(
-    shapeit2,
-    hetSNP_intersect_unique,
-    filename,
-    version="V1",
-):
-    hetSNP_shapeit2 = pd.merge(
-        hetSNP_intersect_unique, shapeit2, how="inner", on=["chr", "pos"]
-    )
+def re_allocateReads(shapeit2_input, snp_input, version, filename, filename_cleaned):
+    if os.path.isfile(filename_cleaned):
+        logging.info(
+            "....... phased data is pre-existed! {0}".format(os.path.basename(filename))
+        )
+    else:
+        hetSNP_intersect_unique = pd.read_csv(
+            snp_input, sep="\t", header=0, index_col=False
+        )
+        if version == "shapeit2":
+            #### version1: with shapeit phasing
+            shapeit2 = pd.read_csv(shapeit2_input, sep="\t", header=0, index_col=False)
+            hetSNP_shapeit2 = pd.merge(
+                hetSNP_intersect_unique, shapeit2, how="inner", on=["chr", "pos"]
+            )
+            logging.debug(
+                "size of hetSNP unique is {0} ; size of shapeit2 phased variants is {1}; innerjoin size is {2}".format(
+                    len(hetSNP_intersect_unique), len(shapeit2), len(hetSNP_shapeit2)
+                )
+            )
+            phasing_data = hetSNP_shapeit2
 
-    hetSNP_shapeit2 = hetSNP_shapeit2[
-        [
-            "chr",
-            "chrN",
-            "pos",
-            "SNP_id",
-            "AF",
-            "geneID",
-            "genotype",
-            "refCount",
-            "altCount",
-            "totalCount",
-            "altRatio",
-            "e_paternal",
-            "e_maternal",
+        #### version2: without shapeit phasing
+        else:
+            hetSNP_intersect_unique[
+                ["e_paternal", "e_maternal"]
+            ] = hetSNP_intersect_unique.genotype.str.split("|", expand=True)
+            phasing_data = hetSNP_intersect_unique
+        phasing_data = phasing_data[
+            [
+                "chr",
+                "chrN",
+                "pos",
+                "SNP_id",
+                "AF",
+                "geneID",
+                "genotype",
+                "refCount",
+                "altCount",
+                "totalCount",
+                "altRatio",
+                "e_paternal",
+                "e_maternal",
+            ]
         ]
-    ]
-
-    base_out = os.path.splitext(filename)[0]
-    hetSNP_intersect_unique_shapeit2 = f"{base_out}.shapeit2.tsv"
-    hetSNP_intersect_unique_shapeit2_dropNA = f"{base_out}.shapeit2.keepfewcol.tsv"
-    #### version1: with shapeit2 phasing
-    if version == "V1":
-        geneIDs = hetSNP_shapeit2["geneID"].unique()
+        geneIDs = phasing_data["geneID"].unique()
         new_df = pd.DataFrame()
         for gene in geneIDs:
-            selected_gene = hetSNP_shapeit2[hetSNP_shapeit2["geneID"] == gene]
+            selected_gene = phasing_data[phasing_data["geneID"] == gene]
             selected_gene = selected_gene.reset_index(drop=True)
             edited_selected_gene = change_phasing(selected_gene)
             new_df = new_df.append(edited_selected_gene)
+        new_df.to_csv(filename, sep="\t", header=True, index=False)
 
-    #### version2: without shapeit phasing
-    # else:
-    #     new_df = hetSNP_shapeit2
-    #     row_n = new_df.shape[0]
-    #     s = new_df["e_paternal"] == 1
-    #     new_df["patCount"] = new_df["refCount"]
-    #     new_df["matCount"] = new_df["altCount"]
-    #     new_df.loc[s, ["patCount", "matCount"]] = new_df.loc[
-    #         s, ["altCount", "refCount"]
-    #     ].values
-    new_df.to_csv(hetSNP_intersect_unique_shapeit2, sep="\t", header=True, index=False)
-
-    # drop NAN
-    # new_df_dropNA = new_df.dropna()
-    # print(new_df_dropNA)
-    new_df_dropNA = new_df.drop(
-        ["refCount", "altCount", "e_paternal", "e_maternal"], axis=1
-    )
-    logging.debug(
-        "size of hetSNP unique is {0} ; size of shapeit2 phased variants is {1}; innerjoin size is {2}; innerjoin keepfew size is {3}".format(
-            len(hetSNP_intersect_unique), len(shapeit2), len(new_df), len(new_df_dropNA)
+        # drop NAN
+        # new_df_dropNA = new_df.dropna()
+        # print(new_df_dropNA)
+        new_df_dropNA = new_df.drop(
+            ["refCount", "altCount", "e_paternal", "e_maternal"], axis=1
         )
-    )
-    new_df_dropNA.to_csv(
-        hetSNP_intersect_unique_shapeit2_dropNA, sep="\t", header=True, index=False
-    )
-
-
-def add_shapepit2(
-    filename,
-    shapeit2_input,
-):
-    hetSNP_intersect_unique_shapeit2 = f"{os.path.splitext(filename)[0]}.shapeit2.tsv"
-    hetSNP_intersect_unique_shapeit2_dropNA = (
-        f"{os.path.splitext(filename)[0]}.shapeit2.keepfewcol.tsv"
-    )
-    if not os.path.isfile(hetSNP_intersect_unique_shapeit2_dropNA):
-        gene_df = pd.read_csv(filename, sep="\t", header=0, index_col=False)
-        shapeit2_df = pd.read_csv(shapeit2_input, sep="\t", header=0, index_col=False)
-        incorporate_shapeit2(shapeit2_df, gene_df, filename)
+        logging.debug(
+            "size of hetSNP unique is {0} ; phased data size is {1}, phased data after filtering size is {2}".format(
+                len(hetSNP_intersect_unique),
+                len(new_df),
+                len(new_df_dropNA),
+            )
+        )
+        new_df_dropNA.to_csv(filename_cleaned, sep="\t", header=True, index=False)
 
 
 def add_simulationData(sim_filename):
@@ -138,19 +126,10 @@ def add_simulationData(sim_filename):
     return simulator_df
 
 
-def generate_modelCount(prefix, filename, simulator_df=None, shapeit2_input=None):
-    base_out = os.path.splitext(filename)[0]
-
-    if shapeit2_input is None:
-        gene_df = pd.read_csv(filename, sep="\t", header=0, index_col=False)
-        print("len of real data variants is %s" % (gene_df.shape[0]))
-        data = gene_df
-        data["patCount"] = data["refCount"]
-        data["matCount"] = data["altCount"]
-    else:
-        filename = f"{base_out}.shapeit2.keepfewcol.tsv"
-        gene_df = pd.read_csv(filename, sep="\t", header=0, index_col=False)
-        data = gene_df
+def generate_modelCount(phased_filename, simulator_df=None):
+    base_out = os.path.splitext(phased_filename)[0]
+    data = pd.read_csv(phased_filename, sep="\t", header=0, index_col=False)
+    print("len of real data variants is %s" % (data.shape[0]))
     data["rsid"] = data["SNP_id"]
     data = data[
         [
@@ -169,7 +148,6 @@ def generate_modelCount(prefix, filename, simulator_df=None, shapeit2_input=None
     ]
     if simulator_df is not None:
         overlapped_variants = data.merge(simulator_df, on=["chr", "pos"], how="inner")
-        base_out = os.path.splitext(filename)[0]
         beforeFilter_filename = f"{base_out}_alignBiasbeforeFilter.tsv"
         overlapped_variants.to_csv(
             beforeFilter_filename, index=False, sep="\t", header=True
@@ -183,7 +161,7 @@ def generate_modelCount(prefix, filename, simulator_df=None, shapeit2_input=None
         Notoverlapped_variants = Notoverlapped_variants[
             Notoverlapped_variants["_merge"] == "left_only"
         ]
-        base_out = os.path.splitext(filename)[0]
+        base_out = os.path.splitext(phased_filename)[0]
         Notoverlapped_variants_filename = f"{base_out}_notoverlapped.tsv"
         Notoverlapped_variants.to_csv(
             Notoverlapped_variants_filename, index=False, sep="\t", header=True
@@ -221,47 +199,47 @@ def generate_modelCount(prefix, filename, simulator_df=None, shapeit2_input=None
                 "matCount",
                 "totalCount",
                 "altRatio",
-                "alt_binomial_p",
                 "rsid",
                 "AF",
                 "geneID",
                 "genotype",
+                "alt_binomial_p",
             ]
         ]
         logging.debug(
             "real data has {0} het SNPs, {1} after removing alignment bias".format(
-                gene_df.shape[0],
+                data.shape[0],
                 gene_df_filtered.shape[0],
             )
         )
-        base_out = os.path.splitext(filename)[0]
         afterFilter_filename = f"{base_out}_alignBiasFiltered.tsv"
         gene_df_filtered.to_csv(
             afterFilter_filename, index=False, sep="\t", header=True
         )
         data = gene_df_filtered
+        # data = gene_df_filtered
         logging.debug(
             "{0} has {1} het SNPs, {2} has {3} het SNPs ({4}%) pass alignment bias filtering".format(
-                os.path.basename(filename),
-                gene_df.shape[0],
+                os.path.basename(phased_filename),
+                data.shape[0],
                 os.path.basename(afterFilter_filename),
                 gene_df_filtered.shape[0],
-                round(100 * gene_df_filtered.shape[0] / gene_df.shape[0], 2),
+                round(100 * gene_df_filtered.shape[0] / data.shape[0], 2),
             )
         )
         file_for_LDannotation = afterFilter_filename
-        base_out = os.path.splitext(afterFilter_filename)[0]
     else:
         logging.debug(
             "{0} has {1} het SNPs, no alignment bias filtering".format(
-                os.path.basename(filename),
+                os.path.basename(phased_filename),
                 data.shape[0],
             )
         )
-        file_for_LDannotation = filename
-        base_out = os.path.splitext(filename)[0]
+        file_for_LDannotation = phased_filename
 
+    base_out = os.path.splitext(file_for_LDannotation)[0]
     file_for_lambda = "{0}.forlambda.tsv".format(base_out)
+    lambdaPredicted_file = "{0}.lambdaPredicted.tsv".format(base_out)
     out_modelinput = "{0}.modelinput.tsv".format(base_out)
     out_modelinput_error = "{0}.modelinput.w_error.tsv".format(base_out)
 
@@ -327,7 +305,13 @@ def generate_modelCount(prefix, filename, simulator_df=None, shapeit2_input=None
                 os.path.dirname(out_modelinput),
             )
         )
-    return file_for_LDannotation, file_for_lambda, out_modelinput, out_modelinput_error
+    return (
+        file_for_LDannotation,
+        file_for_lambda,
+        lambdaPredicted_file,
+        out_modelinput,
+        out_modelinput_error,
+    )
 
 
 def count_reads(fields):
@@ -356,11 +340,13 @@ def update_model_input_lambda_phasing(
     phasing_error = pd.read_csv(meta_error, header=0, sep="\t")
     updated_line = ""
     counter = 0
+
     with open(model_input, "r") as stream_in:
         for i, line in enumerate(
             stream_in
         ):  # start reading in my pileup results line by line
             line = re.sub("\n", "", line)
+            # logging.info("{0}".format(line))
             counter += 1
             if counter % 1000 == 0:
                 logging.info("{0} line processed".format(counter))
@@ -383,7 +369,7 @@ def update_model_input_lambda_phasing(
             pred_prob = [-1 if x != x else x for x in pred_prob]
             # logging.debug("corrected predicted prob :{0}".format(pred_prob))
             PI_pred = []
-            # for gene with 1 het, number of NA is 0, put 0 there
+            # for gene with 1 het, number of NA is 1, put 0 there
             if nhet == 1:
                 updated_line += "%s\t%d\n" % (line, 0)
             # for gene with more than 1 hets, append predicted switching error after nNAs
@@ -395,7 +381,7 @@ def update_model_input_lambda_phasing(
                         PI_pred = "%s\t%s" % (PI_pred, pred_prob[m])
                 updated_line += "%s\t%s\n" % (line, PI_pred)
             # if counter == 20:
-            #    sys.exit()
+            #     sys.exit()
     file1 = open(outfile, "w")
     file1.write(updated_line)
     file1.close()

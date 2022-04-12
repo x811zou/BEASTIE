@@ -100,36 +100,40 @@ if (!file.exists(meta_error)) {
 
   sample_info<-data_final_reginput%>%select(geneID,chr,pos,pair_pos,lag_pos,rsid,log10_distance,d,r2,MAF,lag_MAF,min_MAF,diff_MAF)
 
-  cv.glmnet.fit.GIAB<- readRDS(file.path(beastie_wd, "LogisticReg_GIAB_fitted_phasing_error.rds"))
-  x.test<-as.matrix(sample_info%>%dplyr::select(min_MAF,diff_MAF,log10_distance,r2,d)%>%
-                      dplyr::mutate(min_MAF_diff_MAF=min_MAF*diff_MAF)%>%
-                      mutate(min_MAF_log10_distance=log10_distance*min_MAF)%>%
-                      mutate(min_MAF_r2=min_MAF*r2)%>%
-                      mutate(min_MAF_d=min_MAF*d)%>%
-                      mutate(diff_MAF_log10_distance=log10_distance*diff_MAF)%>%
-                      mutate(diff_MAF_r2=diff_MAF*r2)%>%
-                      mutate(diff_MAF_d=diff_MAF*d)%>%
-                      mutate(log10_distance_r2=log10_distance*r2)%>%
-                      mutate(log10_distance_d=log10_distance*d)%>%
-                      mutate(r2_d=r2*d)%>%
-                      mutate(min_MAF_diff_MAF_log10_distance=min_MAF*diff_MAF*log10_distance)%>%
-                      mutate(min_MAF_diff_MAF_r2=min_MAF*diff_MAF*r2)%>%
-                      mutate(min_MAF_diff_MAF_d=min_MAF*diff_MAF*d)%>%
-                      mutate(min_MAF_log10_distance_r2=min_MAF*log10_distance*r2)%>%
-                      mutate(min_MAF_log10_distance_d=min_MAF*log10_distance*d)%>%
-                      mutate(min_MAF_r2_d=min_MAF*r2*d)%>%
-                      mutate(diff_MAF_log10_distance_r2=diff_MAF*log10_distance*r2)%>%
-                      mutate(diff_MAF_log10_distance_d=diff_MAF*log10_distance*d)%>%
-                      mutate(log10_distance_r2_d=log10_distance*r2*d)%>%
-                      mutate(min_MAF_diff_MAF_log10_distance_r2=min_MAF*diff_MAF*log10_distance*r2)%>%
-                      mutate(min_MAF_diff_MAF_log10_distance_d=min_MAF*diff_MAF*log10_distance*d)%>%
-                      mutate(min_MAF_diff_MAF_r2_d=min_MAF*diff_MAF*r2*d)%>%
-                      mutate(min_MAF_log10_distance_r2_d=min_MAF*log10_distance*r2*d)%>%
-                      mutate(min_MAF_diff_MAF_log10_distance_r2_d=min_MAF*diff_MAF*log10_distance*r2*d))
-  sample_info$pred_error_GIAB <- as.numeric(predict(cv.glmnet.fit.GIAB,alpha=0.7163,lambda=0.000271232500776062,newx=x.test,type='response'))
-
-  sample_info<-sample_info%>%group_by(geneID)%>%arrange(chr,pos)%>%dplyr::mutate(pred_error_GIAB=ifelse(pos==dplyr::first(pos),NA,pred_error_GIAB))%>%ungroup()
-
+  if(grepl("shapeit2",hetSNP_intersect_unique_forlambda_file, fixed=TRUE)){
+    print("shapeit2 phasing is used! we are predicting phasing error !")
+    cv.glmnet.fit.GIAB<- readRDS(file.path(beastie_wd, "LogisticReg_GIAB_fitted_phasing_error.rds"))
+    x.test<-as.matrix(sample_info%>%dplyr::select(min_MAF,diff_MAF,log10_distance,r2,d)%>%
+                        dplyr::mutate(min_MAF_diff_MAF=min_MAF*diff_MAF)%>%
+                        mutate(min_MAF_log10_distance=log10_distance*min_MAF)%>%
+                        mutate(min_MAF_r2=min_MAF*r2)%>%
+                        mutate(min_MAF_d=min_MAF*d)%>%
+                        mutate(diff_MAF_log10_distance=log10_distance*diff_MAF)%>%
+                        mutate(diff_MAF_r2=diff_MAF*r2)%>%
+                        mutate(diff_MAF_d=diff_MAF*d)%>%
+                        mutate(log10_distance_r2=log10_distance*r2)%>%
+                        mutate(log10_distance_d=log10_distance*d)%>%
+                        mutate(r2_d=r2*d)%>%
+                        mutate(min_MAF_diff_MAF_log10_distance=min_MAF*diff_MAF*log10_distance)%>%
+                        mutate(min_MAF_diff_MAF_r2=min_MAF*diff_MAF*r2)%>%
+                        mutate(min_MAF_diff_MAF_d=min_MAF*diff_MAF*d)%>%
+                        mutate(min_MAF_log10_distance_r2=min_MAF*log10_distance*r2)%>%
+                        mutate(min_MAF_log10_distance_d=min_MAF*log10_distance*d)%>%
+                        mutate(min_MAF_r2_d=min_MAF*r2*d)%>%
+                        mutate(diff_MAF_log10_distance_r2=diff_MAF*log10_distance*r2)%>%
+                        mutate(diff_MAF_log10_distance_d=diff_MAF*log10_distance*d)%>%
+                        mutate(log10_distance_r2_d=log10_distance*r2*d)%>%
+                        mutate(min_MAF_diff_MAF_log10_distance_r2=min_MAF*diff_MAF*log10_distance*r2)%>%
+                        mutate(min_MAF_diff_MAF_log10_distance_d=min_MAF*diff_MAF*log10_distance*d)%>%
+                        mutate(min_MAF_diff_MAF_r2_d=min_MAF*diff_MAF*r2*d)%>%
+                        mutate(min_MAF_log10_distance_r2_d=min_MAF*log10_distance*r2*d)%>%
+                        mutate(min_MAF_diff_MAF_log10_distance_r2_d=min_MAF*diff_MAF*log10_distance*r2*d))
+    sample_info$pred_error_GIAB <- as.numeric(predict(cv.glmnet.fit.GIAB,alpha=0.7163,lambda=0.000271232500776062,newx=x.test,type='response'))
+    sample_info<-sample_info%>%group_by(geneID)%>%arrange(chr,pos)%>%dplyr::mutate(pred_error_GIAB=ifelse(pos==dplyr::first(pos),NA,pred_error_GIAB))%>%ungroup()}
+  else{
+    print("VCF phasing is used! we are not predicting phasing error !")
+    sample_info$pred_error_GIAB <- "NA"
+  }
   write.table(sample_info,meta_error,sep = "\t", row.names = FALSE, col.names = TRUE)
   print(paste0("phasing error sample information saved to ",meta_error,sep=""))
 
