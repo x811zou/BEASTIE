@@ -14,7 +14,7 @@ from pkg_resources import resource_filename
 from .helpers import runhelper
 from .annotateLD import annotateLD
 from .prepare_model import (
-    add_shapepit2,
+    re_allocateReads,
     add_simulationData,
     generate_modelCount,
     significant_genes,
@@ -64,12 +64,7 @@ def create_file_name(prefix, tmp_path, shapeit2_input):
             os.path.basename(hetSNP_intersect_unique_lambdaPredicted_file)
         )
     )
-    return (
-        meta_file,
-        meta_error,
-        hetSNP_intersect_unique_forlambda_file,
-        hetSNP_intersect_unique_lambdaPredicted_file,
-    )
+    return (meta_file, meta_error)
 
 
 def run(
@@ -95,15 +90,10 @@ def run(
     ldlink_cache_dir,
     ldlink_token_db,
 ):
-    (
-        meta,
-        meta_error,
-        hetSNP_intersect_unique_forlambda_file,
-        hetSNP_intersect_unique_lambdaPredicted_file,
-    ) = create_file_name(prefix, tmp_path, shapeit2_input)
+    (meta, meta_error) = create_file_name(prefix, tmp_path, shapeit2_input)
 
     #####
-    ##### 2.1 incorporate with optional shapeit2 results, and convert data into model input format
+    ##### 2.1 phase data with shapeit2 or VCF, use simulation data to filter biased variants, and convert data into model input format
     #####
     logging.info("=================")
     logging.info("================= Starting specific step 2.1")
@@ -112,18 +102,55 @@ def run(
             os.path.basename(hetSNP_intersect_unique)
         )
     )
+
     p_cutoff = 0.05
-    if shapeit2_input is not None:
+    if shapeit2_input is None:
+        logging.info(
+            "....... shapeit2 phasing is NOT provided, we use VCF phasing information"
+        )
+        phasing_method = "VCF"
+        phased_filename = (
+            f"{os.path.splitext(hetSNP_intersect_unique)[0]}.phasedByVCF.tsv"
+        )
+    else:
         logging.info(
             "....... shapeit2 phasing is provided {0}".format(
                 os.path.basename(shapeit2_input)
             )
         )
-        add_shapepit2(hetSNP_intersect_unique, shapeit2_input)
+        phasing_method = "shapeit2"
+        phased_filename = (
+            f"{os.path.splitext(hetSNP_intersect_unique)[0]}.phasedByshapeit2.tsv"
+        )
+    filename_cleaned = f"{os.path.splitext(phased_filename)[0]}.cleaned.tsv"
+    re_allocateReads(
+        shapeit2_input,
+        hetSNP_intersect_unique,
+        phasing_method,
+        phased_filename,
+        filename_cleaned,
+    )
+    data21 = pd.read_csv(phased_filename, sep="\t", header=0, index_col=False)
+    if data21.shape[0] < 2:
+        os.remove(phased_filename)
+        logging.error(
+            "....... existed {0} is empty, please try again!".format(
+                os.path.basename(phased_filename)
+            )
+        )
+        sys.exit(1)
     else:
         logging.info(
-            "....... shapeit2 phasing is NOT provided, we take ALT as maternal, REF as paternal"
+            "....... {0} save to {1}".format(
+                os.path.basename(phased_filename),
+                os.path.dirname(phased_filename),
+            )
         )
+
+    #####
+    ##### 2.2 use simulation data to filter biased variants, and convert data into model input format
+    #####
+
     if hetSNP_intersect_unique_sim is None:
         logging.info("....... simulator data is NOT provided")
         biased_variant = None
@@ -136,19 +163,18 @@ def run(
     (
         file_for_LDannotation,
         file_for_lambda,
+        lambdaPredicted_file,
         base_modelin,
         base_modelin_error,
-    ) = generate_modelCount(
-        prefix, hetSNP_intersect_unique, biased_variant, shapeit2_input
-    )
+    ) = generate_modelCount(filename_cleaned, biased_variant)
 
-    data21 = pd.read_csv(file_for_lambda, sep="\t", header=0, index_col=False)
+    data22 = pd.read_csv(file_for_lambda, sep="\t", header=0, index_col=False)
     logging.debug(
         "output {0} has {1} genes for lambda prediction".format(
-            os.path.basename(file_for_lambda), data21.shape[0]
+            os.path.basename(file_for_lambda), data22.shape[0]
         )
     )
-    if data21.shape[0] < 2:
+    if data22.shape[0] < 2:
         os.remove(file_for_lambda)
         logging.error(
             "....... existed {0} with filtered sites prepared for lambda model file is empty, please try again!".format(
@@ -165,12 +191,12 @@ def run(
         )
 
     #####
-    ##### 2.2 Annotation LD
+    ##### 2.3 Annotation LD
     #####
     FORCE_ANNOTATE_LD = False
     if FORCE_ANNOTATE_LD or not os.path.isfile(meta):
         logging.info("=================")
-        logging.info("================= Starting specific step 2.2")
+        logging.info("================= Starting specific step 2.3")
         logging.info("....... start annotating LD information")
         logging.debug("input {0} ".format(os.path.basename(file_for_LDannotation)))
         annotateLD(
@@ -183,14 +209,14 @@ def run(
         )
     else:
         logging.info("=================")
-        logging.info("================= Skipping specific step 2.2")
-    data22 = pd.read_csv(meta, sep="\t", header=0, index_col=False)
+        logging.info("================= Skipping specific step 2.3")
+    data23 = pd.read_csv(meta, sep="\t", header=0, index_col=False)
     logging.debug(
         "output {0} has {1} het SNPs for LD (d',r2) annotation".format(
             os.path.basename(meta), data22.shape[0]
         )
     )
-    if data22.shape[0] < 2:
+    if data23.shape[0] < 2:
         os.remove(meta)
         logging.error(
             "....... existed {0} is empty, please try again!".format(
@@ -211,10 +237,10 @@ def run(
         )
 
     #####
-    ##### 2.3 logistic regression model predict switching phasing error, linear regression model predicts lambda
+    ##### 2.4 logistic regression model predict switching phasing error, linear regression model predicts lambda
     #####
     logging.info("=================")
-    logging.info("================= Starting step specific 2.3")
+    logging.info("================= Starting step specific 2.4")
     logging.info(
         "....... start predicting lambda for {0}".format(
             os.path.basename(file_for_lambda)
@@ -228,15 +254,15 @@ def run(
         "BEASTIE", "predict_lambda_phasingError.R"
     )
     beastie_wd = resource_filename("BEASTIE", ".")
-    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {tmp_path} {prefix} {model} {file_for_LDannotation} {file_for_lambda} {hetSNP_intersect_unique_lambdaPredicted_file} {meta} {meta_error} {beastie_wd}"
+    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {tmp_path} {prefix} {model} {file_for_LDannotation} {file_for_lambda} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd}"
     runhelper(cmd)
-    data23_1 = pd.read_csv(
-        hetSNP_intersect_unique_lambdaPredicted_file,
+    data24_1 = pd.read_csv(
+        lambdaPredicted_file,
         sep="\t",
         header=None,
         index_col=False,
     )
-    data23_2 = pd.read_csv(
+    data24_2 = pd.read_csv(
         meta_error,
         sep="\t",
         header=None,
@@ -247,13 +273,13 @@ def run(
     )
     logging.info(
         "lambda prediction model: input alpha (family wise error rate) is {0}, adjusted after size of input {1} is {2}".format(
-            alpha, data23_1.shape[0], alpha / data23_1.shape[0]
+            alpha, data24_1.shape[0], alpha / data24_1.shape[0]
         )
     )
     logging.debug(
         "output {0} has {1} genes with lambda prediction".format(
-            os.path.basename(hetSNP_intersect_unique_lambdaPredicted_file),
-            data23_1.shape[0],
+            os.path.basename(lambdaPredicted_file),
+            data24_1.shape[0],
         )
     )
     logging.info(
@@ -261,20 +287,20 @@ def run(
     )
     logging.debug(
         "output {0} has {1} het SNPs with switching error prediction".format(
-            os.path.basename(meta_error), data23_2.shape[0] - 1
+            os.path.basename(meta_error), data24_2.shape[0] - 1
         )
     )
 
     #####
-    ##### 2.4 adding switching error information to model input
+    ##### 2.5 adding switching error information to model input
     #####
     logging.info("=================")
-    logging.info("================= Starting specific step 2.4")
+    logging.info("================= Starting specific step 2.5")
     logging.info(
         "....... start adding model input with predicted swhitching error information"
     )
 
-    if os.path.isfile(base_modelin_error):
+    if not os.path.isfile(base_modelin_error):
         logging.info(
             "output {0} is generated for BEASTIE stan model".format(
                 os.path.basename(base_modelin_error)
@@ -291,7 +317,7 @@ def run(
     )
 
     #####
-    ##### 2.5 running stan model
+    ##### 2.6 running stan model
     #####
     logging.info("=================")
     logging.info("================= Starting specific step 2.5")
@@ -303,7 +329,7 @@ def run(
         alpha,
         model,
         result_path,
-        hetSNP_intersect_unique_lambdaPredicted_file,
+        lambdaPredicted_file,
         WARMUP,
         KEEPER,
         either_cov,
@@ -324,7 +350,7 @@ def run(
     logging.info("....... done with running binomial")
 
     #####
-    ##### 2.6 generating output
+    ##### 2.7 generating output
     #####
     logging.info("=================")
     logging.info("================= Starting specific step 2.6")
@@ -351,7 +377,7 @@ def run(
         outfilename,
         outfilename_ase,
         cutoff,
-        hetSNP_intersect_unique_lambdaPredicted_file,
+        lambdaPredicted_file,
     )
     logging.info("....... done with significant_gene")
     if not SAVE_INT:
