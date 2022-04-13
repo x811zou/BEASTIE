@@ -18,6 +18,15 @@ def flatten(lst):
     return [x for sublst in lst for x in sublst]
 
 
+# Returns iterator for chromosomes from start to end inclusive
+# and optionally the x chromosomee
+def chrRange(start, end, include_x_chromosome):
+    for i in range(start, end + 1):
+        yield str(i)
+    if include_x_chromosome:
+        yield "X"
+
+
 def tabix_regions(regions, line_processor, target_file_path, comment_char="#"):
     region_to_results = {}
 

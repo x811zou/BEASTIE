@@ -10,7 +10,7 @@ import pandas as pd
 from pkg_resources import resource_filename
 import gzip
 
-from BEASTIE.helpers import tabix_regions
+from BEASTIE.helpers import chrRange, tabix_regions
 from .misc_tools.GffTranscriptReader import GffTranscriptReader
 from .misc_tools.Pipe import Pipe
 
@@ -78,32 +78,23 @@ def count_all_het_sites(
     chr_end,
     gencode_path,
     DEBUG_GENES=None,
+    **kwargs,
 ):
+    include_x_chromosome = kwargs.pop("include_x_chromosome", False)
     filename = os.path.splitext(str(outputFilename))[0]
     count = 0
-    listChrN=[]
-    if str(chr_end) =="X":
-        N_end=22
-        listChr=range(chr_start,N_end+1)
-        for i in listChr:
-            listChrN.append(i)
-        listChrN.append("X")
-    else:
-        N_end=int(chr_end)
-        listChr=range(chr_start,N_end+1)
-        for i in listChr:
-            listChrN.append(i)
-    for Num in listChrN:
+
+    for chrId in chrRange(chr_start, chr_end, include_x_chromosome):
         reader = GffTranscriptReader()
-        geneFile = gencode_path + f"/gencode.chr{Num}.gtf.gz"
+        geneFile = gencode_path + f"/gencode.chr{chrId}.gtf.gz"
         geneList = reader.loadGenes(geneFile)
-        outputFile = filename + ".chr" + str(Num) + ".TEMP.tsv"
+        outputFile = filename + ".chr" + chrId + ".TEMP.tsv"
         if not os.path.isfile(outputFile):
-            chr = f"chr{Num}"
+            chr = f"chr{chrId}"
             geneList = list(filter(lambda gene: gene.getSubstrate() == chr, geneList))
             logging.info(
                 "..... start loading gencode annotation chr {0} with {1} genes".format(
-                    Num, len(geneList)
+                    chrId, len(geneList)
                 )
             )
 
@@ -122,10 +113,9 @@ def count_all_het_sites(
                 # gene.getSubstrate() chr21
                 # gene.getSubstrate().strip("chr")) 21
                 # print(f">>>> {gene.getID()}")
-                if str(gene.getSubstrate().strip("chr")) == str(Num):
+                if str(gene.getSubstrate().strip("chr")) == chrId:
                     Num_transcript = gene.getNumTranscripts()
                     chrom = gene.getSubstrate()  # column 1 --> chr21
-                    chromN = Num
                     for n in range(Num_transcript):
                         transcript = gene.getIthTranscript(n)
                         # rawExons = transcript.UTR
@@ -134,7 +124,7 @@ def count_all_het_sites(
                         for exon in rawExons:
                             begin = exon.getBegin()  # column 7
                             end = exon.getEnd()  # column 8
-                            exon_region = f"{chromN}:{begin}-{end}"
+                            exon_region = f"{chrId}:{begin}-{end}"
                             if not exon_region in exon_region_to_transcripts:
                                 exon_region_to_transcripts[exon_region] = []
                             exon_region_to_transcripts[exon_region].append(transcript)
@@ -192,7 +182,7 @@ def count_all_het_sites(
                     data.append(
                         [
                             chrom,
-                            chromN,
+                            chrId,
                             pos,
                             transcript.getGeneId(),
                             transcript.getId(),
@@ -213,7 +203,7 @@ def count_all_het_sites(
                 out_stream.write("\n")
             out_stream.close()
         else:
-            logging.info("..... chr{0} existed".format(Num))
+            logging.info("..... chr{0} existed".format(chrId))
         count += 1
         if count == 1:
             data = pd.read_csv(outputFile, sep="\t", header=0, index_col=False)

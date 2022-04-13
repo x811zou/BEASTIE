@@ -36,6 +36,7 @@ ConfigurationData = namedtuple(
         "alpha",
         "chr_start",
         "chr_end",
+        "include_x_chromosome",
         "read_length",
         "LD_token",
         "modelName",
@@ -135,6 +136,11 @@ def check_arguments():
         "--chr-end", help="Ending chromosome number", default=22, type=int
     )
     parser.add_argument(
+        "--include-x-chromosome",
+        help="Also process the X chromosome",
+        action="store_true",
+    )
+    parser.add_argument(
         "--read-length",
         help="Average length of reads for input fastq data.",
         type=int,
@@ -206,6 +212,7 @@ def load_config_from_args(args):
         alpha=args.alpha,
         chr_start=args.chr_start,
         chr_end=args.chr_end,
+        include_x_chromosome=args.include_x_chromosome,
         read_length=args.read_length,
         LD_token=args.ld_token,
         modelName=args.model_name,
