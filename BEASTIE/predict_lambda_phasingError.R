@@ -52,10 +52,12 @@ predict_lambda_realdata <- function(alpha,in_data,out_data,model){
 }
 
 ############################################## 1. predict lambda #####################################################
-if(grepl("iBEASTIE", model, fixed=TRUE)){
-  lambda.fit.simulation<- readRDS(file.path(beastie_wd, "LinearReg_iBEASTIE_fitted_model_lambda_loglambda_version2.rds"))
+if(grepl("phasedByVCF",hetSNP_intersect_unique_forlambda_file,fixed=T)){
+  print("using BEASTIE fitted model to predict lambda!")
+  lambda.fit.simulation<- readRDS(file.path(beastie_wd, "LinearReg_BEASTIE_fitted_model_lambda_loglambda_version2.rds"))
 }else{
-  lambda.fit.simulation<- readRDS(file.path(beastie_wd, "LinearReg_BEASTIE_fitted_model_lambda_version2.rds"))
+  print("using iBEASTIE fitted model to predict lambda!")
+  lambda.fit.simulation<- readRDS(file.path(beastie_wd, "LinearReg_iBEASTIE_fitted_model_lambda_loglambda_version2.rds"))
 }
 
 in_data<-read.delim(file.path(hetSNP_intersect_unique_forlambda_file),header=TRUE,sep="\t")
@@ -100,10 +102,10 @@ if (!file.exists(meta_error)) {
 
   sample_info<-data_final_reginput%>%select(geneID,chr,pos,pair_pos,lag_pos,rsid,log10_distance,d,r2,MAF,lag_MAF,min_MAF,diff_MAF)
   print(hetSNP_intersect_unique_forlambda_file)
-  if(grepl("noshapeit",hetSNP_intersect_unique_forlambda_file,fixed=T)){
+  if(grepl("phasedByVCF",hetSNP_intersect_unique_forlambda_file,fixed=T)){
     print("VCF phasing is used! we are not predicting phasing error !")
     sample_info$pred_error_GIAB <- NA
-    }else{}
+    }else{
     print("shapeit2 phasing is used! we are predicting phasing error !")
     cv.glmnet.fit.GIAB<- readRDS(file.path(beastie_wd, "LogisticReg_GIAB_fitted_phasing_error.rds"))
     x.test<-as.matrix(sample_info%>%dplyr::select(min_MAF,diff_MAF,log10_distance,r2,d)%>%
@@ -133,8 +135,7 @@ if (!file.exists(meta_error)) {
                         mutate(min_MAF_diff_MAF_log10_distance_r2_d=min_MAF*diff_MAF*log10_distance*r2*d))
     sample_info$pred_error_GIAB <- as.numeric(predict(cv.glmnet.fit.GIAB,alpha=0.7163,lambda=0.000271232500776062,newx=x.test,type='response'))
     sample_info<-sample_info%>%group_by(geneID)%>%arrange(chr,pos)%>%dplyr::mutate(pred_error_GIAB=ifelse(pos==dplyr::first(pos),NA,pred_error_GIAB))%>%ungroup()}
-
-  }
+    }
   write.table(sample_info,meta_error,sep = "\t", row.names = FALSE, col.names = TRUE)
   print(paste0("phasing error sample information saved to ",meta_error,sep=""))
 

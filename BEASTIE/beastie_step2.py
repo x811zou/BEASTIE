@@ -156,7 +156,9 @@ def run(
         biased_variant = None
     else:
         logging.info(
-            f"....... simulator data is provided {hetSNP_intersect_unique_sim}"
+            "....... simulator data is provided {0}".format(
+                os.path.basename(hetSNP_intersect_unique_sim)
+            )
         )
         biased_variant = add_simulationData(hetSNP_intersect_unique_sim)
 
