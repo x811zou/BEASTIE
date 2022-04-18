@@ -112,6 +112,7 @@ def run(
         phased_filename = (
             f"{os.path.splitext(hetSNP_intersect_unique)[0]}.phasedByVCF.tsv"
         )
+        phase_difference_filename = None
     else:
         logging.info(
             "....... shapeit2 phasing is provided {0}".format(
@@ -122,6 +123,9 @@ def run(
         phased_filename = (
             f"{os.path.splitext(hetSNP_intersect_unique)[0]}.phasedByshapeit2.tsv"
         )
+        phase_difference_filename = (
+            f"{os.path.splitext(hetSNP_intersect_unique)[0]}.phasingDifference.tsv"
+        )
     filename_cleaned = f"{os.path.splitext(phased_filename)[0]}.cleaned.tsv"
     re_allocateReads(
         shapeit2_input,
@@ -129,7 +133,9 @@ def run(
         phasing_method,
         phased_filename,
         filename_cleaned,
+        phase_difference_filename,
     )
+
     data21 = pd.read_csv(phased_filename, sep="\t", header=0, index_col=False)
     if data21.shape[0] < 2:
         os.remove(phased_filename)
@@ -168,7 +174,7 @@ def run(
         lambdaPredicted_file,
         base_modelin,
         base_modelin_error,
-    ) = generate_modelCount(filename_cleaned, biased_variant)
+    ) = generate_modelCount(filename_cleaned, biased_variant, phase_difference_filename)
 
     data22 = pd.read_csv(file_for_lambda, sep="\t", header=0, index_col=False)
     logging.debug(

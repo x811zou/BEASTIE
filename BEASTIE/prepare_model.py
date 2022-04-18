@@ -4,6 +4,7 @@
 # =========================================================================
 
 import dataclasses
+from pickle import NONE
 import re
 import os
 import sys
@@ -31,7 +32,14 @@ def change_phasing(data):
     return data
 
 
-def re_allocateReads(shapeit2_input, snp_input, version, filename, filename_cleaned):
+def re_allocateReads(
+    shapeit2_input,
+    snp_input,
+    version,
+    filename,
+    filename_cleaned,
+    phase_difference_file=None,
+):
     if os.path.isfile(filename_cleaned):
         logging.info(
             "....... phased data is pre-existed! {0}".format(os.path.basename(filename))
@@ -84,7 +92,66 @@ def re_allocateReads(shapeit2_input, snp_input, version, filename, filename_clea
             edited_selected_gene = change_phasing(selected_gene)
             new_df = new_df.append(edited_selected_gene)
         new_df.to_csv(filename, sep="\t", header=True, index=False)
-
+        ###################
+        # checking phasing difference within a gene
+        if version == "shapeit2" and phase_difference_file is not None:
+            new_df_diff = new_df.rename(
+                columns={
+                    "e_paternal": "shapeit2_paternal",
+                    "e_maternal": "shapeit2_maternal",
+                    "patCount": "shapeit2_patCount",
+                    "matCount": "shapeit2_matCount",
+                }
+            )
+            # new_df["shapeit2_paternal"] = new_df["e_paternal"]
+            # new_df["shapeit2_maternal"] = new_df["e_maternal"]
+            # new_df["shapeit2_patCount"] = new_df["patCount"]
+            # new_df["shapeit2_matCount"] = new_df["matCount"]
+            new_df_diff[["e_paternal", "e_maternal"]] = new_df_diff.genotype.str.split(
+                "|", expand=True
+            )
+            new_df_phasingDiff = pd.DataFrame()
+            for gene in geneIDs:
+                selected_gene = new_df_diff[new_df_diff["geneID"] == gene]
+                selected_gene = selected_gene.reset_index(drop=True)
+                edited_selected_gene = change_phasing(selected_gene)
+                new_df_phasingDiff = new_df_phasingDiff.append(edited_selected_gene)
+            new_df_phasingDiff = new_df_phasingDiff.rename(
+                columns={
+                    "e_paternal": "vcf_paternal",
+                    "e_maternal": "vcf_maternal",
+                    "patCount": "vcf_patCount",
+                    "matCount": "vcf_matCount",
+                }
+            )
+            # new_df_phasingDiff["vcf_paternal"] = new_df_phasingDiff["e_paternal"]
+            # new_df_phasingDiff["vcf_maternal"] = new_df_phasingDiff["e_maternal"]
+            # new_df_phasingDiff["vcf_patCount"] = new_df_phasingDiff["patCount"]
+            # new_df_phasingDiff["vcf_matCount"] = new_df_phasingDiff["matCount"]
+            new_df_phasingDiff["diff"] = np.where(
+                (
+                    new_df_phasingDiff["shapeit2_patCount"]
+                    == new_df_phasingDiff["vcf_patCount"]
+                )
+                & (
+                    new_df_phasingDiff["shapeit2_matCount"]
+                    == new_df_phasingDiff["vcf_matCount"]
+                ),
+                0,
+                1,
+            )
+            # new_df_phasingDiff_dropNA = new_df_phasingDiff.drop(
+            #     ["patCount", "matCount", "e_paternal", "e_maternal"], axis=1
+            # )
+            new_df_phasingDiff.to_csv(
+                phase_difference_file, sep="\t", header=True, index=False
+            )
+            logging.debug(
+                "size of hetSNP unique - compare phase diff is {0}".format(
+                    len(new_df_phasingDiff)
+                )
+            )
+        ###################
         # drop NAN
         # new_df_dropNA = new_df.dropna()
         # print(new_df_dropNA)
@@ -92,7 +159,7 @@ def re_allocateReads(shapeit2_input, snp_input, version, filename, filename_clea
             ["refCount", "altCount", "e_paternal", "e_maternal"], axis=1
         )
         logging.debug(
-            "size of hetSNP unique is {0} ; phased data size is {1}, phased data after filtering size is {2}".format(
+            "size of hetSNP unique is {0} ; phased data size is {1}, phased data after cleaning size is {2}".format(
                 len(hetSNP_intersect_unique),
                 len(new_df),
                 len(new_df_dropNA),
@@ -126,10 +193,10 @@ def add_simulationData(sim_filename):
     return simulator_df
 
 
-def generate_modelCount(phased_filename, simulator_df=None):
+def generate_modelCount(phased_filename, simulator_df=None, phase_difference_file=None):
+
     base_out = os.path.splitext(phased_filename)[0]
     data = pd.read_csv(phased_filename, sep="\t", header=0, index_col=False)
-    print("len of real data variants is %s" % (data.shape[0]))
     data["rsid"] = data["SNP_id"]
     data = data[
         [
@@ -148,6 +215,25 @@ def generate_modelCount(phased_filename, simulator_df=None):
     ]
     if simulator_df is not None:
         overlapped_variants = data.merge(simulator_df, on=["chr", "pos"], how="inner")
+        #################
+        # compare phasing diff
+        if phase_difference_file is not None:
+            phase_difference = pd.read_csv(
+                phase_difference_file, sep="\t", header=0, index_col=False
+            )
+            phase_difference = phase_difference.rename(columns={"SNP_id": "rsid"})
+            overlapped_variants_diff = phase_difference.merge(
+                simulator_df, on=["chr", "pos"], how="inner"
+            )
+            logging.debug(
+                "len of real data variants in compare phase difference file is {0}, after adding binomial test p-val from simulation is {1}".format(
+                    phase_difference.shape[0], overlapped_variants_diff.shape[0]
+                )
+            )
+            overlapped_variants_diff.to_csv(
+                phase_difference_file, index=False, sep="\t", header=True
+            )
+        #################
         beforeFilter_filename = f"{base_out}_alignBiasbeforeFilter.tsv"
         overlapped_variants.to_csv(
             beforeFilter_filename, index=False, sep="\t", header=True
