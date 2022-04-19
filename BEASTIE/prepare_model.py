@@ -32,47 +32,63 @@ def change_phasing(data):
     return data
 
 
-def re_allocateReads(
-    shapeit2_input,
-    snp_input,
-    version,
-    filename,
-    filename_cleaned,
-    phase_difference_file=None,
-):
-    if os.path.isfile(filename_cleaned):
-        logging.info(
-            "....... phased data is pre-existed! {0}".format(os.path.basename(filename))
+def filter_alignBias(p_cutoff, snp_input, simulator_df=None):
+    base_out = os.path.splitext(snp_input)[0]
+    hetSNP_intersect_unique = pd.read_csv(
+        snp_input, sep="\t", header=0, index_col=False
+    )
+    ################# 1. filter out variants with alignment bias first
+    if simulator_df is not None:
+        beforeFilter_filename = f"{base_out}_alignBiasbeforeFilter.tsv"
+        afterFilter_filename = f"{base_out}_alignBiasFiltered.tsv"
+        overlapped_variants = hetSNP_intersect_unique.merge(
+            simulator_df, on=["chr", "pos"], how="inner"
         )
-    else:
-        hetSNP_intersect_unique = pd.read_csv(
-            snp_input, sep="\t", header=0, index_col=False
+        overlapped_variants.to_csv(
+            beforeFilter_filename, index=False, sep="\t", header=True
         )
-        if version == "shapeit2":
-            #### version1: with shapeit phasing
-            shapeit2 = pd.read_csv(shapeit2_input, sep="\t", header=0, index_col=False)
-            hetSNP_shapeit2 = pd.merge(
-                hetSNP_intersect_unique, shapeit2, how="inner", on=["chr", "pos"]
+        Notoverlapped_variants = hetSNP_intersect_unique.drop_duplicates().merge(
+            simulator_df.drop_duplicates(),
+            on=["chr", "pos"],
+            how="left",
+            indicator=True,
+        )
+        Notoverlapped_variants = Notoverlapped_variants[
+            Notoverlapped_variants["_merge"] == "left_only"
+        ]
+        Notoverlapped_variants_filename = f"{base_out}_notoverlapped.tsv"
+        Notoverlapped_variants.to_csv(
+            Notoverlapped_variants_filename, index=False, sep="\t", header=True
+        )
+        logging.debug(
+            "{0} het SNPs in input data, {1} het SNPs in simulation data, overlapped het SNPs {2} in real data, not overlapped {3}".format(
+                hetSNP_intersect_unique.shape[0],
+                simulator_df.shape[0],
+                overlapped_variants.shape[0],
+                Notoverlapped_variants.shape[0],
             )
-            logging.debug(
-                "size of hetSNP unique is {0} ; size of shapeit2 phased variants is {1}; innerjoin size is {2}".format(
-                    len(hetSNP_intersect_unique), len(shapeit2), len(hetSNP_shapeit2)
-                )
+        )
+        simulator_df_biased = overlapped_variants[
+            overlapped_variants["alt_binomial_p"] > p_cutoff
+        ]
+        logging.debug(
+            "{0} ({1}%) overlapped het SNPs pass alignment bias filtering p-val > {1}".format(
+                simulator_df_biased.shape[0],
+                round(
+                    simulator_df_biased.shape[0]
+                    / hetSNP_intersect_unique.shape[0]
+                    * 100,
+                    2,
+                ),
+                p_cutoff,
             )
-            phasing_data = hetSNP_shapeit2
-
-        #### version2: without shapeit phasing
-        else:
-            hetSNP_intersect_unique[
-                ["e_paternal", "e_maternal"]
-            ] = hetSNP_intersect_unique.genotype.str.split("|", expand=True)
-            phasing_data = hetSNP_intersect_unique
-        phasing_data = phasing_data[
+        )
+        gene_df_filtered = simulator_df_biased[
             [
                 "chr",
                 "chrN",
                 "pos",
-                "SNP_id",
+                "rsid",
                 "AF",
                 "geneID",
                 "genotype",
@@ -80,6 +96,96 @@ def re_allocateReads(
                 "altCount",
                 "totalCount",
                 "altRatio",
+                "alt_binomial_p",
+            ]
+        ]
+        gene_df_filtered.to_csv(
+            afterFilter_filename, index=False, sep="\t", header=True
+        )
+        filename = afterFilter_filename
+    else:
+        hetSNP_intersect_unique_subset = hetSNP_intersect_unique[
+            [
+                "chr",
+                "chrN",
+                "pos",
+                "rsid",
+                "AF",
+                "geneID",
+                "genotype",
+                "refCount",
+                "altCount",
+                "totalCount",
+                "altRatio",
+                "alt_binomial_p",
+            ]
+        ]
+        afterFilter_filename = f"{base_out}_NoalignBiasFiltered.tsv"
+        hetSNP_intersect_unique_subset.to_csv(
+            afterFilter_filename, index=False, sep="\t", header=True
+        )
+        filename = afterFilter_filename
+        logging.debug(
+            "{0} has {1} het SNPs, no alignment bias filtering".format(
+                os.path.basename(hetSNP_intersect_unique_subset),
+                hetSNP_intersect_unique_subset.shape[0],
+            )
+        )
+    return filename
+
+
+def re_allocateReads(
+    alignBiasfiltered_filename,
+    shapeit2_input,
+    version,
+    filename,
+    filename_cleaned,
+    phase_difference_file=None,
+):
+    # read data after alignment bias filtering
+    hetSNP_intersect_unique_filtered = pd.read_csv(
+        alignBiasfiltered_filename, sep="\t", header=0, index_col=False
+    )
+    # phasing
+    if os.path.isfile(filename_cleaned):
+        logging.info(
+            "....... phased data is pre-existed! {0}".format(os.path.basename(filename))
+        )
+    else:
+        if version == "shapeit2":
+            #### version1: with shapeit phasing
+            shapeit2 = pd.read_csv(shapeit2_input, sep="\t", header=0, index_col=False)
+            hetSNP_shapeit2 = hetSNP_intersect_unique_filtered.merge(
+                shapeit2, how="inner", on=["chr", "pos"]
+            )
+            logging.debug(
+                "size of filtered hetSNP unique is {0} ; size of shapeit2 phased variants is {1}; innerjoin size is {2}".format(
+                    len(hetSNP_intersect_unique_filtered),
+                    len(shapeit2),
+                    len(hetSNP_shapeit2),
+                )
+            )
+            phasing_data = hetSNP_shapeit2
+        #### version2: without shapeit phasing
+        else:
+            hetSNP_intersect_unique_filtered[
+                ["e_paternal", "e_maternal"]
+            ] = hetSNP_intersect_unique_filtered.genotype.str.split("|", expand=True)
+            phasing_data = hetSNP_intersect_unique_filtered
+        phasing_data = phasing_data[
+            [
+                "chr",
+                "chrN",
+                "pos",
+                "rsid",
+                "AF",
+                "geneID",
+                "genotype",
+                "refCount",
+                "altCount",
+                "totalCount",
+                "altRatio",
+                "alt_binomial_p",
                 "e_paternal",
                 "e_maternal",
             ]
@@ -103,10 +209,6 @@ def re_allocateReads(
                     "matCount": "shapeit2_matCount",
                 }
             )
-            # new_df["shapeit2_paternal"] = new_df["e_paternal"]
-            # new_df["shapeit2_maternal"] = new_df["e_maternal"]
-            # new_df["shapeit2_patCount"] = new_df["patCount"]
-            # new_df["shapeit2_matCount"] = new_df["matCount"]
             new_df_diff[["e_paternal", "e_maternal"]] = new_df_diff.genotype.str.split(
                 "|", expand=True
             )
@@ -124,10 +226,6 @@ def re_allocateReads(
                     "matCount": "vcf_matCount",
                 }
             )
-            # new_df_phasingDiff["vcf_paternal"] = new_df_phasingDiff["e_paternal"]
-            # new_df_phasingDiff["vcf_maternal"] = new_df_phasingDiff["e_maternal"]
-            # new_df_phasingDiff["vcf_patCount"] = new_df_phasingDiff["patCount"]
-            # new_df_phasingDiff["vcf_matCount"] = new_df_phasingDiff["matCount"]
             new_df_phasingDiff["diff"] = np.where(
                 (
                     new_df_phasingDiff["shapeit2_patCount"]
@@ -140,27 +238,20 @@ def re_allocateReads(
                 0,
                 1,
             )
-            # new_df_phasingDiff_dropNA = new_df_phasingDiff.drop(
-            #     ["patCount", "matCount", "e_paternal", "e_maternal"], axis=1
-            # )
             new_df_phasingDiff.to_csv(
                 phase_difference_file, sep="\t", header=True, index=False
-            )
-            logging.debug(
-                "size of hetSNP unique - compare phase diff is {0}".format(
-                    len(new_df_phasingDiff)
-                )
             )
         ###################
         # drop NAN
         # new_df_dropNA = new_df.dropna()
         # print(new_df_dropNA)
+        # new_df = new_df.rename(columns={"SNP_id": "rsid"})
         new_df_dropNA = new_df.drop(
             ["refCount", "altCount", "e_paternal", "e_maternal"], axis=1
         )
         logging.debug(
-            "size of hetSNP unique is {0} ; phased data size is {1}, phased data after cleaning size is {2}".format(
-                len(hetSNP_intersect_unique),
+            "size of filtered hetSNP unique is {0} ; phased data size is {1}, phased data after cleaning size is {2}".format(
+                len(hetSNP_intersect_unique_filtered),
                 len(new_df),
                 len(new_df_dropNA),
             )
@@ -179,25 +270,14 @@ def add_simulationData(sim_filename):
         ),
         axis=1,
     )
-    # simulator_df_biased = simulator_df[simulator_df["alt_binomial_p"] <= p_cutoff]
-    # logging.debug(
-    #     "{0} has {1} het SNPs, {2} het SNPs did not pass alignment bias filtering p-val<= {3}".format(
-    #         os.path.basename(sim_filename),
-    #         simulator_df.shape[0],
-    #         simulator_df_biased.shape[0],
-    #         p_cutoff,
-    #     )
-    # )
     simulator_df.to_csv(sim_filename, index=False, sep="\t", header=True)
     simulator_df = simulator_df[["chr", "pos", "alt_binomial_p"]]
     return simulator_df
 
 
-def generate_modelCount(phased_filename, simulator_df=None, phase_difference_file=None):
-
+def generate_modelCount(phased_filename):
     base_out = os.path.splitext(phased_filename)[0]
     data = pd.read_csv(phased_filename, sep="\t", header=0, index_col=False)
-    data["rsid"] = data["SNP_id"]
     data = data[
         [
             "chr",
@@ -213,117 +293,6 @@ def generate_modelCount(phased_filename, simulator_df=None, phase_difference_fil
             "genotype",
         ]
     ]
-    if simulator_df is not None:
-        overlapped_variants = data.merge(simulator_df, on=["chr", "pos"], how="inner")
-        #################
-        # compare phasing diff
-        if phase_difference_file is not None:
-            phase_difference = pd.read_csv(
-                phase_difference_file, sep="\t", header=0, index_col=False
-            )
-            phase_difference = phase_difference.rename(columns={"SNP_id": "rsid"})
-            overlapped_variants_diff = phase_difference.merge(
-                simulator_df, on=["chr", "pos"], how="inner"
-            )
-            logging.debug(
-                "len of real data variants in compare phase difference file is {0}, after adding binomial test p-val from simulation is {1}".format(
-                    phase_difference.shape[0], overlapped_variants_diff.shape[0]
-                )
-            )
-            overlapped_variants_diff.to_csv(
-                phase_difference_file, index=False, sep="\t", header=True
-            )
-        #################
-        beforeFilter_filename = f"{base_out}_alignBiasbeforeFilter.tsv"
-        overlapped_variants.to_csv(
-            beforeFilter_filename, index=False, sep="\t", header=True
-        )
-        Notoverlapped_variants = data.drop_duplicates().merge(
-            simulator_df.drop_duplicates(),
-            on=["chr", "pos"],
-            how="left",
-            indicator=True,
-        )
-        Notoverlapped_variants = Notoverlapped_variants[
-            Notoverlapped_variants["_merge"] == "left_only"
-        ]
-        base_out = os.path.splitext(phased_filename)[0]
-        Notoverlapped_variants_filename = f"{base_out}_notoverlapped.tsv"
-        Notoverlapped_variants.to_csv(
-            Notoverlapped_variants_filename, index=False, sep="\t", header=True
-        )
-
-        logging.debug(
-            "{0} het SNPs in input data, {1} het SNPs in simulation data, overlapped het SNPs {2} in real data, not overlapped {3}".format(
-                data.shape[0],
-                simulator_df.shape[0],
-                overlapped_variants.shape[0],
-                Notoverlapped_variants.shape[0],
-            )
-        )
-        p_cutoff = 0.05
-        simulator_df_biased = overlapped_variants[
-            overlapped_variants["alt_binomial_p"] > p_cutoff
-        ]
-
-        logging.debug(
-            "{0} overlapped het SNPs pass alignment bias filtering p-val > {1}".format(
-                simulator_df_biased.shape[0],
-                p_cutoff,
-            )
-        )
-        # merged = data.merge(
-        #    simulator_df_biased, on=["chr", "pos"], how="left", indicator=True
-        # )
-        # merged = merged[merged["_merge"] == "left_only"]
-        gene_df_filtered = simulator_df_biased[
-            [
-                "chr",
-                "chrN",
-                "pos",
-                "patCount",
-                "matCount",
-                "totalCount",
-                "altRatio",
-                "rsid",
-                "AF",
-                "geneID",
-                "genotype",
-                "alt_binomial_p",
-            ]
-        ]
-        logging.debug(
-            "real data has {0} het SNPs, {1} after removing alignment bias".format(
-                data.shape[0],
-                gene_df_filtered.shape[0],
-            )
-        )
-        afterFilter_filename = f"{base_out}_alignBiasFiltered.tsv"
-        gene_df_filtered.to_csv(
-            afterFilter_filename, index=False, sep="\t", header=True
-        )
-        data = gene_df_filtered
-        # data = gene_df_filtered
-        logging.debug(
-            "{0} has {1} het SNPs, {2} has {3} het SNPs ({4}%) pass alignment bias filtering".format(
-                os.path.basename(phased_filename),
-                data.shape[0],
-                os.path.basename(afterFilter_filename),
-                gene_df_filtered.shape[0],
-                round(100 * gene_df_filtered.shape[0] / data.shape[0], 2),
-            )
-        )
-        file_for_LDannotation = afterFilter_filename
-    else:
-        logging.debug(
-            "{0} has {1} het SNPs, no alignment bias filtering".format(
-                os.path.basename(phased_filename),
-                data.shape[0],
-            )
-        )
-        file_for_LDannotation = phased_filename
-
-    base_out = os.path.splitext(file_for_LDannotation)[0]
     file_for_lambda = "{0}.forlambda.tsv".format(base_out)
     lambdaPredicted_file = "{0}.lambdaPredicted.tsv".format(base_out)
     out_modelinput = "{0}.modelinput.tsv".format(base_out)
@@ -392,7 +361,6 @@ def generate_modelCount(phased_filename, simulator_df=None, phase_difference_fil
             )
         )
     return (
-        file_for_LDannotation,
         file_for_lambda,
         lambdaPredicted_file,
         out_modelinput,

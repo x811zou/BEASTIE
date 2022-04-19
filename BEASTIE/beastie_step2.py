@@ -14,6 +14,7 @@ from pkg_resources import resource_filename
 from .helpers import runhelper
 from .annotateLD import annotateLD
 from .prepare_model import (
+    filter_alignBias,
     re_allocateReads,
     add_simulationData,
     generate_modelCount,
@@ -93,24 +94,60 @@ def run(
     (meta, meta_error) = create_file_name(prefix, tmp_path, shapeit2_input)
 
     #####
-    ##### 2.1 phase data with shapeit2 or VCF, use simulation data to filter biased variants, and convert data into model input format
+    ##### 2.1 use simulation data to filter biased variants
     #####
     logging.info("=================")
     logging.info("================= Starting specific step 2.1")
-    logging.info(
-        "....... start converting {0} for model input".format(
-            os.path.basename(hetSNP_intersect_unique)
+    logging.info("....... start filtering variants with alignment bias")
+    if hetSNP_intersect_unique_sim is None:
+        logging.info("....... simulator data is NOT provided")
+        biased_variant = None
+    else:
+        logging.info(
+            "....... simulator data is provided {0}".format(
+                os.path.basename(hetSNP_intersect_unique_sim)
+            )
         )
-    )
-
+        biased_variant = add_simulationData(hetSNP_intersect_unique_sim)
+    # running
     p_cutoff = 0.05
+    alignBiasfiltered_filename = filter_alignBias(
+        p_cutoff, hetSNP_intersect_unique, biased_variant
+    )
+    # checking
+    data21 = pd.read_csv(
+        alignBiasfiltered_filename, sep="\t", header=0, index_col=False
+    )
+    if data21.shape[0] < 2:
+        os.remove(alignBiasfiltered_filename)
+        logging.error(
+            "....... existed {0} is empty, please try again!".format(
+                os.path.basename(alignBiasfiltered_filename)
+            )
+        )
+        sys.exit(1)
+    else:
+        logging.info(
+            "....... {0} save to {1}".format(
+                os.path.basename(alignBiasfiltered_filename),
+                os.path.dirname(alignBiasfiltered_filename),
+            )
+        )
+    #####
+    ##### 2.2 phase data with shapeit2 or VCF
+    #####
+    logging.info("=================")
+    logging.info("================= Starting specific step 2.2")
+    logging.info(
+        "....... start phasing with shapeit2 or VCF, convert data into model input format"
+    )
     if shapeit2_input is None:
         logging.info(
             "....... shapeit2 phasing is NOT provided, we use VCF phasing information"
         )
         phasing_method = "VCF"
         phased_filename = (
-            f"{os.path.splitext(hetSNP_intersect_unique)[0]}.phasedByVCF.tsv"
+            f"{os.path.splitext(alignBiasfiltered_filename)[0]}.phasedByVCF.tsv"
         )
         phase_difference_filename = None
     else:
@@ -121,23 +158,24 @@ def run(
         )
         phasing_method = "shapeit2"
         phased_filename = (
-            f"{os.path.splitext(hetSNP_intersect_unique)[0]}.phasedByshapeit2.tsv"
+            f"{os.path.splitext(alignBiasfiltered_filename)[0]}.phasedByshapeit2.tsv"
         )
         phase_difference_filename = (
-            f"{os.path.splitext(hetSNP_intersect_unique)[0]}.phasingDifference.tsv"
+            f"{os.path.splitext(alignBiasfiltered_filename)[0]}.phasingDifference.tsv"
         )
-    filename_cleaned = f"{os.path.splitext(phased_filename)[0]}.cleaned.tsv"
+    # running
+    phased_clean_filename = f"{os.path.splitext(phased_filename)[0]}.cleaned.tsv"
     re_allocateReads(
+        alignBiasfiltered_filename,
         shapeit2_input,
-        hetSNP_intersect_unique,
         phasing_method,
         phased_filename,
-        filename_cleaned,
+        phased_clean_filename,
         phase_difference_filename,
     )
-
-    data21 = pd.read_csv(phased_filename, sep="\t", header=0, index_col=False)
-    if data21.shape[0] < 2:
+    # checking
+    data22_1 = pd.read_csv(phased_filename, sep="\t", header=0, index_col=False)
+    if data22_1.shape[0] < 2:
         os.remove(phased_filename)
         logging.error(
             "....... existed {0} is empty, please try again!".format(
@@ -153,36 +191,26 @@ def run(
             )
         )
 
-    #####
-    ##### 2.2 use simulation data to filter biased variants, and convert data into model input format
-    #####
-
-    if hetSNP_intersect_unique_sim is None:
-        logging.info("....... simulator data is NOT provided")
-        biased_variant = None
-    else:
-        logging.info(
-            "....... simulator data is provided {0}".format(
-                os.path.basename(hetSNP_intersect_unique_sim)
-            )
+    logging.info("....... start converting data into model input format")
+    logging.info(
+        "....... start converting {0} for model input".format(
+            os.path.basename(hetSNP_intersect_unique)
         )
-        biased_variant = add_simulationData(hetSNP_intersect_unique_sim)
-
+    )
     (
-        file_for_LDannotation,
         file_for_lambda,
         lambdaPredicted_file,
         base_modelin,
         base_modelin_error,
-    ) = generate_modelCount(filename_cleaned, biased_variant, phase_difference_filename)
+    ) = generate_modelCount(phased_clean_filename)
 
-    data22 = pd.read_csv(file_for_lambda, sep="\t", header=0, index_col=False)
+    data22_2 = pd.read_csv(file_for_lambda, sep="\t", header=0, index_col=False)
     logging.debug(
         "output {0} has {1} genes for lambda prediction".format(
-            os.path.basename(file_for_lambda), data22.shape[0]
+            os.path.basename(file_for_lambda), data22_2.shape[0]
         )
     )
-    if data22.shape[0] < 2:
+    if data22_2.shape[0] < 2:
         os.remove(file_for_lambda)
         logging.error(
             "....... existed {0} with filtered sites prepared for lambda model file is empty, please try again!".format(
@@ -206,10 +234,10 @@ def run(
         logging.info("=================")
         logging.info("================= Starting specific step 2.3")
         logging.info("....... start annotating LD information")
-        logging.debug("input {0} ".format(os.path.basename(file_for_LDannotation)))
+        logging.debug("input {0} ".format(os.path.basename(phased_clean_filename)))
         annotateLD(
             ancestry,
-            file_for_LDannotation,
+            phased_clean_filename,
             LD_token,
             meta,
             ldlink_cache_dir,
@@ -221,7 +249,7 @@ def run(
     data23 = pd.read_csv(meta, sep="\t", header=0, index_col=False)
     logging.debug(
         "output {0} has {1} het SNPs for LD (d',r2) annotation".format(
-            os.path.basename(meta), data22.shape[0]
+            os.path.basename(meta), data23.shape[0]
         )
     )
     if data23.shape[0] < 2:
@@ -262,7 +290,7 @@ def run(
         "BEASTIE", "predict_lambda_phasingError.R"
     )
     beastie_wd = resource_filename("BEASTIE", ".")
-    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {tmp_path} {prefix} {model} {file_for_LDannotation} {file_for_lambda} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd}"
+    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {file_for_lambda} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd}"
     runhelper(cmd)
     data24_1 = pd.read_csv(
         lambdaPredicted_file,
