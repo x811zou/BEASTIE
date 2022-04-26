@@ -321,8 +321,6 @@ def run(config):
         config.min_single_cov,
         config.ancestry,
         config.LD_token,
-        config.chr_start,
-        config.chr_end,
         config.ldlink_cache_dir,
         config.ldlink_token_db,
     )
