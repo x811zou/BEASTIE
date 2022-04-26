@@ -81,8 +81,19 @@ def count_all_het_sites(
 ):
     filename = os.path.splitext(str(outputFilename))[0]
     count = 0
-
-    for Num in range(chr_start, chr_end + 1):
+    listChrN=[]
+    if str(chr_end) =="X":
+        N_end=22
+        listChr=range(chr_start,N_end+1)
+        for i in listChr:
+            listChrN.append(i)
+        listChrN.append("X")
+    else:
+        N_end=int(chr_end)
+        listChr=range(chr_start,N_end+1)
+        for i in listChr:
+            listChrN.append(i)
+    for Num in listChrN:
         reader = GffTranscriptReader()
         geneFile = gencode_path + f"/gencode.chr{Num}.gtf.gz"
         geneList = reader.loadGenes(geneFile)

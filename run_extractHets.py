@@ -18,7 +18,7 @@ logging.basicConfig(
 if len(sys.argv) != 8:
     exit(
         os.path.basename(sys.argv[0])
-        + " <sample> <vcfgz-path-filename> <output-path-filename> <chr-start> <chr-start> <gencode_path> <debug_gene>\n"
+        + " <sample> <vcfgz-path-filename> <output-path-filename> <chr-start> <chr-end> <gencode_path> <debug_gene>\n"
     )
 (
     sample,
@@ -33,7 +33,7 @@ if len(sys.argv) != 8:
 sample = str(sample)
 vcfgz_path_filename = str(vcfFilename)
 chr_start = int(chr_start)
-chr_end = int(chr_end)
+chr_end = chr_end
 output_path_filename = str(output_path_filename)
 gencode_path = str(gencode_path)
 debug_gene = str(debug_gene)
@@ -51,4 +51,4 @@ extractHets.count_all_het_sites(
 
 print("done!")
 # [“ENG…”, “ENG…”]
-# python run_extractHets.py HG00099 /Users/scarlett/allenlab/BEASTIE_other_example/HG00099_50M/HG00099.remove_chr.content.SNPs.hets.header.vcf.gz /Users/scarlett/allenlab/BEASTIE_other_example/HG00099_50M/HG00099_hetsnp 10 10 /Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE/reference/gencode_chr ENSG00000237399.3
+# python run_extractHets.py HG00096 /hpc/group/allenlab/scarlett/output/RNAseq/1000Genome/HG00096/HG00096.no_chr.content.SNPs.hets.vcf.gz /hpc/group/allenlab/scarlett/output/RNAseq/1000Genome/HG00096 1 X /datacommons/allenlab/hg19/filter/gencode_chr/ None
