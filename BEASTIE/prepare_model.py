@@ -112,7 +112,7 @@ def filter_alignBias(p_cutoff, snp_input, simulator_df=None):
                 p_cutoff,
             )
         )
-        gene_df_filtered = simulator_df_biased[
+        gene_df_filtered = debiased_df[
             [
                 "chr",
                 "chrN",
