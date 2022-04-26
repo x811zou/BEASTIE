@@ -13,7 +13,7 @@ import scipy.stats
 import pandas as pd
 import numpy as np
 from math import floor, log10, pi, isnan
-from scipy.stats import binom_test
+from scipy.stats import binom_test, fisher_exact
 
 
 def change_phasing(data):
@@ -37,13 +37,35 @@ def filter_alignBias(p_cutoff, snp_input, simulator_df=None):
     hetSNP_intersect_unique = pd.read_csv(
         snp_input, sep="\t", header=0, index_col=False
     )
+    # genotyping error fisher exact test score
+    grouped_df = (
+        hetSNP_intersect_unique.groupby("geneID").apply(process_gene).reset_index()
+    )
+    grouped_df[
+        [
+            "chrN",
+            "pos",
+            "refCount",
+            "altCount",
+            "max_rest_data",
+            "min_reast_data",
+            "FishTest",
+        ]
+    ] = pd.DataFrame(grouped_df[0].tolist(), index=hetSNP_intersect_unique.index)
+    grouped_df_sub = grouped_df.drop(grouped_df.columns[[1, 2]], axis=1)
+    new_df = pd.merge(
+        hetSNP_intersect_unique,
+        grouped_df_sub,
+        how="inner",
+        on=["chrN", "pos", "geneID", "refCount", "altCount"],
+    )
     ################# 1. filter out variants with alignment bias first
     if simulator_df is not None:
         beforeFilter_filename = f"{base_out}_alignBiasbeforeFilter.tsv"
         afterFilter_filename = f"{base_out}_alignBiasFiltered.tsv"
-        overlapped_variants = hetSNP_intersect_unique.merge(
-            simulator_df, on=["chr", "pos"], how="inner"
-        )
+        # alignment bias binomial test score
+        overlapped_variants = new_df.merge(simulator_df, on=["chr", "pos"], how="inner")
+        # saving
         overlapped_variants.to_csv(
             beforeFilter_filename, index=False, sep="\t", header=True
         )
@@ -71,13 +93,20 @@ def filter_alignBias(p_cutoff, snp_input, simulator_df=None):
         simulator_df_biased = overlapped_variants[
             overlapped_variants["alt_binomial_p"] > p_cutoff
         ]
+        debiased_df = simulator_df_biased[simulator_df_biased["FishTest"] > p_cutoff]
         logging.debug(
-            "{0} ({1}%) overlapped het SNPs pass alignment bias filtering p-val > {1}".format(
+            "{0} ({1}%) overlapped het SNPs pass alignment bias filtering p-val > {2} \n{3} ({4}%) het SNPs pass genotyping error filtering p-val > {5}".format(
                 simulator_df_biased.shape[0],
                 round(
                     simulator_df_biased.shape[0]
                     / hetSNP_intersect_unique.shape[0]
                     * 100,
+                    2,
+                ),
+                p_cutoff,
+                debiased_df.shape[0],
+                round(
+                    debiased_df.shape[0] / simulator_df_biased.shape[0] * 100,
                     2,
                 ),
                 p_cutoff,
@@ -97,6 +126,7 @@ def filter_alignBias(p_cutoff, snp_input, simulator_df=None):
                 "totalCount",
                 "altRatio",
                 "alt_binomial_p",
+                "FishTest",
             ]
         ]
         gene_df_filtered.to_csv(
@@ -104,7 +134,8 @@ def filter_alignBias(p_cutoff, snp_input, simulator_df=None):
         )
         filename = afterFilter_filename
     else:
-        hetSNP_intersect_unique_subset = hetSNP_intersect_unique[
+        debiased_df = simulator_df_biased[simulator_df_biased["FishTest"] > p_cutoff]
+        hetSNP_intersect_unique_subset = debiased_df[
             [
                 "chr",
                 "chrN",
@@ -118,6 +149,7 @@ def filter_alignBias(p_cutoff, snp_input, simulator_df=None):
                 "totalCount",
                 "altRatio",
                 "alt_binomial_p",
+                "FishTest",
             ]
         ]
         afterFilter_filename = f"{base_out}_NoalignBiasFiltered.tsv"
@@ -126,12 +158,50 @@ def filter_alignBias(p_cutoff, snp_input, simulator_df=None):
         )
         filename = afterFilter_filename
         logging.debug(
-            "{0} has {1} het SNPs, no alignment bias filtering".format(
-                os.path.basename(hetSNP_intersect_unique_subset),
+            "{0} has {1} het SNPs, after genotyping error filtering, {2} has {3} het SNPs, no alignment bias filtering".format(
+                os.path.basename(snp_input),
+                hetSNP_intersect_unique.shape[0],
+                os.path.basename(afterFilter_filename),
                 hetSNP_intersect_unique_subset.shape[0],
             )
         )
     return filename
+
+
+def process_gene(data):
+    data_sub = data[["chrN", "pos", "refCount", "altCount"]]
+    data_rest = data_sub[(data_sub["refCount"] != 0) & (data_sub["altCount"] != 0)]
+    size = data_rest.shape[0]
+    if size == 0:
+        min_rest_data = "NA"
+        max_rest_data = "NA"
+    else:
+        data_rest["max_count"] = data_rest[["refCount", "altCount"]].max(axis=1)
+        data_rest["min_count"] = data_rest[["refCount", "altCount"]].min(axis=1)
+        min_rest_data = data_rest["min_count"].sum()
+        max_rest_data = data_rest["max_count"].sum()
+
+    def process_row(row):
+        fishTest = 100
+        if ((row["refCount"] == 0) or (row["altCount"] == 0)) and (size > 0):
+            zero_counts = row[["refCount", "altCount"]].min()
+            nonzero_counts = row[["refCount", "altCount"]].max()
+            table = np.array(
+                [[nonzero_counts, zero_counts], [max_rest_data, min_rest_data]]
+            )
+            oddsr, p = fisher_exact(table, alternative="two-sided")
+            fishTest = p
+        return (
+            row["chrN"],
+            row["pos"],
+            row["refCount"],
+            row["altCount"],
+            max_rest_data,
+            min_rest_data,
+            fishTest,
+        )
+
+    return data.apply(process_row, axis=1)
 
 
 def re_allocateReads(

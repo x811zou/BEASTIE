@@ -86,19 +86,19 @@ def run(
     either_cov,
     ancestry,
     LD_token,
-    chr_start,
-    chr_end,
     ldlink_cache_dir,
     ldlink_token_db,
 ):
     (meta, meta_error) = create_file_name(prefix, tmp_path, shapeit2_input)
 
     #####
-    ##### 2.1 use simulation data to filter biased variants
+    ##### 2.1 use simulation data to filter variants with alignment bias, use fisher exact test to filter variants with genotyping error
     #####
     logging.info("=================")
     logging.info("================= Starting specific step 2.1")
-    logging.info("....... start filtering variants with alignment bias")
+    logging.info(
+        "....... start filtering variants with alignment bias & genotyping error"
+    )
     if hetSNP_intersect_unique_sim is None:
         logging.info("....... simulator data is NOT provided")
         biased_variant = None
@@ -115,10 +115,10 @@ def run(
         p_cutoff, hetSNP_intersect_unique, biased_variant
     )
     # checking
-    data21 = pd.read_csv(
+    data21_1 = pd.read_csv(
         alignBiasfiltered_filename, sep="\t", header=0, index_col=False
     )
-    if data21.shape[0] < 2:
+    if data21_1.shape[0] < 2:
         os.remove(alignBiasfiltered_filename)
         logging.error(
             "....... existed {0} is empty, please try again!".format(
@@ -133,6 +133,7 @@ def run(
                 os.path.dirname(alignBiasfiltered_filename),
             )
         )
+
     #####
     ##### 2.2 phase data with shapeit2 or VCF
     #####
