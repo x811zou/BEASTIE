@@ -153,6 +153,9 @@ def run(
         hetSNP = os.path.join(output_path, f"{prefix}_hetSNP{chr_suffix}.tsv")
     else:
         provided_hetsnp = pd.read_csv(het_snp_file, sep="\t", header=0, index_col=False)
+        provided_hetsnp = provided_hetsnp[
+            provided_hetsnp["chrN"] != "X"
+        ]
         filtered_hetsnp = provided_hetsnp[
             (provided_hetsnp["chrN"] <= chr_end)
             & (provided_hetsnp["chrN"] >= chr_start)
