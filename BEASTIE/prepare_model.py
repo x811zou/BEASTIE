@@ -543,30 +543,30 @@ def significant_genes(
             len(df_output),
             round((ncount / len(df_output)) * 100, 3),
             "posterior_mass_support_ALT",
-            cutoff,
+            0.5,
         )
     )
-    df_output["foldLog2MedSq_over_var"] = (
+    df_output["foldLog2MedSq_over_std"] = (
         abs(np.log2(df_output["posterior_median"]))
-    ) ** 2 / df_output["posterior_variance"]
+    ) ** 2 / np.log2(df_output["posterior_variance"])
     # df_output["foldLog2MedSq_over_var"]=df_output["foldLog2MedSq_over_var"].apply(lambda x: round(x, 3 - int(floor(log10(abs(x))))))
     df_output["median.altRatio"] = df_output["median.altRatio"].round(3)
     # df_output["extreme_val"] = df_output["foldLog2MedSq_over_var"].apply(lambda x: round(x, 3 - int(floor(log10(abs(x))))))
     extremes = scipy.stats.chi2.ppf(0.95, 1)
-    ncount2 = df_output[df_output["foldLog2MedSq_over_var"] > extremes].count()[8]
+    ncount2 = df_output[df_output["foldLog2MedSq_over_std"] > extremes].count()[8]
     logging.debug(
         "{} genes with ASE out of total genes {} ({}%) at @ {} > extreme values: {} = QCHISQ(p=0.95,df=1)".format(
             ncount2,
             len(df_output),
             round((ncount2 / len(data_modeloutput)) * 100, 3),
-            "foldLog2MedSq_over_var",
+            "foldLog2MedSq_over_std",
             extremes,
         )
     )
     df_output = df_output.assign(
-        extreme_val=lambda dataframe: dataframe["foldLog2MedSq_over_var"].map(
-            lambda foldLog2MedSq_over_var: "Y"
-            if foldLog2MedSq_over_var > extremes
+        extreme_val=lambda dataframe: dataframe["foldLog2MedSq_over_std"].map(
+            lambda foldLog2MedSq_over_std: "Y"
+            if foldLog2MedSq_over_std > extremes
             else "N"
         )
     )
@@ -576,7 +576,7 @@ def significant_genes(
     df_output = df_output.assign(
         ASE=lambda dataframe: dataframe["posterior_mass_support_ALT"].map(
             lambda posterior_mass_support_ALT: "Y"
-            if posterior_mass_support_ALT > cutoff
+            if posterior_mass_support_ALT > 0.5
             else "N"
         )
     )
