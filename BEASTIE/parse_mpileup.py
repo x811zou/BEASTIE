@@ -198,9 +198,10 @@ def Parse_mpileup_allChr(
             stream_in
         ):  # start reading in my pileup results line by line
             chr_info = line.split("\t")[0].strip("chr")
-            start_info = line.split("\t")[1]
-            key_info = chr_info + "-" + start_info
-            pipeup_dict[key_info] = line  # save key: [1] value: line
+            if str(chr_info) != "X":
+                start_info = line.split("\t")[1]
+                key_info = chr_info + "-" + start_info
+                pipeup_dict[key_info] = line  # save key: [1] value: line
         counter = 0
         hets = 0
         snp = 0
