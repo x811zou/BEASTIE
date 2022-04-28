@@ -255,6 +255,7 @@ def re_allocateReads(
                 "altCount",
                 "totalCount",
                 "altRatio",
+                "FishTest",
                 "alt_binomial_p",
                 "e_paternal",
                 "e_maternal",
@@ -548,7 +549,7 @@ def significant_genes(
     )
     df_output["foldLog2MedSq_over_std"] = (
         abs(np.log2(df_output["posterior_median"]))
-    ) ** 2 / np.log2(df_output["posterior_variance"])
+    ) ** 2 / abs(np.log2(df_output["posterior_variance"]))
     # df_output["foldLog2MedSq_over_var"]=df_output["foldLog2MedSq_over_var"].apply(lambda x: round(x, 3 - int(floor(log10(abs(x))))))
     df_output["median.altRatio"] = df_output["median.altRatio"].round(3)
     # df_output["extreme_val"] = df_output["foldLog2MedSq_over_var"].apply(lambda x: round(x, 3 - int(floor(log10(abs(x))))))
