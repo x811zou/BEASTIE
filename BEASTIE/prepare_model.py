@@ -518,7 +518,7 @@ def significant_genes(
     df_adm,
     outfilename,
     outfilename_ase,
-    cutoff,
+    ase_cutoff,
     hetSNP_intersect_unique_lambdaPredicted_file,
 ):
     data_modeloutput = pd.read_csv(
@@ -537,7 +537,8 @@ def significant_genes(
             len(df_ibeastie), len(data_modeloutput), len(df_output)
         )
     )
-    ncount = df_output[df_output["posterior_mass_support_ALT"] > cutoff].count()[8]
+
+    ncount = df_output[df_output["posterior_mass_support_ALT"] > ase_cutoff].count()[8]
     logging.info(
         "{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}".format(
             ncount,
@@ -577,7 +578,7 @@ def significant_genes(
     df_output = df_output.assign(
         ASE=lambda dataframe: dataframe["posterior_mass_support_ALT"].map(
             lambda posterior_mass_support_ALT: "Y"
-            if posterior_mass_support_ALT > 0.5
+            if posterior_mass_support_ALT > ase_cutoff
             else "N"
         )
     )

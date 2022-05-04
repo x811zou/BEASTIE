@@ -11,7 +11,7 @@ import pandas as pd
 from math import floor, log10, log2
 from .misc_tools.StanParser import StanParser
 from .helpers import runhelper
-import scipy.stats as stats
+from scipy import stats
 import statistics
 import sys
 
@@ -198,8 +198,9 @@ def summarize(thetas, alpha):
     thetas.sort()
     # print(f"length of sorted thetas {len(thetas)}")
     CI_left, CI_right = getCredibleInterval(thetas, alpha, n)
-    mad = stats.median_abs_deviation(thetas, scale="normal")
-    # mad = stats.median_absolute_deviation(thetas)
+    # mad = stats.median_abs_deviation(thetas, scale="normal")
+    # mad = stats.median_abs_deviation(thetas, scale=1/1.4826)
+    mad = stats.median_absolute_deviation(thetas)
     return median, variance, CI_left, CI_right, mad
 
 

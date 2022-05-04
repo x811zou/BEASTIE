@@ -110,9 +110,8 @@ def run(
         )
         biased_variant = add_simulationData(hetSNP_intersect_unique_sim)
     # running
-    p_cutoff = 0.05
     alignBiasfiltered_filename = filter_alignBias(
-        p_cutoff, hetSNP_intersect_unique, biased_variant
+        cutoff, hetSNP_intersect_unique, biased_variant
     )
     # checking
     data21_1 = pd.read_csv(
@@ -392,9 +391,10 @@ def run(
     logging.info("=================")
     logging.info("================= Starting specific step 2.6")
     logging.info("....... start generating gene list")
+    ase_cutoff = 0.5
     outfilename = os.path.join(result_path, f"{prefix}_ASE_all.tsv")
     outfilename_ase = os.path.join(
-        result_path, f"{prefix}_ASE_cutoff_{cutoff}_filtered.tsv"
+        result_path, f"{prefix}_ASE_cutoff_{ase_cutoff}_filtered.tsv"
     )
     if (os.path.isfile(outfilename)) and (os.path.isfile(outfilename_ase)):
         logging.info(
@@ -413,7 +413,7 @@ def run(
         df_adm,
         outfilename,
         outfilename_ase,
-        cutoff,
+        ase_cutoff,
         lambdaPredicted_file,
     )
     logging.info("....... done with significant_gene")
@@ -423,14 +423,14 @@ def run(
 
     data26_1 = pd.read_csv(outfilename, sep="\t", header=0, index_col=False)
     data26_2 = pd.read_csv(outfilename_ase, sep="\t", header=0, index_col=False)
-    if data26_1.shape[0] <= 2 or data26_2.shape[0] <= 2:
-        logging.error(
-            "....... existed {0} or {1} is empty, please try again!".format(
-                os.path.basename(outfilename),
-                os.path.basename(outfilename_ase),
-            )
-        )
-        sys.exit(1)
+    # if data26_1.shape[0] <= 2 or data26_2.shape[0] <= 2:
+    #     logging.error(
+    #         "....... existed {0} or {1} is empty, please try again!".format(
+    #             os.path.basename(outfilename),
+    #             os.path.basename(outfilename_ase),
+    #         )
+    #     )
+    #     sys.exit(1)
     logging.info(
         "output {0} has all {1} genes".format(
             os.path.basename(outfilename),
@@ -441,7 +441,7 @@ def run(
         "output {0} has filtered {1} genes passing ASE cutoff {2}".format(
             os.path.basename(outfilename_ase),
             data26_2.shape[0],
-            cutoff,
+            ase_cutoff,
         )
     )
     logging.info("=================")
