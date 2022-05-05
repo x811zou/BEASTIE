@@ -13,8 +13,8 @@ from pkg_resources import resource_filename
 from collections import namedtuple
 from pathlib import Path
 from datetime import date
-
-from . import beastie_step1, beastie_step2
+import os
+from . import extractHets, beastie_step1, beastie_step2
 
 ConfigurationData = namedtuple(
     "ConfigurationData",
@@ -49,144 +49,6 @@ ConfigurationData = namedtuple(
         "ldlink_token_db",
     ],
 )
-
-
-def check_arguments():
-    parser = argparse.ArgumentParser(
-        "beastie",
-        description="Bayesian Estimation of Allele Specific Transcription Integrating across Exons",
-    )
-    parser.add_argument(
-        "--prefix",
-        help="Prefix for output files, default is --vcf-sample-name value.",
-    )
-    parser.add_argument(
-        "--vcfgz-file",
-        help="Path to VCFGZ file",
-        required=True,
-    )
-    parser.add_argument(
-        "--vcf-sample-name",
-        help="Name of sample in VCF file (ex HG00096).",
-        required=True,
-    )
-    parser.add_argument(
-        "--pileup-file",
-        help="Path to pileup file.",
-        required=True,
-    )
-    parser.add_argument(
-        "--shapeit2-phasing-file",
-        help="Path to shapeit2 generated phasing data.",
-    )
-    parser.add_argument(
-        "--simulation-pileup-file",
-        help="Path to simulated data pileup file.",
-    )
-    parser.add_argument(
-        "--het-snp-file",
-        help="Path to pre-generated het snps file.",
-    )
-    parser.add_argument(
-        "--gencode-dir",
-        help="Path to gencode reference directory.  Should contain files gencode.chr{1..22}.gtf.gz",
-        required=True,
-    )
-    parser.add_argument(
-        "--af-dir",
-        help="Path to AF reference directory.  Should contain files AF_chr{1..22}.csv.gz",
-        required=True,
-    )
-    parser.add_argument(
-        "--ancestry",
-        help="Ancestry abbreviation (ex EUR, CEU, TSI, FIN, AFR, YRI, LWK, ...).",
-        required=True,
-    )
-    parser.add_argument(
-        "--min-total-cov",
-        help="Minimum coverage requirement for total read counts on one site.",
-        default=1,
-        type=int,
-    )
-    parser.add_argument(
-        "--min-single-cov",
-        help="Minimum coverage requirement for each REF/ALT allele.",
-        default=0,
-        type=int,
-    )
-    parser.add_argument(
-        "--sigma",
-        help="Dispersion parameter for BEASTIE STAN model.",
-        default=0.5,
-        type=float,
-    )
-    parser.add_argument(
-        "--cutoff", help="Binomial test p-value cutoff.", default=0.05, type=float
-    )
-    parser.add_argument(
-        "--alpha",
-        help="Type-1 error rate for lambda prediction model.",
-        default=0.05,
-        type=float,
-    )
-    parser.add_argument(
-        "--chr-start", help="Starting chromosome number", default=1, type=int
-    )
-    parser.add_argument(
-        "--chr-end", help="Ending chromosome number", default=22, type=int
-    )
-    parser.add_argument(
-        "--include-x-chromosome",
-        help="Also process the X chromosome",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--read-length",
-        help="Average length of reads for input fastq data.",
-        type=int,
-        required=True,
-    )
-    parser.add_argument(
-        "--model-name",
-        help="Name of stan model to use.",
-        default="iBEASTIE2",
-    )
-    parser.add_argument("--STAN", help="Path to STAN model.", required=True)
-    parser.add_argument(
-        "--save-intermediate", help="Keep intermediate files.", action="store_true"
-    )
-    parser.add_argument(
-        "--warmup",
-        help="Number of warmup estimates to burn in STAN model.",
-        default=1000,
-        type=int,
-    ),
-    parser.add_argument(
-        "--keeper",
-        help="Number of estimates to keep from STAN model.",
-        default=1000,
-        type=int,
-    )
-    parser.add_argument(
-        "--output-dir",
-        help="Path to directory where output will be placed.",
-        required=True,
-    )
-    parser.add_argument(
-        "--ld-token",
-        help="LDlink API Token.  Register at https://ldlink.nci.nih.gov/?tab=apiaccess",
-    )
-    parser.add_argument(
-        "--ldlink-cache-dir",
-        help="Path to directory to save ldlink cache database.",
-        default="~/.beastie",
-    )
-    parser.add_argument(
-        "--ldlink-token-db",
-        help="Path to database containing ldlink tokens for running parallel jobs.",
-    )
-
-    return parser.parse_args()
 
 
 def load_config_from_args(args):

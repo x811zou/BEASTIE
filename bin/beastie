@@ -1,9 +1,238 @@
 #!/usr/bin/env python3
 
+from xxlimited import Xxo
 import BEASTIE
+import sys
+import os
+from BEASTIE import extractHets
+import logging
 
-if __name__ == "__main__":
-    args = BEASTIE.check_arguments()
 
+def beastie_runModel(args):
     config = BEASTIE.load_config_from_args(args)
     BEASTIE.run(config)
+
+
+def configure_extractHets_parser(parser):
+    parser.set_defaults(func=beastie_extractHets)
+    parser.add_argument(
+        "--vcfgz-file",
+        help="Path to VCFGZ file",
+        required=True,
+    )
+    parser.add_argument(
+        "--vcf-sample-name",
+        help="Name of sample in VCF file (ex HG00096).",
+        required=True,
+    )
+    parser.add_argument(
+        "--output",
+        help="full path of hetSNP file",
+        required=True,
+    )
+    parser.add_argument(
+        "--gencode-dir",
+        help="Path to gencode reference directory.  Should contain files gencode.chr{1..22}.gtf.gz",
+        required=True,
+    )
+    parser.add_argument(
+        "--chr-start", help="Starting chromosome number", default=1, type=int
+    )
+    parser.add_argument(
+        "--chr-end", help="Ending chromosome number", default=22, type=int
+    )
+    parser.add_argument(
+        "--debug-gene",
+        help="one specific geneID, for debugging purpose only",
+        default=None,
+    )
+
+
+def beastie_extractHets(args):
+    filename = args.output
+    vcfgz_path_filename = args.vcfgz_file
+    chr_start = args.chr_start
+    chr_end = args.chr_end
+    gencode_path = args.gencode_dir
+    debug_gene = args.debug_gene
+    logging.basicConfig(
+        format="%(asctime)-15s [%(levelname)s] %(message)s",
+        level=logging.DEBUG,
+    )
+    extractHets.count_all_het_sites(
+        vcfgz_path_filename,
+        filename,
+        chr_start,
+        chr_end,
+        gencode_path,
+        debug_gene,
+    )
+
+
+def get_parser():
+    import argparse
+
+    top_level_parser = argparse.ArgumentParser(
+        "beastie",
+        description="Bayesian Estimation of Allele Specific Transcription Integrating across Exons",
+    )
+    subparsers = top_level_parser.add_subparsers()
+    parser = subparsers.add_parser("runModel", help="Run BEASTIE stan model")
+    parser.set_defaults(func=beastie_runModel)
+
+    parser.add_argument(
+        "--prefix",
+        help="Prefix for output files, default is --vcf-sample-name value.",
+    )
+    parser.add_argument(
+        "--vcfgz-file",
+        help="Path to VCFGZ file",
+        required=True,
+    )
+    parser.add_argument(
+        "--vcf-sample-name",
+        help="Name of sample in VCF file (ex HG00096).",
+        required=True,
+    )
+    parser.add_argument(
+        "--pileup-file",
+        help="Path to pileup file.",
+        required=True,
+    )
+    parser.add_argument(
+        "--shapeit2-phasing-file",
+        help="Path to shapeit2 generated phasing data.",
+    )
+    parser.add_argument(
+        "--simulation-pileup-file",
+        help="Path to simulated data pileup file.",
+    )
+    parser.add_argument(
+        "--het-snp-file",
+        help="Path to pre-generated het snps file.",
+    )
+    parser.add_argument(
+        "--gencode-dir",
+        help="Path to gencode reference directory.  Should contain files gencode.chr{1..22}.gtf.gz",
+        required=True,
+    )
+    parser.add_argument(
+        "--af-dir",
+        help="Path to AF reference directory.  Should contain files AF_chr{1..22}.csv.gz",
+        required=True,
+    )
+    parser.add_argument(
+        "--ancestry",
+        help="Ancestry abbreviation (ex EUR, CEU, TSI, FIN, AFR, YRI, LWK, ...).",
+        required=True,
+    )
+    parser.add_argument(
+        "--min-total-cov",
+        help="Minimum coverage requirement for total read counts on one site.",
+        default=1,
+        type=int,
+    )
+    parser.add_argument(
+        "--min-single-cov",
+        help="Minimum coverage requirement for each REF/ALT allele.",
+        default=0,
+        type=int,
+    )
+    parser.add_argument(
+        "--sigma",
+        help="Dispersion parameter for BEASTIE STAN model.",
+        default=0.5,
+        type=float,
+    )
+    parser.add_argument(
+        "--cutoff", help="Binomial test p-value cutoff.", default=0.05, type=float
+    )
+    parser.add_argument(
+        "--alpha",
+        help="Type-1 error rate for lambda prediction model.",
+        default=0.05,
+        type=float,
+    )
+    parser.add_argument(
+        "--chr-start", help="Starting chromosome number", default=1, type=int
+    )
+    parser.add_argument(
+        "--chr-end", help="Ending chromosome number", default=22, type=int
+    )
+    parser.add_argument(
+        "--include-x-chromosome",
+        help="Also process the X chromosome",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--read-length",
+        help="Average length of reads for input fastq data.",
+        type=int,
+        required=True,
+    )
+    parser.add_argument(
+        "--model-name",
+        help="Name of stan model to use.",
+        default="iBEASTIE2",
+    )
+    parser.add_argument("--STAN", help="Path to STAN model.", required=True)
+    parser.add_argument(
+        "--save-intermediate", help="Keep intermediate files.", action="store_true"
+    )
+    parser.add_argument(
+        "--warmup",
+        help="Number of warmup estimates to burn in STAN model.",
+        default=1000,
+        type=int,
+    ),
+    parser.add_argument(
+        "--keeper",
+        help="Number of estimates to keep from STAN model.",
+        default=1000,
+        type=int,
+    )
+    parser.add_argument(
+        "--output-dir",
+        help="Path to directory where output will be placed.",
+        required=True,
+    )
+    parser.add_argument(
+        "--ld-token",
+        help="LDlink API Token.  Register at https://ldlink.nci.nih.gov/?tab=apiaccess",
+    )
+    parser.add_argument(
+        "--ldlink-cache-dir",
+        help="Path to directory to save ldlink cache database.",
+        default="~/.beastie",
+    )
+    parser.add_argument(
+        "--ldlink-token-db",
+        help="Path to database containing ldlink tokens for running parallel jobs.",
+    )
+
+    extractHets_parser = subparsers.add_parser(
+        "extractHets",
+        help="extract heterozygous bi-allelic SNPs for specific chromosomes from all gencode transcripts",
+    )
+    configure_extractHets_parser(extractHets_parser)
+
+    filterGenotypingError_parser = subparsers.add_parser(
+        "filterGenotypingError",
+        help="filter genotyping error",
+    )
+    configure_filterGenotypingError_parser(filterGenotypingError_parser)
+
+    return top_level_parser
+
+
+if __name__ == "__main__":
+    parser = get_parser()
+    args = parser.parse_args()
+
+    if not "func" in args or not args.func:
+        parser.print_help()
+    else:
+        args.func(args)
+
+    # config = BEASTIE.load_config_from_args(args)
+    # BEASTIE.run(config)
