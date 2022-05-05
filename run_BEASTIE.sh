@@ -18,34 +18,37 @@ output_dir=$base_dir/$sample/beastie_noshapeit2_random
 hetSNP_filename=$base_dir/$sample/${sample}_hetSNP.tsv
 chr_start=1
 chr_end=22
-
+filter_output_dir=$output_dir/filterGenotypingError
+genotypeEr_cutoff=0.05
+genotypeEr_filename=$base_dir/$sample/${sample}_hetSNP_genotypeEr.tsv
 ### in cluster
 #beastie \
 
-PYTHONPATH='.' python3 bin/beastie \
-    extractHets \
-    --output $hetSNP_filename \
-    --vcfgz-file $input_vcfgz \
-    --vcf-sample-name $sample_name_in_vcf \
-    --chr-start $chr_start \
-    --chr-end $chr_end \
-    --gencode-dir $ref_dir/reference/gencode_chr 
-
 # PYTHONPATH='.' python3 bin/beastie \
-#     filterGenptyingEr \
-#     --prefix $sample \
+#     extractHets \
+#     --output $hetSNP_filename \
 #     --vcfgz-file $input_vcfgz \
 #     --vcf-sample-name $sample_name_in_vcf \
-#     --pileup-file $input_pileup \
-#     --simulation-pileup-file $input_simulation_pileup \
-#     --het-snp-file $hetSNP_filename \
-#     --ancestry $ancestry \
-#     --read-length $read_length \
 #     --chr-start $chr_start \
 #     --chr-end $chr_end \
-#     --output-dir $output_dir \
-#     --af-dir $ref_dir/reference/AF \
 #     --gencode-dir $ref_dir/reference/gencode_chr 
+
+PYTHONPATH='.' python3 bin/beastie \
+    filterGenotypingError \
+    --prefix $sample \
+    --vcfgz-file $input_vcfgz \
+    --vcf-sample-name $sample_name_in_vcf \
+    --pileup-file $input_pileup \
+    --het-snp-file $hetSNP_filename \
+    --ancestry $ancestry \
+    --read-length $read_length \
+    --chr-start $chr_start \
+    --chr-end $chr_end \
+    --filteroutput-dir $filter_output_dir \
+    --af-dir $ref_dir/reference/AF \
+    --output $genotypeEr_filename \
+    --cutoff $genotypeEr_cutoff
+    # --shapeit2-phasing-file $input_shapeit2
 
 
 
