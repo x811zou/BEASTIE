@@ -14,7 +14,7 @@ from collections import namedtuple
 from pathlib import Path
 from datetime import date
 import os
-from . import extractHets, beastie_step1, beastie_step2
+from . import runModel
 
 ConfigurationData = namedtuple(
     "ConfigurationData",
@@ -22,22 +22,17 @@ ConfigurationData = namedtuple(
         "prefix",
         "vcfgz_file",
         "vcf_sample_name",
-        "pileup_file",
-        "simulation_pileup_file",
         "shapeit2",
-        "het_snp_file",
-        "gencode_path",
-        "af_path",
+        "simulation_pileup_file",
         "ancestry",
         "min_total_cov",
         "min_single_cov",
         "sigma",
-        "cutoff",
+        "binomialp_cutoff",
+        "ase_cutoff",
         "alpha",
         "chr_start",
         "chr_end",
-        "include_x_chromosome",
-        "read_length",
         "LD_token",
         "modelName",
         "STAN",
@@ -60,22 +55,17 @@ def load_config_from_args(args):
         prefix=args.prefix if args.prefix is not None else args.vcf_sample_name,
         vcfgz_file=args.vcfgz_file,
         vcf_sample_name=args.vcf_sample_name,
-        pileup_file=args.pileup_file,
         shapeit2=args.shapeit2_phasing_file,
         simulation_pileup_file=args.simulation_pileup_file,
-        het_snp_file=args.het_snp_file,
-        gencode_path=args.gencode_dir,
-        af_path=args.af_dir,
         ancestry=args.ancestry,
         min_total_cov=args.min_total_cov,
         min_single_cov=args.min_single_cov,
         sigma=args.sigma,
-        cutoff=args.cutoff,
+        binomialp_cutoff=args.binomialp_cutoff,
+        ase_cutoff=args.ase_cutoff,
         alpha=args.alpha,
         chr_start=args.chr_start,
         chr_end=args.chr_end,
-        include_x_chromosome=args.include_x_chromosome,
-        read_length=args.read_length,
         LD_token=args.ld_token,
         modelName=args.model_name,
         STAN=args.STAN,
@@ -96,18 +86,9 @@ def load_config_from_args(args):
 
 
 def run(config):
-    out_dir = config.output_dir
-    vcfgz_file = config.vcfgz_file
-    pileup_file = config.pileup_file
-    shapeit2_file = config.shapeit2
-    simulation_pileup_file = config.simulation_pileup_file
-    gencode_path = config.gencode_path
-    af_path = config.af_path
-    model = os.path.join(config.STAN, config.modelName)
+    output_path = config.output_dir
     today = date.today()
-
     specification = f"chr{config.chr_start}-{config.chr_end}_s{config.sigma}_a{config.alpha}_sinCov{config.min_single_cov}_totCov{config.min_total_cov}_W{config.WARMUP}K{config.KEEPER}"
-    output_path = out_dir
     specification_path = os.path.join(output_path, specification)
     log_path = os.path.join(specification_path, "log")
     tmp_path = os.path.join(specification_path, "tmp")
@@ -120,7 +101,6 @@ def run(config):
     Path(result_path).mkdir(parents=True, exist_ok=True)
 
     log_filename = f"{config.prefix}-{today.strftime('%b-%d-%Y')}"
-
     # stdout_stderr_filepath = os.path.join(log_path, f"{log_filename}.output")
     # stdout_stderr_file = open(stdout_stderr_filepath, "w")
     # sys.stdout = stdout_stderr_file
@@ -141,54 +121,33 @@ def run(config):
     )
 
     logging.info(">> Starting running BEASTIE")
-
-    logging.info("========================================")
+    logging.info("======================================== ")
     logging.info(
-        "======================================== step1: Processing raw data & annotating LD and AF information"
+        "======================================== Processing simulation raw data & Preparing input in a format required for BEASTIE model"
     )
     logging.info("======================================== ")
-    hetSNP_intersect_unique, hetSNP_intersect_unique_sim = beastie_step1.run(
+    runModel.run(
         config.prefix,
+        config.vcfgz_file,
         config.vcf_sample_name,
+        config.simulation_pileup_file,
         output_path,
         tmp_path,
-        gencode_path,
-        af_path,
-        model,
-        vcfgz_file,
+        result_path,
+        config.shapeit2,
+        config.binomialp_cutoff,
+        config.ase_cutoff,
+        os.path.join(config.STAN, config.modelName),
         config.ancestry,
         config.chr_start,
         config.chr_end,
         config.min_total_cov,
         config.min_single_cov,
-        config.read_length,
-        pileup_file,
-        simulation_pileup_file,
-        shapeit2_file,
-        config.het_snp_file,
-    )
-    logging.info("======================================== ")
-    logging.info(
-        "======================================== step2: Preparing input in a format required for BEASTIE model"
-    )
-    logging.info("======================================== ")
-    beastie_step2.run(
-        shapeit2_file,
-        hetSNP_intersect_unique,
-        hetSNP_intersect_unique_sim,
-        config.prefix,
         config.alpha,
-        model,
         config.sigma,
-        tmp_path,
-        result_path,
-        config.cutoff,
         config.SAVE_INT,
         config.WARMUP,
         config.KEEPER,
-        config.min_total_cov,
-        config.min_single_cov,
-        config.ancestry,
         config.LD_token,
         config.ldlink_cache_dir,
         config.ldlink_token_db,

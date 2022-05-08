@@ -92,13 +92,11 @@ def run(
     (meta, meta_error) = create_file_name(prefix, tmp_path, shapeit2_input)
 
     #####
-    ##### 2.1 use simulation data to filter variants with alignment bias, use fisher exact test to filter variants with genotyping error
+    ##### 2.1 use simulation data to filter variants with alignment bias
     #####
     logging.info("=================")
     logging.info("================= Starting specific step 2.1")
-    logging.info(
-        "....... start filtering variants with alignment bias & genotyping error"
-    )
+    logging.info("....... start filtering variants with alignment bias")
     if hetSNP_intersect_unique_sim is None:
         logging.info("....... simulator data is NOT provided")
         biased_variant = None
