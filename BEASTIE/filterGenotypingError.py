@@ -216,7 +216,6 @@ def filter_genotypeEr(
 def run(
     prefix,
     vcf_sample_name,
-    input_path,
     output_path,
     af_path,
     vcfgz,
@@ -227,9 +226,10 @@ def run(
     min_single_cov,
     min_total_cov,
     het_snp_file,
-    genotypeErfiltered_filename,
+    genotypeErfiltered_file,
     pileup,
     genotypeEr_cutoff,
+    filtered_hetSNP_filename,
 ):
     #####
     ##### 1.1 Check input file existence
@@ -360,15 +360,11 @@ def run(
     logging.info("=================")
     logging.info("================= Starting specific step 1.5")
     logging.info("....... start filtering variants with genotyping error")
-    genotypeErfiltered_file = os.path.join(input_path, genotypeErfiltered_filename)
-    filtered_hetSNP_intersect_pileup = os.path.join(
-        output_path, prefix + ".filtered_hetSNPs_intersect_pileup.tsv"
-    )
 
     filter_genotypeEr(
         genotypeEr_cutoff,
         hetSNP_intersect_pileup,
-        filtered_hetSNP_intersect_pileup,
+        filtered_hetSNP_filename,
         genotypeErfiltered_file,
     )
 
@@ -385,7 +381,7 @@ def run(
     else:
         logging.info(
             "....... {0} save to {1}".format(
-                os.path.basename(genotypeErfiltered_filename),
+                os.path.basename(genotypeErfiltered_file),
                 output_path,
             )
         )

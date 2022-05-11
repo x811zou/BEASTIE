@@ -187,6 +187,7 @@ def run(
     vcfgz,
     vcf_sample_name,
     simulation_pileup,
+    filtered_hetSNP_intersect_pileup,
     output_path,
     tmp_path,
     result_path,
@@ -214,9 +215,6 @@ def run(
     logging.info("=================")
     logging.info("================= Starting specific step 2.1")
     logging.info("....... start checking file existence")
-    filtered_hetSNP_intersect_pileup = os.path.join(
-        output_path, prefix + ".filtered_hetSNPs_intersect_pileup.tsv"
-    )
     Path(output_path).mkdir(parents=True, exist_ok=True)
     check_file_existence2(
         vcfgz, simulation_pileup, filtered_hetSNP_intersect_pileup, shapeit2_file

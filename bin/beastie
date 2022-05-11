@@ -14,22 +14,22 @@ def beastie_runModel(args):
 
 
 def beastie_filterGenotypingError(args):
-    prefix = args.prefix
+    prefix = args.prefix if args.prefix is not None else args.vcf_sample_name
     vcfgz = args.vcfgz_file
     vcf_sample_name = args.vcf_sample_name
-    input_path = args.input_dir
-    output_path = args.output_dir
+    output_path = args.beastie_outdir
     chr_start = args.chr_start
     chr_end = args.chr_end
     af_path = args.af_dir
     pileup = args.pileup_file
     ancestry = args.ancestry
     read_length = args.read_length
-    het_snp_file = args.het_snp_file
+    het_snp_file = args.input_het_snp_file
     min_single_count = args.min_single_cov
     min_total_count = args.min_total_cov
-    genotypeEr_filename = args.filename
+    genotypeEr_file = args.outfile
     genotypeEr_cutoff = args.genotypeEr_cutoff
+    filtered_het_snp_file = args.filtered_het_snp_file
     logging.basicConfig(
         format="%(asctime)-15s [%(levelname)s] %(message)s",
         level=logging.DEBUG,
@@ -37,7 +37,6 @@ def beastie_filterGenotypingError(args):
     filterGenotypingError.run(
         prefix,
         vcf_sample_name,
-        input_path,
         output_path,
         af_path,
         vcfgz,
@@ -48,9 +47,10 @@ def beastie_filterGenotypingError(args):
         min_single_count,
         min_total_count,
         het_snp_file,
-        genotypeEr_filename,
+        genotypeEr_file,
         pileup,
         genotypeEr_cutoff,
+        filtered_het_snp_file,
     )
 
 
@@ -77,8 +77,12 @@ def configure_filterGenotypingError_parser(parser):
         required=True,
     )
     parser.add_argument(
-        "--het-snp-file",
+        "--input-het-snp-file",
         help="Path to pre-generated het snps file.",
+    )
+    parser.add_argument(
+        "--filtered-het-snp-file",
+        help="Path to filtered het snps file.",
     )
     parser.add_argument(
         "--af-dir",
@@ -126,18 +130,13 @@ def configure_filterGenotypingError_parser(parser):
         required=True,
     )
     parser.add_argument(
-        "--output-dir",
-        help="Path to directory where output will be placed.",
+        "--beastie-outdir",
+        help="Path to directory where beastie output will be placed.",
         required=True,
     )
     parser.add_argument(
-        "--input-dir",
-        help="Path to directory where inputs locate.",
-        required=True,
-    )
-    parser.add_argument(
-        "--filename",
-        help="genotyping Error filtered hetSNP file",
+        "--outfile",
+        help="full path to genotyping Error filtered hetSNP file",
         required=True,
     )
 
@@ -227,6 +226,10 @@ def get_parser():
         "--simulation-pileup-file",
         help="Path to simulation pileup file.",
         required=True,
+    )
+    parser.add_argument(
+        "--filtered-het-snp-file",
+        help="Path to filtered het snps file.",
     )
     parser.add_argument(
         "--shapeit2-phasing-file",
