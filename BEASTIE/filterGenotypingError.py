@@ -154,10 +154,24 @@ def filter_genotypeEr(
     hetSNP_intersect_unique = pd.read_csv(
         hetSNP_intersect_unique_filename, sep="\t", header=0, index_col=False
     )
-
+    hetSNP_intersect_unique = hetSNP_intersect_unique[
+        [
+            "chr",
+            "chrN",
+            "pos",
+            "rsid",
+            "AF",
+            "geneID",
+            "genotype",
+            "refCount",
+            "altCount",
+            "totalCount",
+            "altRatio",
+        ]
+    ]
     base_out = os.path.splitext(hetSNP_intersect_unique_filename)[0]
+    applyFilter_filename = f"{base_out}_underGenotypingErTesting.tsv"
     beforeFilter_filename = f"{base_out}_beforeGenotypingErFiltered.tsv"
-    # afterFilter_filename = f"{base_out}_afterGenotypingErFiltered.tsv"
     # genotyping error fisher exact test score
     grouped_df = (
         hetSNP_intersect_unique.groupby("geneID").apply(process_gene).reset_index()
@@ -174,35 +188,19 @@ def filter_genotypeEr(
         ]
     ] = pd.DataFrame(grouped_df[0].tolist(), index=hetSNP_intersect_unique.index)
     grouped_df_sub = grouped_df.drop(grouped_df.columns[[1, 2]], axis=1)
+    grouped_df_sub.to_csv(applyFilter_filename, index=False, sep="\t", header=True)
     new_df = pd.merge(
         hetSNP_intersect_unique,
         grouped_df_sub,
         how="inner",
         on=["chrN", "pos", "geneID", "refCount", "altCount"],
     )
+    new_df.to_csv(beforeFilter_filename, index=False, sep="\t", header=True)
     debiased_df = new_df[new_df["FishTest"] > genotypeEr_cutoff]
     logging.debug(
         f"{debiased_df.shape[0]} out of {new_df.shape[0]} ({round(debiased_df.shape[0] / new_df.shape[0] * 100,2,)}%) het SNPs pass genotyping error with Fisher exact test p-val > {genotypeEr_cutoff}"
     )
-
-    new_df.to_csv(beforeFilter_filename, index=False, sep="\t", header=True)
-    gene_df_filtered = debiased_df[
-        [
-            "chr",
-            "chrN",
-            "pos",
-            "rsid",
-            "AF",
-            "geneID",
-            "genotype",
-            "refCount",
-            "altCount",
-            "totalCount",
-            "altRatio",
-            "FishTest",
-        ]
-    ]
-    gene_df_filtered.to_csv(
+    debiased_df.to_csv(
         filtered_hetSNP_intersec_pileup, index=False, sep="\t", header=True
     )
     biased_df = new_df[new_df["FishTest"] <= genotypeEr_cutoff]
