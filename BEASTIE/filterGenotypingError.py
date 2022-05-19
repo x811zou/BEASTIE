@@ -19,7 +19,7 @@ from .helpers import runhelper
 from .intersect_hets import Intersect_exonicHetSnps
 from .parse_mpileup import Parse_mpileup_allChr
 from scipy.stats import fisher_exact
-
+from run_jags import genotype_bugs_model
 
 def parse_mpileup(
     input_file, output_file, vcf_sample_name, vcfgz, min_total_cov, min_single_cov
@@ -108,7 +108,7 @@ def is_valid_parsed_pileup(filepath):
     return True
 
 
-def process_gene(data):
+def process_gene(data,mu,var):
     data_sub = data[["chrN", "pos", "refCount", "altCount"]]
     data_rest = data_sub[(data_sub["refCount"] != 0) & (data_sub["altCount"] != 0)]
     size = data_rest.shape[0]
@@ -123,13 +123,14 @@ def process_gene(data):
 
     def process_row(row):
         fishTest = 100
-        if ((row["refCount"] == 0) or (row["altCount"] == 0)) and (size > 0):
-            zero_counts = row[["refCount", "altCount"]].min()
+        if ((row["refCount"] == 0 and row["altCount"] != 0) or (row["refCount"] != 0 and row["altCount"] == 0)) and (size > 0):
+            # zero_counts = row[["refCount", "altCount"]].min()
             nonzero_counts = row[["refCount", "altCount"]].max()
-            table = np.array(
-                [[nonzero_counts, zero_counts], [max_rest_data, min_rest_data]]
-            )
-            oddsr, p = fisher_exact(table, alternative="two-sided")
+            # table = np.array(
+            #     [[nonzero_counts, zero_counts], [max_rest_data, min_rest_data]]
+            # )
+            #oddsr, p = fisher_exact(table, alternative="two-sided")
+            p = genotype_bugs_model(min_rest_data, max_rest_data, nonzero_counts, mu, var)
             fishTest = p
         return (
             row["chrN"],
