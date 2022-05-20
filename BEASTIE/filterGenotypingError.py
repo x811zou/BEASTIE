@@ -19,7 +19,8 @@ from .helpers import runhelper
 from .intersect_hets import Intersect_exonicHetSnps
 from .parse_mpileup import Parse_mpileup_allChr
 from scipy.stats import fisher_exact
-from run_jags import genotype_bugs_model
+from .run_jags import genotype_bugs_model
+
 
 def parse_mpileup(
     input_file, output_file, vcf_sample_name, vcfgz, min_total_cov, min_single_cov
@@ -108,7 +109,7 @@ def is_valid_parsed_pileup(filepath):
     return True
 
 
-def process_gene(data,mu,var):
+def process_gene(data, mu, var):
     data_sub = data[["chrN", "pos", "refCount", "altCount"]]
     data_rest = data_sub[(data_sub["refCount"] != 0) & (data_sub["altCount"] != 0)]
     size = data_rest.shape[0]
@@ -122,16 +123,21 @@ def process_gene(data,mu,var):
         max_rest_data = data_rest["max_count"].sum()
 
     def process_row(row):
-        fishTest = 100
-        if ((row["refCount"] == 0 and row["altCount"] != 0) or (row["refCount"] != 0 and row["altCount"] == 0)) and (size > 0):
+        genotypeTest = 100
+        if (
+            (row["refCount"] == 0 and row["altCount"] != 0)
+            or (row["refCount"] != 0 and row["altCount"] == 0)
+        ) and (size > 0):
             # zero_counts = row[["refCount", "altCount"]].min()
             nonzero_counts = row[["refCount", "altCount"]].max()
             # table = np.array(
             #     [[nonzero_counts, zero_counts], [max_rest_data, min_rest_data]]
             # )
-            #oddsr, p = fisher_exact(table, alternative="two-sided")
-            p = genotype_bugs_model(min_rest_data, max_rest_data, nonzero_counts, mu, var)
-            fishTest = p
+            # oddsr, p = fisher_exact(table, alternative="two-sided")
+            p = genotype_bugs_model(
+                min_rest_data, max_rest_data, nonzero_counts, mu, var
+            )
+            genotypeTest = p
         return (
             row["chrN"],
             row["pos"],
@@ -139,7 +145,7 @@ def process_gene(data,mu,var):
             row["altCount"],
             max_rest_data,
             min_rest_data,
-            fishTest,
+            genotypeTest,
         )
 
     return data.apply(process_row, axis=1)
@@ -174,8 +180,15 @@ def filter_genotypeEr(
     applyFilter_filename = f"{base_out}_underGenotypingErTesting.tsv"
     beforeFilter_filename = f"{base_out}_beforeGenotypingErFiltered.tsv"
     # genotyping error fisher exact test score
+    mean_totalcount = hetSNP_intersect_unique["totalCount"].mean()
+    var_totalcount = hetSNP_intersect_unique["totalCount"].var()
+    logging.debug(
+        f"input for genotyping error test : total count for each SNP mean {mean_totalcount}, variance {var_totalcount}"
+    )
     grouped_df = (
-        hetSNP_intersect_unique.groupby("geneID").apply(process_gene).reset_index()
+        hetSNP_intersect_unique.groupby("geneID")
+        .apply(lambda x: process_gene(x, mean_totalcount, var_totalcount))
+        .reset_index()
     )
     grouped_df[
         [
@@ -185,7 +198,7 @@ def filter_genotypeEr(
             "altCount",
             "max_rest_data",
             "min_reast_data",
-            "FishTest",
+            "genotypeTest",
         ]
     ] = pd.DataFrame(grouped_df[0].tolist(), index=hetSNP_intersect_unique.index)
     grouped_df_sub = grouped_df.drop(grouped_df.columns[[1, 2]], axis=1)
@@ -197,18 +210,19 @@ def filter_genotypeEr(
         on=["chrN", "pos", "geneID", "refCount", "altCount"],
     )
     new_df.to_csv(beforeFilter_filename, index=False, sep="\t", header=True)
-    debiased_df = new_df[new_df["FishTest"] > genotypeEr_cutoff]
+    new_df_testedsites = new_df[new_df["genotypeTest"] != 100]
+    debiased_df = new_df[new_df["genotypeTest"] > genotypeEr_cutoff]
     logging.debug(
-        f"{debiased_df.shape[0]} out of {new_df.shape[0]} ({round(debiased_df.shape[0] / new_df.shape[0] * 100,2,)}%) het SNPs pass genotyping error with Fisher exact test p-val > {genotypeEr_cutoff}"
+        f"{debiased_df.shape[0]} out of {new_df.shape[0]} ({round(debiased_df.shape[0] / new_df.shape[0] * 100,2,)}%) het SNPs pass genotyping error with Fisher exact test p-val > {genotypeEr_cutoff}, {new_df.shape[0]-debiased_df.shape[0]} ({round((new_df.shape[0]-debiased_df.shape[0])/ new_df.shape[0] * 100,2,)}%) SNPs with 0 allele count were filtered out"
     )
     debiased_df.to_csv(
         filtered_hetSNP_intersec_pileup, index=False, sep="\t", header=True
     )
-    biased_df = new_df[new_df["FishTest"] <= genotypeEr_cutoff]
+    biased_df = new_df[new_df["genotypeTest"] <= genotypeEr_cutoff]
     biased_df = biased_df[["chrN", "pos"]]
     biased_df.to_csv(genotypeEr_filename, index=False, sep="\t", header=True)
     logging.debug(
-        f"{biased_df.shape[0]} het SNPs with genotyping error will be filtered out in shapeit2 phasing and simulation steps"
+        f"{biased_df.shape[0]} het SNPs out of {new_df_testedsites.shape[0]} ({round(biased_df.shape[0] / new_df_testedsites.shape[0] * 100,2,)}%) het SNPs with 0 allele count were identified with genotyping error, and will be filtered out in shapeit2 phasing and simulation steps"
     )
 
 

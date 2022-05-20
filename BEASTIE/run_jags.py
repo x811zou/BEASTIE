@@ -61,33 +61,35 @@ def summary(samples, varname, total_count):
 # ===========================================
 # command line: ./run_jags.py 49 51 5 31 300
 # ===========================================
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "smaller_sum",
-    help="prior count for smaller (come from the other (nonzero) sites, combined via pseudo-phasing)",
-)
-parser.add_argument(
-    "larger_sum",
-    help="prior count for larger (come from the other (nonzero) sites, combined via pseudo-phasing)",
-)
-parser.add_argument(
-    "nonzero_count", help="the total count at the zero site (non-zero allele count)"
-)
-parser.add_argument("mu", help="mu (mean of the empirical distribution)")
-parser.add_argument("var", help="variance (variance of the empirical distribution)")
-parser.add_argument(
-    "--n_warmup", help="number of warm up samples (burn out)", default=1000
-)
-parser.add_argument("--n_keep", help="number of samples to keep", default=1000)
-args = parser.parse_args()
-alpha = args.smaller_sum
-beta = args.larger_sum
-n = args.nonzero_count
-n = int(n)
-mu = args.mu
-var = args.var
-WARMUP = args.n_warmup
-KEEPER = args.n_keep
 
-pval = genotype_bugs_model(alpha, beta, n, mu, var, WARMUP, KEEPER)
-print(pval)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "smaller_sum",
+        help="prior count for smaller (come from the other (nonzero) sites, combined via pseudo-phasing)",
+    )
+    parser.add_argument(
+        "larger_sum",
+        help="prior count for larger (come from the other (nonzero) sites, combined via pseudo-phasing)",
+    )
+    parser.add_argument(
+        "nonzero_count", help="the total count at the zero site (non-zero allele count)"
+    )
+    parser.add_argument("mu", help="mu (mean of the empirical distribution)")
+    parser.add_argument("var", help="variance (variance of the empirical distribution)")
+    parser.add_argument(
+        "--n_warmup", help="number of warm up samples (burn out)", default=1000
+    )
+    parser.add_argument("--n_keep", help="number of samples to keep", default=1000)
+    args = parser.parse_args()
+    alpha = args.smaller_sum
+    beta = args.larger_sum
+    n = args.nonzero_count
+    n = int(n)
+    mu = args.mu
+    var = args.var
+    WARMUP = args.n_warmup
+    KEEPER = args.n_keep
+    pval = genotype_bugs_model(alpha, beta, n, mu, var, WARMUP, KEEPER)
+    print(pval)
