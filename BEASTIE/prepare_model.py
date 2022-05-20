@@ -106,7 +106,7 @@ def filter_alignBias(
                 "totalCount",
                 "altRatio",
                 "alt_binomial_p",
-                "FishTest",
+                "genotypeTest",
             ]
         ]
         gene_df_filtered.to_csv(
@@ -127,7 +127,7 @@ def filter_alignBias(
                 "altCount",
                 "totalCount",
                 "altRatio",
-                "FishTest",
+                "genotypeTest",
             ]
         ]
         afterFilter_filename = os.path.join(
@@ -206,7 +206,7 @@ def re_allocateReads(
                 "altCount",
                 "totalCount",
                 "altRatio",
-                "FishTest",
+                "genotypeTest",
                 "alt_binomial_p",
                 "e_paternal",
                 "e_maternal",
