@@ -64,6 +64,7 @@ def summary(samples, varname, nonzero_count):
     values = samples[varname]
     N = values.shape[1]
     pval = np.sum(values[0, :, 0] >= nonzero_count) / values.shape[1]
+    #pval = np.sum(values[0, :, 0] == 0) / values.shape[1]
     return pval
 
 
