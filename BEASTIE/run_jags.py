@@ -10,6 +10,8 @@ from pyjags.model import *
 from pyjags.modules import *
 import sys
 import argparse
+import math
+from pyrsistent import v
 
 # from collections import Mapping
 
@@ -19,7 +21,17 @@ np.set_printoptions(precision=1)
 
 
 def genotype_bugs_model(
-    smaller_sum, total_sum, nonzero_count, mean, variance, WARMUP=1000, KEEPER=1000
+    smaller_sum,
+    total_sum,
+    nonzero_count,
+    mean,
+    variance,
+    WARMUP=1000,
+    KEEPER=1000,
+    RE_ITERATE=False,
+    pcutoff_low=None,
+    pcutoff_high=None,
+    N=None,
 ):
     # p is between 0 and 1, the probablity of having ALT allele
     # alpha: sum of lower counts (ALT), beta: sum of total counts
@@ -57,14 +69,23 @@ def genotype_bugs_model(
     samples = model.sample(KEEPER, vars=["n"])
     for varname in ["n"]:
         pval = summary(samples, varname, nonzero_count)
-    return pval
+    if RE_ITERATE:
+        if (pval <= pcutoff_high) and (pval >= pcutoff_low):
+            samples = model.sample(N, vars=["n"])
+            for varname in ["n"]:
+                new_pval = summary(samples, varname, nonzero_count)
+        else:
+            new_pval = math.nan
+    else:
+        new_pval = math.nan
+    return pval, new_pval
 
 
 def summary(samples, varname, nonzero_count):
     values = samples[varname]
     N = values.shape[1]
     pval = np.sum(values[0, :, 0] >= nonzero_count) / values.shape[1]
-    #pval = np.sum(values[0, :, 0] == 0) / values.shape[1]
+    # pval = np.sum(values[0, :, 0] == 0) / values.shape[1]
     return pval
 
 
@@ -88,8 +109,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("mu", help="mu (mean of the empirical distribution)")
     parser.add_argument("var", help="variance (variance of the empirical distribution)")
-    parser.add_argument(
-        "--rep", help="number of replication", default=1)
+    parser.add_argument("--rep", help="number of replication", default=1)
     parser.add_argument(
         "--n_warmup", help="number of warm up samples (burn out)", default=1000
     )
