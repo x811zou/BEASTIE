@@ -42,12 +42,12 @@ RUN ./configure && make
 
 
 FROM ubuntu:20.04 AS beastie-py
-RUN apt-get update && apt-get install --no-install-recommends -qq make pipenv python3.8-venv
+RUN apt-get update && apt-get install --no-install-recommends -qq make pipenv python3.8-venv python3.8-dev pkg-config jags gcc g++
 
 WORKDIR /BEASTIE
 COPY . .
 RUN make clean dist
-RUN pip install Cython==0.29.24 && pip install dist/*.whl
+RUN pip install Cython==0.29.24 && pip install numpy==1.21.0 && pip install dist/*.whl
 
 
 
@@ -67,7 +67,7 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   r-base-core r-base-dev libicu66 libstdc++6 openssl libxml2 libcurl4 zlib1g \
   libbz2-1.0 lzma libhts3 vcftools samtools pipenv python3.8-venv libtbb2 \
-  r-cran-dplyr r-cran-readr krb5-user sssd-krb5
+  r-cran-dplyr r-cran-readr krb5-user sssd-krb5 jags
 
 RUN ln -s /usr/bin/python3.8 /usr/bin/python
 
