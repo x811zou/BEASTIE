@@ -10,6 +10,7 @@ import re
 import sys
 import math
 import logging
+import logging.handlers
 from unittest.mock import NonCallableMagicMock
 import pandas as pd
 import numpy as np
@@ -21,7 +22,7 @@ from .intersect_hets import Intersect_exonicHetSnps
 from .parse_mpileup import Parse_mpileup_allChr
 from scipy.stats import fisher_exact
 from .run_jags import genotype_bugs_model
-
+from datetime import date
 
 def parse_mpileup(
     input_file, output_file, vcf_sample_name, vcfgz, min_total_cov, min_single_cov
@@ -395,6 +396,21 @@ def run(
     ##### 1.1 Check input file existence
     #####
     tmp_path = output_path + "/" + foldername
+    today = date.today()
+    log_path = os.path.join(tmp_path, "log")
+    Path(log_path).mkdir(parents=True, exist_ok=True)
+    log_filename = f"{prefix}-{today.strftime('%b-%d-%Y')}"
+    logname = os.path.join(log_path, f"{log_filename}.log")
+    if os.path.isfile(logname):
+        os.remove(logname)
+    #
+    logger = logging.getLogger("")
+    logger.setLevel(logging.DEBUG)
+    handler = logging.handlers.RotatingFileHandler(logname, maxBytes=(1048576*5), backupCount=7)
+    formatter = logging.Formatter("%(asctime)-15s [%(levelname)s] %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
     logging.info("..... output saving to {0}".format(tmp_path))
     Path(output_path).mkdir(parents=True, exist_ok=True)
     Path(tmp_path).mkdir(parents=True, exist_ok=True)
