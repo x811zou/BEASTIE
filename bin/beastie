@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 
-from xxlimited import Xxo
-
-from traitlets import Int
 import BEASTIE
-import sys
-import os
 from BEASTIE import extractHets, filterGenotypingError
 import logging
 
