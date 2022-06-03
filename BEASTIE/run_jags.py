@@ -11,7 +11,8 @@ from pyjags.modules import *
 import sys
 import argparse
 import math
-from pyrsistent import v
+
+# from pyrsistent import v
 
 # from collections import Mapping
 
