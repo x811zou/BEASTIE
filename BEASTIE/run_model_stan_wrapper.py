@@ -108,15 +108,15 @@ def getMaxProb_lambda(thetas, Lambda):
     p_more1 = len([i for i in thetas if i > max_l]) / len(thetas)
     lambda_prob1 = max(p_less1, p_more1)
     # 2. transform thetas, and then calculate proportion
-    # thetas_log2 = [math.log2(x) for x in thetas]
-    # p_less2 = len([i for i in thetas_log2 if i < math.log2(one_over_Lambda)])/len(thetas)
-    # p_more2 = len([i for i in thetas_log2 if i > math.log2(float(Lambda))])/len(thetas)
-    # lambda_prob2 = max(p_less2,p_more2)
+    thetas_log2 = [math.log2(x) for x in thetas]
+    p_less2 = len([i for i in thetas_log2 if i < math.log2(one_over_Lambda)])/len(thetas)
+    p_more2 = len([i for i in thetas_log2 if i > math.log2(float(Lambda))])/len(thetas)
+    lambda_prob2 = max(p_less2,p_more2)
     # 3. sum tail
     lambda_sum1 = p_less1 + p_more1
     # 4. sum tail  transform thetas, and then calculate proportion
-    # lambda_sum2 = p_less2 + p_more2
-    return round(lambda_prob1, 3), round(lambda_sum1, 3)
+    lambda_sum2 = p_less2 + p_more2
+    return round(lambda_prob2, 3), round(lambda_sum2, 3)
 
 
 def runModel(
