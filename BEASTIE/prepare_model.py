@@ -498,7 +498,7 @@ def significant_genes(
             len(df_output),
             round((ncount / len(df_output)) * 100, 3),
             "posterior_mass_support_ALT",
-            0.5,
+            ase_cutoff,
         )
     )
     df_output["foldLog2MedSq_over_std"] = (
