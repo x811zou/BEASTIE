@@ -14,7 +14,7 @@ from .helpers import runhelper
 from scipy import stats
 import statistics
 import sys
-
+import math
 
 def writeInitializationFile(filename):
     OUT = open(filename, "wt")
