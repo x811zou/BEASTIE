@@ -236,7 +236,7 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
                 # print(">>>> record")
                 geneID.append(ID)
                 lambdas_choice = lambdas.loc[lambdas["geneID"] == ID].iloc[
-                    0, 6
+                    0, 5
                 ]  # has to change here
                 # log_lambda=(log(alpha/(1-alpha)) -(as.numeric(model$coefficients[1])+as.numeric(model$coefficients[3])*as.integer(totalCount)))/as.numeric(model$coefficients[2]))
                 # predicted_lambda = exp(log_lambda)
