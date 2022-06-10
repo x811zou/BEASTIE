@@ -39,13 +39,17 @@ beastie_wd=args[10]
 source(file.path(beastie_wd, "Get_phasing_error_rate.R"))
 
 predict_lambda_realdata <- function(alpha,in_data,out_data,model){
-  #colnames(in_data)<-c("gene_ID","total_reads","num_hets")
+  ######### model with log(lambda-1)
+  # colnames(in_data)<-c("gene_ID","total_reads","num_hets")
   data<-in_data%>%
-    dplyr::mutate(log_lambda_1=(log(alpha/(1-alpha)) -(as.numeric(model$coefficients[1])+as.numeric(model$coefficients[3])*as.integer(totalCount)))/as.numeric(model$coefficients[2]))%>%
-    mutate(predicted_lambda = exp(log_lambda_1))%>%
-    mutate(predicted_lambda=ifelse(predicted_lambda<1,1,predicted_lambda))
-    #mutate(predicted_lambda_plus1 = predicted_lambda+1)
-  #data<-in_data%>%mutate(predicted_lambda=(log(alpha/(1-alpha)) -(15.587909+-0.006483*total_reads))/-13.248682)
+    dplyr::mutate(log_lambda_minus1=(log(alpha/(1-alpha)) -(as.numeric(model$coefficients[1])+as.numeric(model$coefficients[3])*as.integer(totalCount)))/as.numeric(model$coefficients[2]))%>%
+    mutate(predicted_lambda = exp(log_lambda_minus1)+1)
+  ######### model with log(lambda)
+  # data<-in_data%>%
+  #   dplyr::mutate(log_lambda=(log(alpha/(1-alpha)) -(as.numeric(model$coefficients[1])+as.numeric(model$coefficients[3])*as.integer(totalCount)))/as.numeric(model$coefficients[2]))%>%
+  #   mutate(predicted_lambda = exp(log_lambda))%>%
+  #   mutate(predicted_lambda=ifelse(predicted_lambda<1,1,predicted_lambda))
+
   write.table(data,file = out_data,row.names=FALSE,col.names = TRUE,sep="\t")
   print(paste0("model input with predicted lambda saved to ",out_data,sep=""))
   return(data)
@@ -54,10 +58,10 @@ predict_lambda_realdata <- function(alpha,in_data,out_data,model){
 ############################################## 1. predict lambda #####################################################
 if(grepl("phasedByVCF",hetSNP_intersect_unique_forlambda_file,fixed=T)){
   print("using BEASTIE fitted model to predict lambda!")
-  lambda.fit.simulation<- readRDS(file.path(beastie_wd, "LinearReg_BEASTIE_fitted_model_lambda_loglambda_version2.rds"))
+  lambda.fit.simulation<- readRDS(file.path(beastie_wd, "LinearReg_BEASTIE_fitted_model_lambda_loglambdaminus1.rds"))
 }else{
   print("using iBEASTIE fitted model to predict lambda!")
-  lambda.fit.simulation<- readRDS(file.path(beastie_wd, "LinearReg_iBEASTIE_fitted_model_lambda_loglambda_version2.rds"))
+  lambda.fit.simulation<- readRDS(file.path(beastie_wd, "LinearReg_iBEASTIE_fitted_model_lambda_loglambdaminus1.rds"))
 }
 
 in_data<-read.delim(file.path(hetSNP_intersect_unique_forlambda_file),header=TRUE,sep="\t")
@@ -135,10 +139,8 @@ if (!file.exists(meta_error)) {
                         mutate(min_MAF_diff_MAF_log10_distance_r2_d=min_MAF*diff_MAF*log10_distance*r2*d))
     sample_info$pred_error_GIAB <- as.numeric(predict(cv.glmnet.fit.GIAB,alpha=0.7163,lambda=0.000271232500776062,newx=x.test,type='response'))
     sample_info<-sample_info%>%group_by(geneID)%>%arrange(chr,pos)%>%dplyr::mutate(pred_error_GIAB=ifelse(pos==dplyr::first(pos),NA,pred_error_GIAB))%>%ungroup()}
-    }
   write.table(sample_info,meta_error,sep = "\t", row.names = FALSE, col.names = TRUE)
   print(paste0("phasing error sample information saved to ",meta_error,sep=""))
-
 }else{
   print("phasing error prediction file exists!")
 }

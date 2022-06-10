@@ -250,121 +250,123 @@ def filter_genotypeEr(
     ] = pd.DataFrame(grouped_df[0].tolist(), index=hetSNP_intersect_unique.index)
     grouped_df_sub = grouped_df.drop(grouped_df.columns[[1, 2]], axis=1)
     grouped_df_sub.to_csv(applyFilter_filename, index=False, sep="\t", header=True)
-    new_df = pd.merge(
+    df_before_filter = pd.merge(
         hetSNP_intersect_unique,
         grouped_df_sub,
         how="inner",
         on=["chrN", "pos", "geneID", "refCount", "altCount"],
     )
-    new_df.to_csv(beforeFilter_filename, index=False, sep="\t", header=True)
-    new_df_testedsites = new_df[new_df["genotypeTest"].notnull()]
-    debiased_df = new_df[new_df["genotypeTest"] > genotypeEr_cutoff]
-    biased_df = new_df[new_df["genotypeTest"] <= genotypeEr_cutoff]
-    biased_df_ss = new_df_testedsites[new_df_testedsites["genotypeTest"] < pcutoff_low]
-    biased_df_nss = new_df_testedsites[
-        new_df_testedsites["genotypeTest"] > pcutoff_high
-    ]
-    biased_df_candidates = new_df_testedsites[
-        (new_df_testedsites["genotypeTest"] >= pcutoff_low)
-        & (new_df_testedsites["genotypeTest"] <= pcutoff_high)
-    ]
+    # total het SNPs overlapped between hetSNPs and pileup and AF annotation
+    df_before_filter.to_csv(beforeFilter_filename, index=False, sep="\t", header=True)
+    # het SNPs in genotyping error testing
+    df_testedsites = df_before_filter[df_before_filter["genotypeTest"].notnull()]
+    # 
+    df_after_filter = df_before_filter[
+        (df_before_filter["genotypeTest"] > genotypeEr_cutoff)
+        | (df_before_filter["genotypeTest"].isnull())
+        ]
+    df_testedsites_fail = df_testedsites[df_testedsites["genotypeTest"] <= genotypeEr_cutoff]
+    # biased_df_ss = new_df_testedsites[new_df_testedsites["genotypeTest"] < pcutoff_low]
+    # biased_df_nss = new_df_testedsites[
+    #     new_df_testedsites["genotypeTest"] > pcutoff_high
+    # ]
+    # biased_df_candidates = new_df_testedsites[
+    #     (new_df_testedsites["genotypeTest"] >= pcutoff_low)
+    #     & (new_df_testedsites["genotypeTest"] <= pcutoff_high)
+    # ]
     logging.debug(
-        f"total hetSNPs: {new_df.shape[0]}, tested hetSNPs with 0 read count on 1 allele: {new_df_testedsites.shape[0]} "
+        f"total hetSNPs: {df_before_filter.shape[0]}, tested hetSNPs (with 0 read count on 1 allele and at least one SNPs with both non-zero allele read count in the same gene): {df_testedsites.shape[0]} "
     )
     logging.debug(
-        f"      {biased_df.shape[0]} out of {new_df_testedsites.shape[0]} ({round((biased_df.shape[0]) / new_df_testedsites.shape[0] * 100,2,)}%) , {biased_df.shape[0]} out of {new_df.shape[0]} ({round(biased_df.shape[0]/ new_df.shape[0] * 100,2,)}%), tested het SNPs fail genotyping error JAGS test p-val <= {genotypeEr_cutoff}"
+        f"      {df_testedsites_fail.shape[0]} out of {df_testedsites.shape[0]} ({round((df_testedsites_fail.shape[0]) / df_testedsites.shape[0] * 100,2,)}%) , {df_testedsites_fail.shape[0]} out of {df_before_filter.shape[0]} ({round(df_testedsites_fail.shape[0]/ df_before_filter.shape[0] * 100,2,)}%), tested het SNPs fail genotyping error JAGS test p-val <= {genotypeEr_cutoff}"
     )
-    logging.debug(
-        f"          - {biased_df_nss.shape[0]} out of {new_df_testedsites.shape[0]} ({round(biased_df_nss.shape[0] / new_df_testedsites.shape[0] * 100,2,)}%) tested het SNPs pass genotyping error JAGS test p-val > {genotypeEr_cutoff}"
-    )
-
-    if iterate:
-        debiased_df = new_df[
-            (new_df["genotypeTest"] > pcutoff_high)
-            | (new_df["new_genotypeTest"] > genotypeEr_cutoff)
-            | (new_df["genotypeTest"].isna())
-        ]
-        biased_df = new_df[
-            (new_df["genotypeTest"] < pcutoff_low)
-            | (new_df["new_genotypeTest"] <= genotypeEr_cutoff)
-        ]
-        logging.debug(
-            f"      {biased_df_ss.shape[0]} out of {new_df_testedsites.shape[0]} ({round(biased_df_ss.shape[0]/ new_df_testedsites.shape[0] * 100,2,)}%) biased SNPs w/ genotyping error JAGS test p-val < {pcutoff_low}"
-        )
-        logging.debug(
-            f"      {biased_df_candidates.shape[0]} out of {new_df_testedsites.shape[0]} ({round(biased_df_candidates.shape[0]/ new_df_testedsites.shape[0] * 100,2,)}%) biased SNPs w/ genotyping error JAGS test {pcutoff_low} <= p-val <= {pcutoff_high}"
-        )
-        logging.debug(
-            f"      {new_df_testedsites.shape[0]-biased_df_ss.shape[0]} out of {new_df_testedsites.shape[0]} ({round((new_df_testedsites.shape[0]-biased_df_ss.shape[0])/ new_df_testedsites.shape[0] * 100,2,)}%) biased SNPs w/ genotyping error JAGS test p-val > {pcutoff_high}"
-        )
-        re_df = new_df[new_df["new_genotypeTest"].notnull()]
-        re_df = re_df[
-            [
-                "chrN",
-                "pos",
-                "refCount",
-                "altCount",
-                "max_rest_data",
-                "min_reast_data",
-                "AAR",
-                "genotypeTest",
-            ]
-        ]
-        logging.debug(
-            f"{re_df.shape[0]} out of {new_df.shape[0]} ({round(re_df.shape[0]/ new_df.shape[0] * 100,2,)}%) het SNPs that are being re-tested ({pcutoff_low} <= p <= {pcutoff_high}) with calculated N"
-        )
-        if re_df.shape[0] > 0:
-            re_df_ss = new_df[new_df["new_genotypeTest"] > genotypeEr_cutoff]
-            both_ss = re_df[
-                (re_df["new_genotypeTest"] <= genotypeEr_cutoff)
-                & (re_df["genotypeTest"] <= genotypeEr_cutoff)
-            ]
-            both_nss = re_df[
-                (re_df["new_genotypeTest"] > genotypeEr_cutoff)
-                & (re_df["genotypeTest"] > genotypeEr_cutoff)
-            ]
-            ns_s = re_df[
-                (re_df["new_genotypeTest"] <= genotypeEr_cutoff)
-                & (re_df["genotypeTest"] > genotypeEr_cutoff)
-            ]
-            s_ns = re_df[
-                (re_df["new_genotypeTest"] > genotypeEr_cutoff)
-                & (re_df["genotypeTest"] <= genotypeEr_cutoff)
-            ]
-            logging.debug(
-                f"      {re_df.shape[0]-re_df_ss.shape[0]} out of {re_df.shape[0]} ({round((re_df.shape[0]-re_df_ss.shape[0]) / re_df.shape[0] * 100,2,)}%) het SNPs fail genotyping error jags test p-val <= {genotypeEr_cutoff}"
-            )
-            logging.debug(
-                f"      {re_df_ss.shape[0]} out of {re_df.shape[0]} ({round(re_df_ss.shape[0] / re_df.shape[0] * 100,2,)}%) het SNPs pass genotyping error jags test p-val > {genotypeEr_cutoff}"
-            )
-            logging.debug(
-                f"      - {both_ss.shape[0]} ({round(both_ss.shape[0] / re_df.shape[0] * 100,2,)}%) hetSNPs are SS in both test and re-test."
-            )
-            print(both_ss)
-            logging.debug(
-                f"      - {both_nss.shape[0]} ({round(both_nss.shape[0] / re_df.shape[0] * 100,2,)}%) hetSNPs are not SS in both test and re-test."
-            )
-            print(both_nss)
-            logging.debug(
-                f"      - {s_ns.shape[0]} ({round(s_ns.shape[0] / re_df.shape[0] * 100,2,)}%) hetSNPs are SS in test1 but nt SS in test2."
-            )
-            print(s_ns)
-            logging.debug(
-                f"      - {ns_s.shape[0]} ({round(ns_s.shape[0] / re_df.shape[0] * 100,2,)}%) hetSNPs are not SS in test1 but SS in test2."
-            )
-            print(ns_s)
-        else:
-            print("re-run does not have any SNPs fall into the p-value low-high cutoff")
-    debiased_df.to_csv(
+    # if iterate:
+    #     debiased_df = new_df[
+    #         (new_df["genotypeTest"] > pcutoff_high)
+    #         | (new_df["new_genotypeTest"] > genotypeEr_cutoff)
+    #         | (new_df["genotypeTest"].isna())
+    #     ]
+    #     biased_df = new_df[
+    #         (new_df["genotypeTest"] < pcutoff_low)
+    #         | (new_df["new_genotypeTest"] <= genotypeEr_cutoff)
+    #     ]
+    #     logging.debug(
+    #         f"      {biased_df_ss.shape[0]} out of {new_df_testedsites.shape[0]} ({round(biased_df_ss.shape[0]/ new_df_testedsites.shape[0] * 100,2,)}%) biased SNPs w/ genotyping error JAGS test p-val < {pcutoff_low}"
+    #     )
+    #     logging.debug(
+    #         f"      {biased_df_candidates.shape[0]} out of {new_df_testedsites.shape[0]} ({round(biased_df_candidates.shape[0]/ new_df_testedsites.shape[0] * 100,2,)}%) biased SNPs w/ genotyping error JAGS test {pcutoff_low} <= p-val <= {pcutoff_high}"
+    #     )
+    #     logging.debug(
+    #         f"      {new_df_testedsites.shape[0]-biased_df_ss.shape[0]} out of {new_df_testedsites.shape[0]} ({round((new_df_testedsites.shape[0]-biased_df_ss.shape[0])/ new_df_testedsites.shape[0] * 100,2,)}%) biased SNPs w/ genotyping error JAGS test p-val > {pcutoff_high}"
+    #     )
+    #     re_df = new_df[new_df["new_genotypeTest"].notnull()]
+    #     re_df = re_df[
+    #         [
+    #             "chrN",
+    #             "pos",
+    #             "refCount",
+    #             "altCount",
+    #             "max_rest_data",
+    #             "min_reast_data",
+    #             "AAR",
+    #             "genotypeTest",
+    #         ]
+    #     ]
+    #     logging.debug(
+    #         f"{re_df.shape[0]} out of {new_df.shape[0]} ({round(re_df.shape[0]/ new_df.shape[0] * 100,2,)}%) het SNPs that are being re-tested ({pcutoff_low} <= p <= {pcutoff_high}) with calculated N"
+    #     )
+    #     if re_df.shape[0] > 0:
+    #         re_df_ss = new_df[new_df["new_genotypeTest"] > genotypeEr_cutoff]
+    #         both_ss = re_df[
+    #             (re_df["new_genotypeTest"] <= genotypeEr_cutoff)
+    #             & (re_df["genotypeTest"] <= genotypeEr_cutoff)
+    #         ]
+    #         both_nss = re_df[
+    #             (re_df["new_genotypeTest"] > genotypeEr_cutoff)
+    #             & (re_df["genotypeTest"] > genotypeEr_cutoff)
+    #         ]
+    #         ns_s = re_df[
+    #             (re_df["new_genotypeTest"] <= genotypeEr_cutoff)
+    #             & (re_df["genotypeTest"] > genotypeEr_cutoff)
+    #         ]
+    #         s_ns = re_df[
+    #             (re_df["new_genotypeTest"] > genotypeEr_cutoff)
+    #             & (re_df["genotypeTest"] <= genotypeEr_cutoff)
+    #         ]
+    #         logging.debug(
+    #             f"      {re_df.shape[0]-re_df_ss.shape[0]} out of {re_df.shape[0]} ({round((re_df.shape[0]-re_df_ss.shape[0]) / re_df.shape[0] * 100,2,)}%) het SNPs fail genotyping error jags test p-val <= {genotypeEr_cutoff}"
+    #         )
+    #         logging.debug(
+    #             f"      {re_df_ss.shape[0]} out of {re_df.shape[0]} ({round(re_df_ss.shape[0] / re_df.shape[0] * 100,2,)}%) het SNPs pass genotyping error jags test p-val > {genotypeEr_cutoff}"
+    #         )
+    #         logging.debug(
+    #             f"      - {both_ss.shape[0]} ({round(both_ss.shape[0] / re_df.shape[0] * 100,2,)}%) hetSNPs are SS in both test and re-test."
+    #         )
+    #         print(both_ss)
+    #         logging.debug(
+    #             f"      - {both_nss.shape[0]} ({round(both_nss.shape[0] / re_df.shape[0] * 100,2,)}%) hetSNPs are not SS in both test and re-test."
+    #         )
+    #         print(both_nss)
+    #         logging.debug(
+    #             f"      - {s_ns.shape[0]} ({round(s_ns.shape[0] / re_df.shape[0] * 100,2,)}%) hetSNPs are SS in test1 but nt SS in test2."
+    #         )
+    #         print(s_ns)
+    #         logging.debug(
+    #             f"      - {ns_s.shape[0]} ({round(ns_s.shape[0] / re_df.shape[0] * 100,2,)}%) hetSNPs are not SS in test1 but SS in test2."
+    #         )
+    #         print(ns_s)
+    #     else:
+    #         print("re-run does not have any SNPs fall into the p-value low-high cutoff")
+    df_after_filter.to_csv(
         filtered_hetSNP_intersec_pileup, index=False, sep="\t", header=True
     )
-    biased_df = biased_df[["chrN", "pos"]]
-    biased_df.to_csv(genotypeEr_filename, index=False, sep="\t", header=True)
+    df_testedsites_fail = df_testedsites_fail[["chrN", "pos"]]
+    df_testedsites_fail.to_csv(genotypeEr_filename, index=False, sep="\t", header=True)
     logging.debug(
-        f"{biased_df.shape[0]} het SNPs out of {new_df.shape[0]} ({round(biased_df.shape[0] / new_df.shape[0] * 100,2,)}%) het SNPs with 0 allele count were identified with genotyping error, and will be filtered out in shapeit2 phasing and simulation steps"
+        f"{df_testedsites_fail.shape[0]} het SNPs out of {df_before_filter.shape[0]} ({round(df_testedsites_fail.shape[0] / df_before_filter.shape[0] * 100,2,)}%) het SNPs with 0 allele count were identified with genotyping error, and will be filtered out in shapeit2 phasing and simulation steps"
     )
     logging.debug(
-        f"{debiased_df.shape[0]} het SNPs out of {new_df.shape[0]} ({round(debiased_df.shape[0] / new_df.shape[0] * 100,2,)}%) het SNPs saved in filtered het SNP pile up file"
+        f"{df_after_filter.shape[0]} het SNPs out of {df_before_filter.shape[0]} ({round(df_after_filter.shape[0] / df_before_filter.shape[0] * 100,2,)}%) het SNPs saved in filtered het SNP pile up file"
     )
 
 
