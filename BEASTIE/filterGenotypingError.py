@@ -117,7 +117,7 @@ def calculate_N_for_CI(p, CI, Z_score):
 
 
 def process_gene(
-    data, mu, var, n_warmup, n_keeper, iterate, pcutoff_low, pcutoff_high, CI, Z_score
+    data, mu, var, n_warmup, n_keeper, CI, Z_score,iterate=None, pcutoff_low=None, pcutoff_high=None,
 ):
     data_sub = data[["chrN", "pos", "refCount", "altCount"]]
     data_rest = data_sub[(data_sub["refCount"] != 0) & (data_sub["altCount"] != 0)]
@@ -185,9 +185,6 @@ def filter_genotypeEr(
     genotypeEr_filename,
     n_warmup,
     n_keeper,
-    iterate,
-    pcutoff_low,
-    pcutoff_high,
     CI=0.01,
     Z_score=1.96,
 ):
@@ -216,7 +213,7 @@ def filter_genotypeEr(
     mean_totalcount = hetSNP_intersect_unique["totalCount"].mean()
     var_totalcount = hetSNP_intersect_unique["totalCount"].var()
     logging.debug(
-        f"input for genotyping error test : total count stats for each SNP mean {mean_totalcount}, variance {var_totalcount}"
+        f"input for JAGS model : total count stats for all SNP mean {mean_totalcount}, variance {var_totalcount}"
     )
     grouped_df = (
         hetSNP_intersect_unique.groupby("geneID")
@@ -227,9 +224,6 @@ def filter_genotypeEr(
                 var_totalcount,
                 n_warmup,
                 n_keeper,
-                iterate,
-                pcutoff_low,
-                pcutoff_high,
                 CI,
                 Z_score,
             )
@@ -550,9 +544,6 @@ def run(
         genotypeErfiltered_file,
         n_warmup,
         n_keeper,
-        RE_ITERATE,
-        pcutoff_low,
-        pcutoff_high,
     )
 
     # checking
