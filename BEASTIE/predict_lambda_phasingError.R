@@ -43,7 +43,7 @@ predict_lambda_realdata <- function(alpha,in_data,out_data,model){
   # colnames(in_data)<-c("gene_ID","total_reads","num_hets")
   data<-in_data%>%
     dplyr::mutate(log_lambda_minus1=(log(alpha/(1-alpha)) -(as.numeric(model$coefficients[1])+as.numeric(model$coefficients[3])*as.integer(totalCount)))/as.numeric(model$coefficients[2]))%>%
-    mutate(predicted_lambda = exp(log_lambda_minus1)+1)
+    mutate(predicted_lambda_plus1 = exp(log_lambda_minus1)+1)
   ######### model with log(lambda)
   # data<-in_data%>%
   #   dplyr::mutate(log_lambda=(log(alpha/(1-alpha)) -(as.numeric(model$coefficients[1])+as.numeric(model$coefficients[3])*as.integer(totalCount)))/as.numeric(model$coefficients[2]))%>%
