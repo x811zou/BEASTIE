@@ -16,6 +16,7 @@ import statistics
 import sys
 import math
 
+
 def writeInitializationFile(filename):
     OUT = open(filename, "wt")
     print("theta <- 1", file=OUT)
@@ -109,9 +110,13 @@ def getMaxProb_lambda(thetas, Lambda):
     lambda_prob1 = max(p_less1, p_more1)
     # 2. transform thetas, and then calculate proportion
     thetas_log2 = [math.log2(x) for x in thetas]
-    p_less2 = len([i for i in thetas_log2 if i < math.log2(one_over_Lambda)])/len(thetas)
-    p_more2 = len([i for i in thetas_log2 if i > math.log2(float(Lambda))])/len(thetas)
-    lambda_prob2 = max(p_less2,p_more2)
+    p_less2 = len([i for i in thetas_log2 if i < math.log2(one_over_Lambda)]) / len(
+        thetas
+    )
+    p_more2 = len([i for i in thetas_log2 if i > math.log2(float(Lambda))]) / len(
+        thetas
+    )
+    lambda_prob2 = max(p_less2, p_more2)
     # 3. sum tail
     lambda_sum1 = p_less1 + p_more1
     # 4. sum tail  transform thetas, and then calculate proportion
@@ -189,6 +194,7 @@ def getCredibleInterval(thetas, alpha, n):
 
 
 def summarize(thetas, alpha):
+    mean = statistics.mean(thetas)
     median = statistics.median(thetas)
     # print(f"median {median}")
     variance = np.var(thetas)
@@ -201,7 +207,7 @@ def summarize(thetas, alpha):
     # mad = stats.median_abs_deviation(thetas, scale="normal")
     # mad = stats.median_abs_deviation(thetas, scale=1/1.4826)
     mad = stats.median_absolute_deviation(thetas)
-    return median, variance, CI_left, CI_right, mad
+    return mean, median, variance, CI_left, CI_right, mad
 
 
 def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
@@ -217,6 +223,7 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
 
     prob_sum_lambda = []
     model_theta_med = []  # 150
+    model_theta_mean = []  # 150
     model_theta_var = []  # 150
     model_mad = []  # 150
     CI_left = []
@@ -235,11 +242,11 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
             if len(gene_thetas) > 1:
                 # print(">>>> record")
                 geneID.append(ID)
-                lambdas_choice = lambdas.loc[lambdas["geneID"] == ID].iloc[
-                    0, 5
-                ] 
+                lambdas_choice = lambdas.loc[lambdas["geneID"] == ID].iloc[0, 5]
 
-                median, variance, left_CI, right_CI, mad = summarize(gene_thetas, 0.05)
+                mean, median, variance, left_CI, right_CI, mad = summarize(
+                    gene_thetas, 0.05
+                )
                 # print(f"mad {mad}")
                 max_prob = getMaxProb_RMSE(gene_thetas)
                 max_prob_lambda, sum_prob_lambda = getMaxProb_lambda(
@@ -249,6 +256,7 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
                 prob_sum_lambda.append(sum_prob_lambda)
                 CI_left.append(round(left_CI, 3))
                 CI_right.append(round(right_CI, 3))
+                model_theta_mean.append(mean)
                 model_theta_med.append(median)
                 model_theta_var.append(variance)
                 model_mad.append(round(mad, 3))
@@ -257,6 +265,7 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
         "geneID": geneID,
         "median_abs_deviation": model_mad,
         "posterior_median": model_theta_med,
+        "posterior_mean": model_theta_mean,
         "posterior_variance": model_theta_var,
         "CI_left": CI_left,
         "CI_right": CI_right,

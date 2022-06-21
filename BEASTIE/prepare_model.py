@@ -139,7 +139,7 @@ def filter_alignBias(
         filename = afterFilter_filename
         logging.debug(
             "{0} has {1} het SNPs, after genotyping error filtering, {2} has {3} het SNPs, no alignment bias filtering".format(
-                os.path.basename(new_df),
+                os.path.basename(genotypeErfiltered_filename),
                 new_df.shape[0],
                 os.path.basename(afterFilter_filename),
                 hetSNP_intersect_unique_subset.shape[0],
@@ -154,6 +154,7 @@ def re_allocateReads(
     version,
     filename,
     filename_cleaned,
+    simulation_pileup=None,
     phase_difference_file=None,
 ):
     # read data after alignment bias filtering
@@ -193,32 +194,51 @@ def re_allocateReads(
                 ["e_paternal", "e_maternal"]
             ] = hetSNP_intersect_unique_filtered.genotype.str.split("|", expand=True)
             phasing_data = hetSNP_intersect_unique_filtered
-        phasing_data = phasing_data[
-            [
-                "chr",
-                "chrN",
-                "pos",
-                "rsid",
-                "AF",
-                "geneID",
-                "genotype",
-                "refCount",
-                "altCount",
-                "totalCount",
-                "altRatio",
-                "genotypeTest",
-                "alt_binomial_p",
-                "e_paternal",
-                "e_maternal",
+        if simulation_pileup is not None:
+            phasing_data = phasing_data[
+                [
+                    "chr",
+                    "chrN",
+                    "pos",
+                    "rsid",
+                    "AF",
+                    "geneID",
+                    "genotype",
+                    "refCount",
+                    "altCount",
+                    "totalCount",
+                    "altRatio",
+                    "genotypeTest",
+                    "alt_binomial_p",
+                    "e_paternal",
+                    "e_maternal",
+                ]
             ]
-        ]
+        else:
+            phasing_data = phasing_data[
+                [
+                    "chr",
+                    "chrN",
+                    "pos",
+                    "rsid",
+                    "AF",
+                    "geneID",
+                    "genotype",
+                    "refCount",
+                    "altCount",
+                    "totalCount",
+                    "altRatio",
+                    "e_paternal",
+                    "e_maternal",
+                ]
+            ]
         geneIDs = phasing_data["geneID"].unique()
         new_df = pd.DataFrame()
         for gene in geneIDs:
             selected_gene = phasing_data[phasing_data["geneID"] == gene]
             selected_gene = selected_gene.reset_index(drop=True)
             edited_selected_gene = change_phasing(selected_gene)
-            new_df = new_df.append(edited_selected_gene)
+            new_df = pd.concat([new_df, edited_selected_gene], ignore_index=True)
         new_df.to_csv(filename, sep="\t", header=True, index=False)
         ###################
         # checking phasing difference within a gene

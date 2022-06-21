@@ -228,41 +228,43 @@ def run(
     logging.info("=================")
     logging.info("================= Starting specific step 2.2")
     logging.info("....... start parsing simulation pileup data")
-    with multiprocessing.Pool(2) as pool:
-        handles = []
-        simulation_parsed_pileup = os.path.join(
-            tmp_path, f"{prefix}_parsed_pileup{chr_suffix}.simulation.tsv"
-        )
-        handle = pool.apply_async(
-            parse_mpileup,
-            (
-                simulation_pileup,
-                simulation_parsed_pileup,
-                vcf_sample_name,
-                vcfgz,
-                min_total_cov,
-                min_single_cov,
-            ),
-        )
-        handles.append(handle)
+    if simulation_pileup is not None:
+        with multiprocessing.Pool(2) as pool:
+            handles = []
+            simulation_parsed_pileup = os.path.join(
+                tmp_path, f"{prefix}_parsed_pileup{chr_suffix}.simulation.tsv"
+            )
+            handle = pool.apply_async(
+                parse_mpileup,
+                (
+                    simulation_pileup,
+                    simulation_parsed_pileup,
+                    vcf_sample_name,
+                    vcfgz,
+                    min_total_cov,
+                    min_single_cov,
+                ),
+            )
+            handles.append(handle)
 
-        pool.close()
-        pool.join()
+            pool.close()
+            pool.join()
 
-        for handle in handles:
-            handle.get()
-
+            for handle in handles:
+                handle.get()
+    else:
+        logging.info("....... simulator data is NOT provided, skip step")
     #####
     ##### 2.3 use simulation data to filter variants with alignment bias
     #####
     logging.info("=================")
     logging.info(
-        "================= Starting specific step 2.3 aligmment bias filtering"
+        "================= Starting specific step 2.3 aligmment bias filtering using simulation data"
     )
     logging.info("....... start filtering variants with alignment bias")
 
     if simulation_pileup is None:
-        logging.info("....... simulator data is NOT provided")
+        logging.info("....... simulator data is NOT provided, skip step")
         biased_variant = None
     else:
         logging.info(
@@ -338,6 +340,7 @@ def run(
         phasing_method,
         phased_filename,
         phased_clean_filename,
+        simulation_pileup,
         phase_difference_filename,
     )
 

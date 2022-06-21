@@ -5,11 +5,6 @@ from BEASTIE import extractHets, filterGenotypingError
 import logging
 
 
-def beastie_runModel(args):
-    config = BEASTIE.load_config_from_args(args)
-    BEASTIE.run(config)
-
-
 def beastie_filterGenotypingError(args):
     prefix = args.prefix if args.prefix is not None else args.vcf_sample_name
     vcfgz = args.vcfgz_file
@@ -241,6 +236,11 @@ def beastie_extractHets(args):
     )
 
 
+def beastie_runModel(args):
+    config = BEASTIE.load_config_from_args(args)
+    BEASTIE.run(config)
+
+
 def get_parser():
     import argparse
 
@@ -269,7 +269,6 @@ def get_parser():
     parser.add_argument(
         "--simulation-pileup-file",
         help="Path to simulation pileup file.",
-        required=True,
     )
     parser.add_argument(
         "--filtered-het-snp-file",
