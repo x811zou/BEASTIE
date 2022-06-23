@@ -196,8 +196,12 @@ def getCredibleInterval(thetas, alpha, n):
 def summarize(thetas, alpha):
     mean = statistics.mean(thetas)
     median = statistics.median(thetas)
+    thetas_log2 = [log2(x) for x in thetas]
+    log2_mean = statistics.mean(thetas_log2)
+    log2_median = statistics.median(thetas_log2)
     # print(f"median {median}")
     variance = np.var(thetas)
+    log2_variance = np.var(thetas_log2)
     # print(f"variance {variance}")
     # print(f"length of thetas {len(thetas)}")
     n = len(thetas)
@@ -207,7 +211,17 @@ def summarize(thetas, alpha):
     # mad = stats.median_abs_deviation(thetas, scale="normal")
     # mad = stats.median_abs_deviation(thetas, scale=1/1.4826)
     mad = stats.median_absolute_deviation(thetas)
-    return mean, median, variance, CI_left, CI_right, mad
+    return (
+        mean,
+        median,
+        variance,
+        CI_left,
+        CI_right,
+        mad,
+        log2_mean,
+        log2_median,
+        log2_variance,
+    )
 
 
 def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
@@ -225,6 +239,9 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
     model_theta_med = []  # 150
     model_theta_mean = []  # 150
     model_theta_var = []  # 150
+    model_log2_theta_med = []  # 150
+    model_log2_theta_mean = []  # 150
+    model_log2_theta_var = []  # 150
     model_mad = []  # 150
     CI_left = []
     CI_right = []
@@ -244,9 +261,17 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
                 geneID.append(ID)
                 lambdas_choice = lambdas.loc[lambdas["geneID"] == ID].iloc[0, 5]
 
-                mean, median, variance, left_CI, right_CI, mad = summarize(
-                    gene_thetas, 0.05
-                )
+                (
+                    mean,
+                    median,
+                    variance,
+                    left_CI,
+                    right_CI,
+                    mad,
+                    log2_mean,
+                    log2_median,
+                    log2_variance,
+                ) = summarize(gene_thetas, 0.05)
                 # print(f"mad {mad}")
                 max_prob = getMaxProb_RMSE(gene_thetas)
                 max_prob_lambda, sum_prob_lambda = getMaxProb_lambda(
@@ -260,7 +285,9 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
                 model_theta_med.append(median)
                 model_theta_var.append(variance)
                 model_mad.append(round(mad, 3))
-
+                model_log2_theta_mean.append(log2_mean)
+                model_log2_theta_med.append(log2_median)
+                model_log2_theta_var.append(log2_variance)
     df = {
         "geneID": geneID,
         "median_abs_deviation": model_mad,
@@ -270,8 +297,14 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
         "CI_left": CI_left,
         "CI_right": CI_right,
         "posterior_mass_support_ALT": prob_sum_lambda,
+        "log2_posterior_median": model_log2_theta_med,
+        "log2_posterior_mean": model_log2_theta_mean,
+        "log2_posterior_variance": model_log2_theta_var,
     }
     df = pd.DataFrame(df)
+    df["posterior_mean"] = df["posterior_mean"].apply(
+        lambda x: round(x, 3 - int(floor(log10(abs(x)))))
+    )
     df["posterior_median"] = df["posterior_median"].apply(
         lambda x: round(x, 3 - int(floor(log10(abs(x)))))
     )
