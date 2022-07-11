@@ -3,6 +3,7 @@
 import BEASTIE
 from BEASTIE import extractHets, filterGenotypingError
 import logging
+import sys
 
 
 def beastie_filterGenotypingError(args):
@@ -213,6 +214,11 @@ def configure_extractHets_parser(parser):
         help="one specific geneID, for debugging purpose only",
         default=None,
     )
+    parser.add_argument(
+        "--atacseq",
+        help="input data is atacseq",
+        action="store_true",
+    )
 
 
 def beastie_extractHets(args):
@@ -220,20 +226,30 @@ def beastie_extractHets(args):
     vcfgz_path_filename = args.vcfgz_file
     chr_start = args.chr_start
     chr_end = args.chr_end
-    gencode_path = args.gencode_dir
+    annotation = args.gencode_dir
     debug_gene = args.debug_gene
+    atacseq = args.atacseq
     logging.basicConfig(
         format="%(asctime)-15s [%(levelname)s] %(message)s",
         level=logging.DEBUG,
     )
-    extractHets.count_all_het_sites(
-        vcfgz_path_filename,
-        filename,
-        chr_start,
-        chr_end,
-        gencode_path,
-        debug_gene,
-    )
+    if atacseq:
+        extractHets.count_all_het_sites_forpeaks(
+            vcfgz_path_filename,
+            filename,
+            chr_start,
+            chr_end,
+            annotation,
+        )
+    else:
+        extractHets.count_all_het_sites(
+            vcfgz_path_filename,
+            filename,
+            chr_start,
+            chr_end,
+            annotation,
+            debug_gene,
+        )
 
 
 def beastie_runModel(args):
@@ -367,7 +383,7 @@ def get_parser():
 
     extractHets_parser = subparsers.add_parser(
         "extractHets",
-        help="extract heterozygous bi-allelic SNPs for specific chromosomes from all gencode transcripts",
+        help="extract heterozygous bi-allelic SNPs for specific chromosomes from gencode annotation for RNAseq, or peak annotation for ATACseq",
     )
     configure_extractHets_parser(extractHets_parser)
 
