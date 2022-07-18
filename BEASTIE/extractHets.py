@@ -9,8 +9,8 @@ import sys
 import pandas as pd
 from pkg_resources import resource_filename
 import gzip
-
-from BEASTIE.helpers import chrRange, tabix_regions
+import csv
+from .helpers import chrRange, tabix_regions
 from .misc_tools.GffTranscriptReader import GffTranscriptReader
 from .misc_tools.Pipe import Pipe
 
@@ -59,6 +59,23 @@ def vcfline_processor(line):
 
     if fields[6] != "PASS":
         return None
+
+    genotype = fields[9].split(":")[0]
+
+    if not isHeterozygous(genotype):
+        return None
+
+    pos = int(fields[1])
+    rs = fields[2]
+
+    return (pos, rs, genotype)
+
+
+def vcfline_processor_atacseq(line):
+    fields = line.split("\t")
+    if len(fields) < 10:
+        print(f"bad field line: '{line}'")
+    assert len(fields) >= 10
 
     genotype = fields[9].split(":")[0]
 
@@ -202,8 +219,6 @@ def count_all_het_sites(
 def count_all_het_sites_forpeaks(
     vcfFilename,
     outputFilename,
-    chr_start,
-    chr_end,
     annotation_file,
 ):
     out_stream = open(outputFilename, "w")
@@ -218,27 +233,24 @@ def count_all_het_sites_forpeaks(
     with gzip.open(annotation_file, "rt", newline="\n") as csvfile:
         reader = csv.DictReader(csvfile, delimiter="\t")
         for row in reader:
-            key = f"{row['chr']}:{row['peak_start']}-{row['peak_end']}"
+            key = f"{row['chrN']}:{row['peak_start']}-{row['peak_end']}"
             peak_region_to_IDs[key] = row
-
     """
     2. construct a dict with unique peak region with VCF records {peak_region:VCF records}
     """
     peak_region_to_snp_infos = tabix_regions(
-        peak_region_to_IDs.keys(), vcfline_processor, vcfFilename
+        peak_region_to_IDs.keys(), vcfline_processor_atacseq, vcfFilename
     )
-
     """
     3. write output data
     """
-    variant_to_peak_info = {}
     data = []
     for peak_region in peak_region_to_snp_infos:
         snp_infos = peak_region_to_snp_infos[peak_region]
         IDs = peak_region_to_IDs[peak_region]
         for snp_info in snp_infos:  # loop through each variant record
             pos, rsid, genotype = snp_info
-            chrId = IDs["chr"]
+            chrId = IDs["chrN"]
             chrom = "chr" + chrId
             peak_start = IDs["peak_start"]
             peak_end = IDs["peak_end"]
