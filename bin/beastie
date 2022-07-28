@@ -293,7 +293,7 @@ def get_parser():
     )
     parser.add_argument(
         "--vcfgz-file",
-        help="Path to filtered VCFGZ file",
+        help="Full path of the filtered VCFGZ file",
         required=True,
     )
     parser.add_argument(
@@ -302,16 +302,20 @@ def get_parser():
         required=True,
     )
     parser.add_argument(
+        "--collected-alignmentBias-file",
+        help="Full path of the file with alignment Bias SNPs that you want to filter out",
+    )
+    parser.add_argument(
         "--simulation-pileup-file",
-        help="Path to simulation pileup file.",
+        help="Full path of the simulation pileup file.",
     )
     parser.add_argument(
         "--filtered-het-snp-file",
-        help="Path to filtered het snps file.",
+        help="Full path of the filtered het snps file.",
     )
     parser.add_argument(
         "--shapeit2-phasing-file",
-        help="Path to shapeit2 generated phasing data.",
+        help="Full path of the shapeit2 generated phasing data.",
     )
     parser.add_argument(
         "--ancestry",
@@ -329,6 +333,12 @@ def get_parser():
         help="Minimum coverage requirement for each REF/ALT allele.",
         default=0,
         type=int,
+    )
+    parser.add_argument(
+        "--read-length",
+        help="Average length of reads for input fastq data.",
+        type=int,
+        required=True,
     )
     parser.add_argument(
         "--sigma",

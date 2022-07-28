@@ -33,14 +33,64 @@ def change_phasing(data):
 
 
 def filter_alignBias(
-    prefix, tmp_path, binomialp_cutoff, genotypeErfiltered_filename, simulator_df=None
+    prefix,
+    tmp_path,
+    binomialp_cutoff,
+    genotypeErfiltered_hetSNP_intersect_pileup,
+    read_length,
+    simulator_df=None,
+    collected_alignmentBias_file=None,
 ):
-    base_out = os.path.splitext(genotypeErfiltered_filename)[0]
+    base_out = os.path.splitext(genotypeErfiltered_hetSNP_intersect_pileup)[0]
     new_df = pd.read_csv(
-        genotypeErfiltered_filename, sep="\t", header=0, index_col=False
+        genotypeErfiltered_hetSNP_intersect_pileup, sep="\t", header=0, index_col=False
     )
-    ################# 1. filter out variants with alignment bias first
-    if simulator_df is not None:
+
+    ################# 1. w/ alignment bias SNP file --> filter out variants with alignment bias from given SNP list
+    if collected_alignmentBias_file is not None:
+        SNPs_needtobe_filtered = pd.read_csv(
+            collected_alignmentBias_file, sep="\t", header=None, index_col=False
+        )
+        SNPs_needtobe_filtered.columns = ["chrN_pos"]
+        SNP_list = SNPs_needtobe_filtered.chrN_pos.values.tolist()
+        new_df["chrN_pos"] = new_df.apply(
+            lambda x: "%s_%s" % (x["chrN"], x["pos"]), axis=1
+        )
+        # SNP_list2 = ["9_140483339", "9_140507688"]
+        new_df_SNPlistfiltered = new_df[~new_df["chrN_pos"].isin(SNP_list)]
+        new_df_SNPlistfiltered = new_df_SNPlistfiltered[
+            [
+                "chr",
+                "chrN",
+                "pos",
+                "rsid",
+                "AF",
+                "geneID",
+                "genotype",
+                "refCount",
+                "altCount",
+                "totalCount",
+                "altRatio",
+                "genotypeTest",
+            ]
+        ]
+        afterFilter_filename = os.path.join(
+            tmp_path, f"{prefix}_givenBiasSNPlistFiltered.tsv"
+        )
+        new_df_SNPlistfiltered.to_csv(
+            afterFilter_filename, index=False, sep="\t", header=True
+        )
+        filename = afterFilter_filename
+        logging.debug(
+            "{0} has {1} het SNPs after genotyping error filtering. After given alignment Bias SNP list filtering {2} has {3} het SNPs".format(
+                os.path.basename(genotypeErfiltered_hetSNP_intersect_pileup),
+                new_df.shape[0],
+                os.path.basename(afterFilter_filename),
+                new_df_SNPlistfiltered.shape[0],
+            )
+        )
+    ################# 2. w/ simulation data --> filter out variants with alignment bias from simulation data
+    elif simulator_df is not None:
         beforeFilter_filename = os.path.join(
             tmp_path, f"{prefix}_real_alignBiasbeforeFilter.tsv"
         )
@@ -113,6 +163,8 @@ def filter_alignBias(
             afterFilter_filename, index=False, sep="\t", header=True
         )
         filename = afterFilter_filename
+
+    ################# 3. no simulation data --> do not filter out variants with alignment bias
     else:
         hetSNP_intersect_unique_subset = new_df[
             [
@@ -139,7 +191,7 @@ def filter_alignBias(
         filename = afterFilter_filename
         logging.debug(
             "{0} has {1} het SNPs, after genotyping error filtering, {2} has {3} het SNPs, no alignment bias filtering".format(
-                os.path.basename(genotypeErfiltered_filename),
+                os.path.basename(genotypeErfiltered_hetSNP_intersect_pileup),
                 new_df.shape[0],
                 os.path.basename(afterFilter_filename),
                 hetSNP_intersect_unique_subset.shape[0],
@@ -154,6 +206,7 @@ def re_allocateReads(
     version,
     filename,
     filename_cleaned,
+    collected_alignmentBias_file=None,
     simulation_pileup=None,
     phase_difference_file=None,
 ):
@@ -161,7 +214,6 @@ def re_allocateReads(
     hetSNP_intersect_unique_filtered = pd.read_csv(
         alignBiasfiltered_filename, sep="\t", header=0, index_col=False
     )
-
     # phasing
     if os.path.isfile(filename_cleaned):
         logging.info(
@@ -194,7 +246,25 @@ def re_allocateReads(
                 ["e_paternal", "e_maternal"]
             ] = hetSNP_intersect_unique_filtered.genotype.str.split("|", expand=True)
             phasing_data = hetSNP_intersect_unique_filtered
-        if simulation_pileup is not None:
+        if (collected_alignmentBias_file is not None) or (simulation_pileup is None):
+            phasing_data = phasing_data[
+                [
+                    "chr",
+                    "chrN",
+                    "pos",
+                    "rsid",
+                    "AF",
+                    "geneID",
+                    "genotype",
+                    "refCount",
+                    "altCount",
+                    "totalCount",
+                    "altRatio",
+                    "e_paternal",
+                    "e_maternal",
+                ]
+            ]
+        elif simulation_pileup is not None:
             phasing_data = phasing_data[
                 [
                     "chr",
@@ -210,24 +280,6 @@ def re_allocateReads(
                     "altRatio",
                     "genotypeTest",
                     "alt_binomial_p",
-                    "e_paternal",
-                    "e_maternal",
-                ]
-            ]
-        else:
-            phasing_data = phasing_data[
-                [
-                    "chr",
-                    "chrN",
-                    "pos",
-                    "rsid",
-                    "AF",
-                    "geneID",
-                    "genotype",
-                    "refCount",
-                    "altCount",
-                    "totalCount",
-                    "altRatio",
                     "e_paternal",
                     "e_maternal",
                 ]

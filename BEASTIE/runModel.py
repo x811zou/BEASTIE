@@ -9,9 +9,9 @@ import shutil
 import multiprocessing
 from pathlib import Path
 import pandas as pd
-import BEASTIE.ADM_for_real_data as ADM_for_real_data
-import BEASTIE.binomial_for_real_data as binomial_for_real_data
-import BEASTIE.run_model_stan_wrapper as run_model_stan_wrapper
+from . import ADM_for_real_data
+from . import binomial_for_real_data
+from . import run_model_stan_wrapper
 from pkg_resources import resource_filename
 from .helpers import runhelper
 from .parse_mpileup import Parse_mpileup_allChr
@@ -66,7 +66,11 @@ def is_valid_parsed_pileup(filepath):
 
 
 def check_file_existence2(
-    vcfgz, simulation_pileup, filtered_hetSNP_intersect_pileup, shapeit2_file
+    vcfgz,
+    simulation_pileup,
+    filtered_hetSNP_intersect_pileup,
+    shapeit2_file,
+    collected_alignmentBias_file,
 ):
     ##### VCFGZ file
     vcfgztbi = "{0}.tbi".format(vcfgz)
@@ -135,6 +139,20 @@ def check_file_existence2(
             logging.info(
                 "Great! shapeit2 phased file {0} exists.".format(shapeit2_file)
             )
+    ##### collected_alignmentBias_file
+    if collected_alignmentBias_file is not None:
+        if not os.path.isfile(collected_alignmentBias_file):
+            logging.error(
+                "Oops!  File with alignment Bias SNPs {0} doesn't exist. Please try again ...".format(
+                    collected_alignmentBias_file
+                )
+            )
+        else:
+            logging.info(
+                "Great! File with alignment Bias SNPs {0} exists.".format(
+                    collected_alignmentBias_file
+                )
+            )
 
 
 def create_file_name(prefix, tmp_path, shapeit2_input):
@@ -186,6 +204,7 @@ def run(
     prefix,
     vcfgz,
     vcf_sample_name,
+    collected_alignmentBias_file,
     simulation_pileup,
     filtered_hetSNP_intersect_pileup,
     output_path,
@@ -200,6 +219,7 @@ def run(
     chr_end,
     min_total_cov,
     min_single_cov,
+    read_length,
     alpha,
     sigma,
     SAVE_INT,
@@ -217,11 +237,14 @@ def run(
     logging.info("....... start checking file existence")
     Path(output_path).mkdir(parents=True, exist_ok=True)
     check_file_existence2(
-        vcfgz, simulation_pileup, filtered_hetSNP_intersect_pileup, shapeit2_file
+        vcfgz,
+        simulation_pileup,
+        filtered_hetSNP_intersect_pileup,
+        shapeit2_file,
+        collected_alignmentBias_file,
     )
     (meta, meta_error) = create_file_name(prefix, tmp_path, shapeit2_file)
     chr_suffix = f"_chr{chr_start}-{chr_end}"
-
     #####
     ##### 2.2 parse simulation data
     #####
@@ -262,24 +285,33 @@ def run(
         "================= Starting specific step 2.3 aligmment bias filtering using simulation data"
     )
     logging.info("....... start filtering variants with alignment bias")
-
-    if simulation_pileup is None:
-        logging.info("....... simulator data is NOT provided, skip step")
-        biased_variant = None
-    else:
+    biased_variant = None
+    if collected_alignmentBias_file is not None:
         logging.info(
-            "....... simulator data is provided {0}".format(
-                os.path.basename(simulation_parsed_pileup)
+            "....... alignment Bias SNP list is provided {0}".format(
+                os.path.basename(collected_alignmentBias_file)
             )
         )
-        biased_variant = add_simulationData(simulation_parsed_pileup)
+    else:
+        logging.info("....... alignment Bias SNP list is NOT provided, skip")
+        if simulation_pileup is None:
+            logging.info("....... simulator data is NOT provided, skip step")
+        else:
+            logging.info(
+                "....... simulator data is provided {0}".format(
+                    os.path.basename(simulation_parsed_pileup)
+                )
+            )
+            biased_variant = add_simulationData(simulation_parsed_pileup)
     # running
     alignBiasfiltered_filename = filter_alignBias(
         prefix,
         tmp_path,
         binomialp_cutoff,
         filtered_hetSNP_intersect_pileup,
+        read_length,
         biased_variant,
+        collected_alignmentBias_file,
     )
     # checking
     data23 = pd.read_csv(
@@ -300,7 +332,6 @@ def run(
                 os.path.dirname(alignBiasfiltered_filename),
             )
         )
-
     #####
     ##### 2.4 phase data with shapeit2 or VCF
     #####
@@ -340,10 +371,10 @@ def run(
         phasing_method,
         phased_filename,
         phased_clean_filename,
+        collected_alignmentBias_file,
         simulation_pileup,
         phase_difference_filename,
     )
-
     # checking
     data24_1 = pd.read_csv(phased_filename, sep="\t", header=0, index_col=False)
     if data24_1.shape[0] < 2:
@@ -396,7 +427,6 @@ def run(
                 os.path.dirname(file_for_lambda),
             )
         )
-
     #####
     ##### 2.5 Annotation LD
     #####
@@ -416,7 +446,7 @@ def run(
         )
     else:
         logging.info("=================")
-        logging.info("================= Skipping specific step 2.3")
+        logging.info("================= Skipping specific step 2.5")
     data25 = pd.read_csv(meta, sep="\t", header=0, index_col=False)
     logging.debug(
         "output {0} has {1} het SNPs for LD (d',r2) annotation".format(
@@ -442,7 +472,6 @@ def run(
                 os.path.dirname(meta),
             )
         )
-
     #####
     ##### 2.6 logistic regression model predict switching phasing error, linear regression model predicts lambda
     #####
