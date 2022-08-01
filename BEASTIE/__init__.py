@@ -73,7 +73,9 @@ def load_config_from_args(args):
         chr_start=args.chr_start,
         chr_end=args.chr_end,
         LD_token=args.ld_token,
-        modelName=args.model_name,
+        modelName="iBEASTIE2"
+        if args.VCFphasing is "phased"
+        else "BEASTIE3-fix-uniform",
         STAN=args.STAN,
         SAVE_INT=args.save_intermediate,
         WARMUP=args.warmup,

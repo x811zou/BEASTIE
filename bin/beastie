@@ -371,11 +371,11 @@ def get_parser():
         "--chr-end", help="Ending chromosome number", default=22, type=int
     )
     parser.add_argument(
-        "--model-name",
-        help="Name of stan model to use.",
-        default="iBEASTIE2",
+        "--VCFphasing",
+        help="whether you want to use the phasing from VCF - 'phased' indicate full phased data in VCF; or 'unphased' indicate no phasing info will be used",
+        default="phased",
     )
-    parser.add_argument("--STAN", help="Path to STAN model.", required=True)
+    parser.add_argument("--STAN", help="Path to STAN model.", default="/usr/local/bin/")
     parser.add_argument(
         "--save-intermediate", help="Keep intermediate files.", action="store_true"
     )

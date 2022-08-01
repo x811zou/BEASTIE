@@ -13,7 +13,7 @@ RUN make build
 COPY BEASTIE/iBEASTIE2.stan .
 RUN make iBEASTIE2
 
-COPY BEASTIE/BEASTIE3-fix-uniform.stan
+COPY BEASTIE/BEASTIE3-fix-uniform.stan .
 RUN make BEASTIE3-fix-uniform
 
 FROM ubuntu:20.04 AS sqlite
