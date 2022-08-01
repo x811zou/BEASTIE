@@ -31,7 +31,7 @@ ConfigurationData = namedtuple(
         "min_single_cov",
         "read_length",
         "sigma",
-        "binomialp_cutoff",
+        "alignBiasP_cutoff",
         "ase_cutoff",
         "alpha",
         "chr_start",
@@ -67,15 +67,13 @@ def load_config_from_args(args):
         min_single_cov=args.min_single_cov,
         read_length=args.read_length,
         sigma=args.sigma,
-        binomialp_cutoff=args.binomialp_cutoff,
+        alignBiasP_cutoff=args.alignBiasP_cutoff,
         ase_cutoff=args.ase_cutoff,
         alpha=args.alpha,
         chr_start=args.chr_start,
         chr_end=args.chr_end,
         LD_token=args.ld_token,
-        modelName="iBEASTIE2"
-        if args.VCFphasing is "phased"
-        else "BEASTIE3-fix-uniform",
+        modelName="iBEASTIE2" if args.nophasing is None else "BEASTIE3-fix-uniform",
         STAN=args.STAN,
         SAVE_INT=args.save_intermediate,
         WARMUP=args.warmup,
@@ -96,7 +94,7 @@ def load_config_from_args(args):
 def run(config):
     output_path = config.output_dir
     today = date.today()
-    specification = f"chr{config.chr_start}-{config.chr_end}_s{config.sigma}_a{config.alpha}_sinCov{config.min_single_cov}_totCov{config.min_total_cov}_W{config.WARMUP}K{config.KEEPER}"
+    specification = f"chr{config.chr_start}-{config.chr_end}_alignBiasp{config.alignBiasP_cutoff}_ase{config.ase_cutoff}_s{config.sigma}_a{config.alpha}_sinCov{config.min_single_cov}_totCov{config.min_total_cov}_W{config.WARMUP}K{config.KEEPER}"
     specification_path = os.path.join(output_path, specification)
     log_path = os.path.join(specification_path, "log")
     tmp_path = os.path.join(specification_path, "tmp")
@@ -145,7 +143,7 @@ def run(config):
         tmp_path,
         result_path,
         config.shapeit2,
-        config.binomialp_cutoff,
+        config.alignBiasP_cutoff,
         config.ase_cutoff,
         os.path.join(config.STAN, config.modelName),
         config.ancestry,

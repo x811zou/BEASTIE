@@ -3,6 +3,7 @@
 # Copyright (C) Xue Zou (xue.zou@duke.edu)
 # =========================================================================
 import logging
+from lzma import MODE_NORMAL
 import os
 import sys
 import shutil
@@ -340,28 +341,34 @@ def run(
     logging.info(
         "....... start phasing with shapeit2 or VCF, convert data into model input format"
     )
-    if shapeit2_file is None:
-        logging.info(
-            "....... shapeit2 phasing is NOT provided, we use VCF phasing information"
+    if "BEASTIE3-fix-uniform" in model:
+        print(
+            "....... Phasing not provided: skip using phasing information from VCF file"
         )
-        phasing_method = "VCF"
+        phasing_method = "nophasing"
         phased_filename = (
-            f"{os.path.splitext(alignBiasfiltered_filename)[0]}.phasedByVCF.tsv"
+            f"{os.path.splitext(alignBiasfiltered_filename)[0]}.nophasing.tsv"
         )
         phase_difference_filename = None
     else:
-        logging.info(
-            "....... shapeit2 phasing is provided {0}".format(
-                os.path.basename(shapeit2_file)
+        if shapeit2_file is None:
+            logging.info(
+                "....... Phasing provided: shapeit2 phasing is NOT provided, we use VCF phasing information"
             )
-        )
-        phasing_method = "shapeit2"
-        phased_filename = (
-            f"{os.path.splitext(alignBiasfiltered_filename)[0]}.phasedByshapeit2.tsv"
-        )
-        phase_difference_filename = (
-            f"{os.path.splitext(alignBiasfiltered_filename)[0]}.phasingDifference.tsv"
-        )
+            phasing_method = "VCF"
+            phased_filename = (
+                f"{os.path.splitext(alignBiasfiltered_filename)[0]}.phasedByVCF.tsv"
+            )
+            phase_difference_filename = None
+        else:
+            logging.info(
+                "....... Phasing provided: shapeit2 phasing is provided {0}".format(
+                    os.path.basename(shapeit2_file)
+                )
+            )
+            phasing_method = "shapeit2"
+            phased_filename = f"{os.path.splitext(alignBiasfiltered_filename)[0]}.phasedByshapeit2.tsv"
+            phase_difference_filename = f"{os.path.splitext(alignBiasfiltered_filename)[0]}.phasingDifference.tsv"
 
     # running
     phased_clean_filename = f"{os.path.splitext(phased_filename)[0]}.cleaned.tsv"
@@ -375,6 +382,7 @@ def run(
         simulation_pileup,
         phase_difference_filename,
     )
+
     # checking
     data24_1 = pd.read_csv(phased_filename, sep="\t", header=0, index_col=False)
     if data24_1.shape[0] < 2:
@@ -430,48 +438,51 @@ def run(
     #####
     ##### 2.5 Annotation LD
     #####
-    FORCE_ANNOTATE_LD = False
-    if FORCE_ANNOTATE_LD or not os.path.isfile(meta):
-        logging.info("=================")
-        logging.info("================= Starting specific step 2.5 annotate LD")
-        logging.info("....... start annotating LD information")
-        logging.debug("input {0} ".format(os.path.basename(phased_clean_filename)))
-        annotateLD(
-            ancestry,
-            phased_clean_filename,
-            LD_token,
-            meta,
-            ldlink_cache_dir,
-            ldlink_token_db,
-        )
-    else:
-        logging.info("=================")
-        logging.info("================= Skipping specific step 2.5")
-    data25 = pd.read_csv(meta, sep="\t", header=0, index_col=False)
-    logging.debug(
-        "output {0} has {1} het SNPs for LD (d',r2) annotation".format(
-            os.path.basename(meta), data23.shape[0]
-        )
-    )
-    if data25.shape[0] < 2:
-        os.remove(meta)
-        logging.error(
-            "....... existed {0} is empty, please try again!".format(
-                os.path.basename(meta)
+    logging.info("=================")
+    logging.info("================= Starting specific step 2.5 annotate LD")
+    if phasing_method != "nophasing":
+        FORCE_ANNOTATE_LD = False
+        if FORCE_ANNOTATE_LD or not os.path.isfile(meta):
+            logging.info("....... Phasing provided: start annotating LD information")
+            logging.debug("input {0} ".format(os.path.basename(phased_clean_filename)))
+            annotateLD(
+                ancestry,
+                phased_clean_filename,
+                LD_token,
+                meta,
+                ldlink_cache_dir,
+                ldlink_token_db,
+            )
+        else:
+            logging.info("=================")
+            logging.info("================= Skipping specific step 2.5")
+        data25 = pd.read_csv(meta, sep="\t", header=0, index_col=False)
+        logging.debug(
+            "output {0} has {1} het SNPs for LD (d',r2) annotation".format(
+                os.path.basename(meta), data23.shape[0]
             )
         )
-        sys.exit(1)
-    else:
-        for files in os.listdir(os.path.dirname(meta)):
-            if "TEMP_chr" in files:
-                logging.info("..... remove created TEMP files: {0}".format(files))
-                os.remove(os.path.dirname(meta) + "/" + files)
-        logging.info(
-            "....... {0} save to {1}".format(
-                os.path.basename(meta),
-                os.path.dirname(meta),
+        if data25.shape[0] < 2:
+            os.remove(meta)
+            logging.error(
+                "....... existed {0} is empty, please try again!".format(
+                    os.path.basename(meta)
+                )
             )
-        )
+            sys.exit(1)
+        else:
+            for files in os.listdir(os.path.dirname(meta)):
+                if "TEMP_chr" in files:
+                    logging.info("..... remove created TEMP files: {0}".format(files))
+                    os.remove(os.path.dirname(meta) + "/" + files)
+            logging.info(
+                "....... {0} save to {1}".format(
+                    os.path.basename(meta),
+                    os.path.dirname(meta),
+                )
+            )
+    else:
+        logging.info("....... Phasing not provided: skip annotating LD information")
     #####
     ##### 2.6 logistic regression model predict switching phasing error, linear regression model predicts lambda
     #####
@@ -482,15 +493,18 @@ def run(
             os.path.basename(file_for_lambda)
         )
     )
-    logging.info(
-        "....... start predicting switching eror for {0}".format(os.path.basename(meta))
-    )
+    if phasing_method != "nophasing":
+        logging.info(
+            "....... start predicting switching eror for {0}".format(
+                os.path.basename(meta)
+            )
+        )
 
     predict_lambda_phasing_error = resource_filename(
         "BEASTIE", "predict_lambda_phasingError.R"
     )
     beastie_wd = resource_filename("BEASTIE", ".")
-    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {file_for_lambda} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd}"
+    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {file_for_lambda} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd} {phasing_method}"
     runhelper(cmd)
     data26_1 = pd.read_csv(
         lambdaPredicted_file,
@@ -498,12 +512,7 @@ def run(
         header=None,
         index_col=False,
     )
-    data26_2 = pd.read_csv(
-        meta_error,
-        sep="\t",
-        header=None,
-        index_col=False,
-    )
+
     logging.info(
         "lambda prediction model: input {0}".format(os.path.basename(file_for_lambda))
     )
@@ -518,61 +527,70 @@ def run(
             data26_1.shape[0],
         )
     )
-    logging.info(
-        "switching error prediction model: input {0}".format(os.path.basename(meta))
-    )
-    logging.debug(
-        "output {0} has {1} het SNPs with switching error prediction".format(
-            os.path.basename(meta_error), data26_2.shape[0] - 1
+    if phasing_method != "nophasing":
+        data26_2 = pd.read_csv(
+            meta_error,
+            sep="\t",
+            header=None,
+            index_col=False,
         )
-    )
-
-    #####
-    ##### 2.7 adding switching error information to model input
-    #####
-    logging.info("=================")
-    logging.info("================= Starting specific step 2.7")
-    logging.info(
-        "....... start adding model input with predicted swhitching error information"
-    )
-
-    if not os.path.isfile(base_modelin_error):
         logging.info(
-            "output {0} is generated for BEASTIE stan model".format(
-                os.path.basename(base_modelin_error)
+            "switching error prediction model: input {0}".format(os.path.basename(meta))
+        )
+        logging.debug(
+            "output {0} has {1} het SNPs with switching error prediction".format(
+                os.path.basename(meta_error), data26_2.shape[0] - 1
             )
         )
+
+    if phasing_method != "nophasing":
+        #####
+        ##### 2.7 adding switching error information to model input
+        #####
+        logging.info("=================")
+        logging.info("================= Starting specific step 2.7")
+        logging.info(
+            "....... start adding model input with predicted switching error information"
+        )
+
+        if not os.path.isfile(base_modelin_error):
+            logging.info(
+                "output {0} is generated for BEASTIE stan model".format(
+                    os.path.basename(base_modelin_error)
+                )
+            )
+        else:
+            logging.info(
+                "....... {0} exists, overwrites".format(
+                    os.path.basename(base_modelin_error)
+                )
+            )
+        update_model_input_lambda_phasing(
+            "pred_error_GIAB", base_modelin, base_modelin_error, meta_error
+        )
+        model_input = base_modelin_error
     else:
-        logging.info(
-            "....... {0} exists, overwrites".format(
-                os.path.basename(base_modelin_error)
-            )
-        )
-    update_model_input_lambda_phasing(
-        "pred_error_GIAB", base_modelin, base_modelin_error, meta_error
-    )
+        model_input = base_modelin
 
     #####
     ##### 2.8 running stan model
     #####
     logging.info("=================")
     logging.info("================= Starting specific step 2.8 running STAN model")
-    logging.info("....... start running iBEASTIE model")
-    df_ibeastie, picklename = run_model_stan_wrapper.run(
+    logging.info("....... start running {0} model".format(model))
+    df_beastie, picklename = run_model_stan_wrapper.run(
         prefix,
-        base_modelin_error,
+        model_input,
         sigma,
-        alpha,
         model,
         result_path,
         lambdaPredicted_file,
         WARMUP,
         KEEPER,
-        min_single_cov,
-        min_total_cov,
+        phasing_method,
     )
-    if df_ibeastie.shape[0] > 2:
-        logging.info("....... done with running model!")
+    if df_beastie.shape[0] > 2:
+        logging.info("....... done with running model {0}!".format(model))
     else:
         logging.error("....... model output is empty, please try again!")
         sys.exit(1)
@@ -592,6 +610,7 @@ def run(
     logging.info("================= Starting specific step 2.9 generating output files")
     logging.info("....... start generating gene list")
     outfilename = os.path.join(result_path, f"{prefix}_ASE_all.tsv")
+    outfilename_sub = os.path.join(result_path, f"{prefix}_ASE_sub.tsv")
     outfilename_ase = os.path.join(
         result_path, f"{prefix}_ASE_cutoff_{ase_cutoff}_filtered.tsv"
     )
@@ -607,10 +626,11 @@ def run(
             )
         )
     significant_genes(
-        df_ibeastie,
+        df_beastie,
         df_binomial,
         df_adm,
         outfilename,
+        outfilename_sub,
         outfilename_ase,
         ase_cutoff,
         lambdaPredicted_file,

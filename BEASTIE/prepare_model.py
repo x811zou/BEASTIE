@@ -223,90 +223,91 @@ def re_allocateReads(
         )
     else:
         # use everything can be phased by shapeit2, no matter whether VCF have phased genotype
-        if version == "shapeit2":
-            #### version1: with shapeit phasing
-            shapeit2 = pd.read_csv(
-                shapeit2_input,
-                sep="\t",
-                header=None,
-                index_col=False,
-                names=["chr", "pos", "ref", "alt", "e_paternal", "e_maternal"],
-            )
-            hetSNP_shapeit2 = hetSNP_intersect_unique_filtered.merge(
-                shapeit2, how="inner", on=["chr", "pos"]
-            )
-            logging.debug(
-                "size of filtered hetSNP unique is {0} ; size of shapeit2 phased variants is {1}; innerjoin size is {2}".format(
-                    len(hetSNP_intersect_unique_filtered),
-                    len(shapeit2),
-                    len(hetSNP_shapeit2),
+        if version != "nophasing":
+            if version == "shapeit2":
+                #### version1: with shapeit phasing
+                shapeit2 = pd.read_csv(
+                    shapeit2_input,
+                    sep="\t",
+                    header=None,
+                    index_col=False,
+                    names=["chr", "pos", "ref", "alt", "e_paternal", "e_maternal"],
                 )
-            )
-            phasing_data = hetSNP_shapeit2
-            # print(phasing_data[phasing_data["pos"] == 851002])
-            # sys.exit()
-        #### version2: without shapeit phasing
+                hetSNP_shapeit2 = hetSNP_intersect_unique_filtered.merge(
+                    shapeit2, how="inner", on=["chr", "pos"]
+                )
+                logging.debug(
+                    "size of filtered hetSNP unique is {0} ; size of shapeit2 phased variants is {1}; innerjoin size is {2}".format(
+                        len(hetSNP_intersect_unique_filtered),
+                        len(shapeit2),
+                        len(hetSNP_shapeit2),
+                    )
+                )
+                phasing_data = hetSNP_shapeit2
+            #### version2: VCF phasing
+            elif version == "VCF":
+                hetSNP_intersect_unique_filtered = hetSNP_intersect_unique_filtered[
+                    (hetSNP_intersect_unique_filtered["genotype"] != "1/0")
+                    & (hetSNP_intersect_unique_filtered["genotype"] != "0/1")
+                ]
+                hetSNP_intersect_unique_filtered[
+                    ["e_paternal", "e_maternal"]
+                ] = hetSNP_intersect_unique_filtered.genotype.str.split(
+                    "|", expand=True
+                )
+                phasing_data = hetSNP_intersect_unique_filtered
+            geneIDs = phasing_data["geneID"].unique()
+            new_df = pd.DataFrame()
+            for gene in geneIDs:
+                selected_gene = phasing_data[phasing_data["geneID"] == gene]
+                selected_gene = selected_gene.reset_index(drop=True)
+                edited_selected_gene = change_phasing(selected_gene)
+                new_df = pd.concat([new_df, edited_selected_gene], ignore_index=True)
+        #### version3: no phasing
         else:
-            # only use phased VCF genotypes
-            hetSNP_intersect_unique_filtered = hetSNP_intersect_unique_filtered[
-                (hetSNP_intersect_unique_filtered["genotype"] != "1/0")
-                & (hetSNP_intersect_unique_filtered["genotype"] != "0/1")
-            ]
-            hetSNP_intersect_unique_filtered[
-                ["e_paternal", "e_maternal"]
-            ] = hetSNP_intersect_unique_filtered.genotype.str.split("|", expand=True)
-            phasing_data = hetSNP_intersect_unique_filtered
-        if (collected_alignmentBias_file is not None) or (simulation_pileup is None):
-            phasing_data = phasing_data[
-                [
-                    "chr",
-                    "chrN",
-                    "pos",
-                    "rsid",
-                    "AF",
-                    "geneID",
-                    "genotype",
-                    "refCount",
-                    "altCount",
-                    "totalCount",
-                    "altRatio",
-                    "e_paternal",
-                    "e_maternal",
-                ]
-            ]
-        elif simulation_pileup is not None:
-            phasing_data = phasing_data[
-                [
-                    "chr",
-                    "chrN",
-                    "pos",
-                    "rsid",
-                    "AF",
-                    "geneID",
-                    "genotype",
-                    "refCount",
-                    "altCount",
-                    "totalCount",
-                    "altRatio",
-                    "genotypeTest",
-                    "alt_binomial_p",
-                    "e_paternal",
-                    "e_maternal",
-                ]
-            ]
-        geneIDs = phasing_data["geneID"].unique()
-        # gene = "ENSG00000188818.8"
-        # selected_gene = phasing_data[phasing_data["geneID"] == gene]
-        # print(selected_gene)
-        # selected_gene = selected_gene.reset_index(drop=True)
-        # edited_selected_gene = change_phasing(selected_gene)
-        new_df = pd.DataFrame()
-        for gene in geneIDs:
-            selected_gene = phasing_data[phasing_data["geneID"] == gene]
-            selected_gene = selected_gene.reset_index(drop=True)
-            edited_selected_gene = change_phasing(selected_gene)
-            new_df = pd.concat([new_df, edited_selected_gene], ignore_index=True)
+            new_df = hetSNP_intersect_unique_filtered
+            new_df["patCount"] = new_df["refCount"]
+            new_df["matCount"] = new_df["altCount"]
         new_df.to_csv(filename, sep="\t", header=True, index=False)
+        # collected alignment bias SNP list filtering
+        # if (collected_alignmentBias_file is not None) or (simulation_pileup is None):
+        #     phasing_data = phasing_data[
+        #         [
+        #             "chr",
+        #             "chrN",
+        #             "pos",
+        #             "rsid",
+        #             "AF",
+        #             "geneID",
+        #             "genotype",
+        #             "refCount",
+        #             "altCount",
+        #             "totalCount",
+        #             "altRatio",
+        #             "e_paternal",
+        #             "e_maternal",
+        #         ]
+        #     ]
+        # elif simulation_pileup is not None:
+        #     phasing_data = phasing_data[
+        #         [
+        #             "chr",
+        #             "chrN",
+        #             "pos",
+        #             "rsid",
+        #             "AF",
+        #             "geneID",
+        #             "genotype",
+        #             "refCount",
+        #             "altCount",
+        #             "totalCount",
+        #             "altRatio",
+        #             "genotypeTest",
+        #             "alt_binomial_p",
+        #             "e_paternal",
+        #             "e_maternal",
+        #         ]
+        #     ]
         ###################
         # checking phasing difference within a gene (for sites with VCF phased genotype and shapeit2 phasing)
         if version == "shapeit2" and phase_difference_file is not None:
@@ -365,12 +366,13 @@ def re_allocateReads(
                 )
         ###################
         # drop NAN
+        # print(new_df)
+        new_df_dropNA = new_df
         # new_df_dropNA = new_df.dropna()
-        # print(new_df_dropNA)
         # new_df = new_df.rename(columns={"SNP_id": "rsid"})
-        new_df_dropNA = new_df.drop(
-            ["refCount", "altCount", "e_paternal", "e_maternal"], axis=1
-        )
+        # new_df_dropNA = new_df.drop(
+        #     ["refCount", "altCount", "e_paternal", "e_maternal"], axis=1
+        # )
         logging.debug(
             "size of filtered hetSNP unique is {0} ; phased data size is {1}, phased data after cleaning size is {2}".format(
                 len(hetSNP_intersect_unique_filtered),
@@ -566,10 +568,11 @@ def update_model_input_lambda_phasing(
 
 
 def significant_genes(
-    df_ibeastie,
+    df_beastie,
     df_binomial,
     df_adm,
     outfilename,
+    outfilename_sub,
     outfilename_ase,
     ase_cutoff,
     hetSNP_intersect_unique_lambdaPredicted_file,
@@ -582,12 +585,12 @@ def significant_genes(
             len(data_modeloutput)
         )
     )
-    logging.debug("size of df_beastie {}".format(len(df_ibeastie)))
+    logging.debug("size of df_beastie {}".format(len(df_beastie)))
 
-    df_output = pd.merge(data_modeloutput, df_ibeastie, on=["geneID"], how="inner")
+    df_output = pd.merge(data_modeloutput, df_beastie, on=["geneID"], how="inner")
     logging.debug(
         "size of model output is {0} ; size of hetSNP_intersect_unique_lambdaPredicted_file is {1}; intersection size is {2}".format(
-            len(df_ibeastie), len(data_modeloutput), len(df_output)
+            len(df_beastie), len(data_modeloutput), len(df_output)
         )
     )
 
@@ -626,8 +629,7 @@ def significant_genes(
         )
     )
     df_output["ASE"] = df_output["posterior_mass_support_ALT"]
-    # print(">> merged V2")
-    # print(df_output.head(n=5))
+    # output that contain everything
     df_output = df_output.assign(
         ASE=lambda dataframe: dataframe["posterior_mass_support_ALT"].map(
             lambda posterior_mass_support_ALT: "Y"
@@ -635,6 +637,7 @@ def significant_genes(
             else "N"
         )
     )
+    # subset output
     df_output_bi = pd.merge(df_output, df_binomial, on=["geneID"], how="inner")
 
     if df_output_bi.shape[0] == 0:
@@ -646,7 +649,6 @@ def significant_genes(
                 "FirstSite_pval",
                 "FirstSite_esti",
                 "NaiveSum_esti",
-                "Pseudo_pval",
                 "Pseudo_esti",
                 "MajorSite_esti",
             ],
@@ -662,9 +664,27 @@ def significant_genes(
     # print(df_output_bi_adm.head(n=5))
 
     logging.info("....... done with dropping")
-    df_output = df_output_bi_adm
+    # df_output = df_output_bi_adm
+    df_output = df_output_bi
+    df_output_sub = df_output.drop(
+        [
+            "median.altRatio",
+            "log_lambda_minus1",
+            "predicted_lambda_plus1",
+            "median_abs_deviation",
+            "posterior_median",
+            "posterior_mean",
+            "posterior_variance",
+            "CI_left",
+            "CI_right",
+            "foldLog2MedSq_over_std",
+            "extreme_val",
+        ],
+        axis=1,
+    )
     # outfilename="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/other_example/HG00096/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_ASE_all.tsv"
     # outfilename_ase="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/other_example/HG00096/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_ASE_cutoff_0.5_filtered.tsv"
-    df_output_bi.to_csv(outfilename, sep="\t", header=True, index=False)
-    df_output_ase = df_output[df_output["ASE"] == "Y"]
+    df_output.to_csv(outfilename, sep="\t", header=True, index=False)
+    df_output_sub.to_csv(outfilename_sub, sep="\t", header=True, index=False)
+    df_output_ase = df_output_sub[df_output_sub["ASE"] == "Y"]
     df_output_ase.to_csv(outfilename_ase, sep="\t", header=True, index=False)

@@ -347,8 +347,8 @@ def get_parser():
         type=float,
     )
     parser.add_argument(
-        "--binomialp-cutoff",
-        help="Binomial test p-value cutoff.",
+        "--alignBiasP-cutoff",
+        help="alignment bias Binomial test p-value cutoff.",
         default=0.05,
         type=float,
     )
@@ -371,9 +371,8 @@ def get_parser():
         "--chr-end", help="Ending chromosome number", default=22, type=int
     )
     parser.add_argument(
-        "--VCFphasing",
-        help="whether you want to use the phasing from VCF - 'phased' indicate full phased data in VCF; or 'unphased' indicate no phasing info will be used",
-        default="phased",
+        "--nophasing",
+        help="(1) this option indicates no phasing info will be used, (2) default is VCF phasing, (3) if shapei2 is provided will use providied phasing",
     )
     parser.add_argument("--STAN", help="Path to STAN model.", default="/usr/local/bin/")
     parser.add_argument(

@@ -35,7 +35,7 @@ hetSNP_intersect_unique_lambdaPredicted_file=args[7]
 meta=args[8]
 meta_error=args[9]
 beastie_wd=args[10]
-
+phasing_method=args[11]
 source(file.path(beastie_wd, "Get_phasing_error_rate.R"))
 
 predict_lambda_realdata <- function(alpha,in_data,out_data,model){
@@ -76,7 +76,7 @@ if (!file.exists(out_data)) {
 }
 
 ################################################ 2 predict phasing error ###################################
-if (!file.exists(meta_error)) {
+if (!file.exists(meta_error) && (phasing_method!="nophasing")) {
   print("meta file with phasing error not exists, has to run logistic reg!")
   sample_info<-read.delim(file.path(meta),header=TRUE,sep="\t")
   data <- sample_info

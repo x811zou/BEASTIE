@@ -125,12 +125,23 @@ def getMaxProb_lambda(thetas, Lambda):
 
 
 def runModel(
-    model, fields, tmp_output_file, stan_output_file, init_file, sigma, WARMUP, KEEPER
+    model,
+    fields,
+    tmp_output_file,
+    stan_output_file,
+    init_file,
+    sigma,
+    WARMUP,
+    KEEPER,
+    phasing_method,
 ):
     if len(fields) >= 4:
         geneID = str(fields[0])
         # logging.debug(geneID)
-        writeInputsFile_i(fields, tmp_output_file, sigma)
+        if phasing_method == "nophasing":
+            writeInputsFile(fields, tmp_output_file, sigma)
+        else:
+            writeInputsFile_i(fields, tmp_output_file, sigma)
         writeInitializationFile(init_file)
         cmd = (
             "%s sample num_samples=%s num_warmup=%s data file=%s init=%s output file=%s refresh=0"
@@ -327,6 +338,7 @@ def save_raw_theta(
     sigma,
     WARMUP,
     KEEPER,
+    phasing_method,
 ):
     model_theta = {}  # 150
     with open(input_file, "rt") as IN:
@@ -345,6 +357,7 @@ def save_raw_theta(
                 sigma,
                 WARMUP,
                 KEEPER,
+                phasing_method,
             )
             # model_theta.extend(thetas)
             model_theta[geneID] = thetas
@@ -358,18 +371,12 @@ def save_raw_theta(
 
 
 def run(
-    prefix,
-    inFile,
-    sigma,
-    alpha,
-    models,
-    out0,
-    lambdas_file,
-    WARMUP,
-    KEEPER,
-    either_cov,
-    total_cov,
+    prefix, inFile, sigma, models, out0, lambdas_file, WARMUP, KEEPER, phasing_method
 ):
+    if phasing_method != "nophasing":
+        out_BEASTIE = "iBEASTIE"
+    else:
+        out_BEASTIE = "BEASTIE-fix-uniform"
     logging.debug(
         "Number of WARMUP samples is {0}, Number of posterior estimates is {1}".format(
             WARMUP, KEEPER
@@ -379,7 +386,7 @@ def run(
     initFile = "initialization_stan.txt"
     outFile = "stan_output.txt"
     out = os.path.join(out0, "output_pkl")
-    out_path = os.path.join(out, "ibeastie")
+    out_path = os.path.join(out, out_BEASTIE)
     if not os.path.exists(out):
         os.makedirs(out)
     if not os.path.exists(out_path):
@@ -405,6 +412,7 @@ def run(
             sigma,
             WARMUP,
             KEEPER,
+            phasing_method,
         )
     logging.info(
         "...... Finshed running {0} and saved raw theta at : {1}".format(
