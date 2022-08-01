@@ -13,6 +13,8 @@ RUN make build
 COPY BEASTIE/iBEASTIE2.stan .
 RUN make iBEASTIE2
 
+COPY BEASTIE/BEASTIE3-fix-uniform.stan
+RUN make BEASTIE3-fix-uniform
 
 FROM ubuntu:20.04 AS sqlite
 RUN apt-get update && apt-get install --no-install-recommends -qq wget ca-certificates make gcc g++ libbz2-1.0 libbz2-dev lbzip2 zlib1g-dev liblzma-dev
@@ -72,6 +74,7 @@ RUN apt-get update \
 RUN ln -s /usr/bin/python3.8 /usr/bin/python
 
 COPY --from=CMDSTAN /cmdstan/iBEASTIE2 /usr/local/bin
+COPY --from=CMDSTAN /cmdstan/BEASTIE3-fix-uniform /usr/local/bin
 COPY --from=tabix /htslib/tabix /usr/local/bin
 
 COPY --from=rpackages /usr/local/lib/R/site-library /usr/local/lib/R/site-library
