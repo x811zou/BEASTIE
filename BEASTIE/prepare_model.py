@@ -21,6 +21,8 @@ def change_phasing(data):
     data["patCount"] = data["refCount"]
     data["matCount"] = data["altCount"]
     reference_row = data.iloc[0]
+    # print(reference_row)
+    # print(int(reference_row["e_paternal"]))
     if not isnan(int(reference_row["e_paternal"])):
         for x in range(1, row_n):
             row = data.iloc[x]
@@ -220,6 +222,7 @@ def re_allocateReads(
             "....... phased data is pre-existed! {0}".format(os.path.basename(filename))
         )
     else:
+        # use everything can be phased by shapeit2, no matter whether VCF have phased genotype
         if version == "shapeit2":
             #### version1: with shapeit phasing
             shapeit2 = pd.read_csv(
@@ -240,8 +243,15 @@ def re_allocateReads(
                 )
             )
             phasing_data = hetSNP_shapeit2
+            # print(phasing_data[phasing_data["pos"] == 851002])
+            # sys.exit()
         #### version2: without shapeit phasing
         else:
+            # only use phased VCF genotypes
+            hetSNP_intersect_unique_filtered = hetSNP_intersect_unique_filtered[
+                (hetSNP_intersect_unique_filtered["genotype"] != "1/0")
+                & (hetSNP_intersect_unique_filtered["genotype"] != "0/1")
+            ]
             hetSNP_intersect_unique_filtered[
                 ["e_paternal", "e_maternal"]
             ] = hetSNP_intersect_unique_filtered.genotype.str.split("|", expand=True)
@@ -285,6 +295,11 @@ def re_allocateReads(
                 ]
             ]
         geneIDs = phasing_data["geneID"].unique()
+        # gene = "ENSG00000188818.8"
+        # selected_gene = phasing_data[phasing_data["geneID"] == gene]
+        # print(selected_gene)
+        # selected_gene = selected_gene.reset_index(drop=True)
+        # edited_selected_gene = change_phasing(selected_gene)
         new_df = pd.DataFrame()
         for gene in geneIDs:
             selected_gene = phasing_data[phasing_data["geneID"] == gene]
@@ -293,48 +308,61 @@ def re_allocateReads(
             new_df = pd.concat([new_df, edited_selected_gene], ignore_index=True)
         new_df.to_csv(filename, sep="\t", header=True, index=False)
         ###################
-        # checking phasing difference within a gene
+        # checking phasing difference within a gene (for sites with VCF phased genotype and shapeit2 phasing)
         if version == "shapeit2" and phase_difference_file is not None:
-            new_df_diff = new_df.rename(
-                columns={
-                    "e_paternal": "shapeit2_paternal",
-                    "e_maternal": "shapeit2_maternal",
-                    "patCount": "shapeit2_patCount",
-                    "matCount": "shapeit2_matCount",
-                }
-            )
-            new_df_diff[["e_paternal", "e_maternal"]] = new_df_diff.genotype.str.split(
-                "|", expand=True
-            )
-            new_df_phasingDiff = pd.DataFrame()
-            for gene in geneIDs:
-                selected_gene = new_df_diff[new_df_diff["geneID"] == gene]
-                selected_gene = selected_gene.reset_index(drop=True)
-                edited_selected_gene = change_phasing(selected_gene)
-                new_df_phasingDiff = new_df_phasingDiff.append(edited_selected_gene)
-            new_df_phasingDiff = new_df_phasingDiff.rename(
-                columns={
-                    "e_paternal": "vcf_paternal",
-                    "e_maternal": "vcf_maternal",
-                    "patCount": "vcf_patCount",
-                    "matCount": "vcf_matCount",
-                }
-            )
-            new_df_phasingDiff["diff"] = np.where(
-                (
-                    new_df_phasingDiff["shapeit2_patCount"]
-                    == new_df_phasingDiff["vcf_patCount"]
+            new_df_filtered = new_df[
+                (new_df["genotype"] != "1/0") & (new_df["genotype"] != "0/1")
+            ]
+            logging.debug(
+                "size of shapeit2 phased sites inner join vcf het sites is {0} ; overlapped with only VCF phased sites is {1}".format(
+                    len(new_df), len(new_df_filtered)
                 )
-                & (
-                    new_df_phasingDiff["shapeit2_matCount"]
-                    == new_df_phasingDiff["vcf_matCount"]
-                ),
-                0,
-                1,
             )
-            new_df_phasingDiff.to_csv(
-                phase_difference_file, sep="\t", header=True, index=False
-            )
+            if len(new_df) == len(new_df_filtered):
+                new_df_diff = new_df_filtered.rename(
+                    columns={
+                        "e_paternal": "shapeit2_paternal",
+                        "e_maternal": "shapeit2_maternal",
+                        "patCount": "shapeit2_patCount",
+                        "matCount": "shapeit2_matCount",
+                    }
+                )
+                new_df_diff[
+                    ["e_paternal", "e_maternal"]
+                ] = new_df_diff.genotype.str.split("|", expand=True)
+                new_df_phasingDiff = pd.DataFrame()
+                for gene in geneIDs:
+                    selected_gene = new_df_diff[new_df_diff["geneID"] == gene]
+                    selected_gene = selected_gene.reset_index(drop=True)
+                    edited_selected_gene = change_phasing(selected_gene)
+                    new_df_phasingDiff = new_df_phasingDiff.append(edited_selected_gene)
+                new_df_phasingDiff = new_df_phasingDiff.rename(
+                    columns={
+                        "e_paternal": "vcf_paternal",
+                        "e_maternal": "vcf_maternal",
+                        "patCount": "vcf_patCount",
+                        "matCount": "vcf_matCount",
+                    }
+                )
+                new_df_phasingDiff["diff"] = np.where(
+                    (
+                        new_df_phasingDiff["shapeit2_patCount"]
+                        == new_df_phasingDiff["vcf_patCount"]
+                    )
+                    & (
+                        new_df_phasingDiff["shapeit2_matCount"]
+                        == new_df_phasingDiff["vcf_matCount"]
+                    ),
+                    0,
+                    1,
+                )
+                new_df_phasingDiff.to_csv(
+                    phase_difference_file, sep="\t", header=True, index=False
+                )
+            else:
+                logging.debug(
+                    "there are sites without VCF phasing, skip phasing difference file generation!"
+                )
         ###################
         # drop NAN
         # new_df_dropNA = new_df.dropna()
