@@ -44,13 +44,11 @@ def tabix_regions(regions, line_processor, target_file_path, comment_char="#"):
             command = (
                 f"tabix --separate-regions {target_file_path} --regions {file.name}"
             )
-
             output = Pipe.run(command)
     else:
         region_batch = " ".join(regions)
         command = f"tabix --separate-regions {target_file_path} {region_batch}"
         output = Pipe.run(command)
-
     if len(output) == 0:
         return region_to_results
 
