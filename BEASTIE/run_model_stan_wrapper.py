@@ -235,7 +235,7 @@ def summarize(thetas, alpha):
     )
 
 
-def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
+def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model):
     thetas = pickle.load(
         open(
             out1,
@@ -322,8 +322,15 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file):
     df["posterior_variance"] = df["posterior_variance"].apply(
         lambda x: round(x, 3 - int(floor(log10(abs(x)))))
     )
+    if "iBEASTIE" in model:
+        modelname = "iBEASTIE"
+    else:
+        modelname = "BEASTIE_fix_uniform"
     df.to_csv(
-        out + "/" + prefix + "_ASE_ibeastie.tsv", sep="\t", header=True, index=False
+        out + "/" + prefix + "_ASE_" + modelname + ".tsv",
+        sep="\t",
+        header=True,
+        index=False,
     )
     return df
 
@@ -419,6 +426,8 @@ def run(
             os.path.basename(models), os.path.dirname(out1)
         )
     )
-    df = parse_stan_output(out0, prefix, inFile, out1, KEEPER, lambdas_file)
+    df = parse_stan_output(
+        out0, prefix, inFile, out1, KEEPER, lambdas_file, os.path.basename(models)
+    )
     # step2
     return df, outname1
