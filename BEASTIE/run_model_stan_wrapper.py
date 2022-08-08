@@ -208,11 +208,15 @@ def summarize(thetas, alpha):
     mean = statistics.mean(thetas)
     median = statistics.median(thetas)
     thetas_log2 = [log2(x) for x in thetas]
+    thetas_log2_abs = [abs(log2(x)) for x in thetas]
     log2_mean = statistics.mean(thetas_log2)
     log2_median = statistics.median(thetas_log2)
+    abslog2_mean = statistics.mean(thetas_log2)
+    abslog2_median = statistics.median(thetas_log2_abs)
     # print(f"median {median}")
     variance = np.var(thetas)
     log2_variance = np.var(thetas_log2)
+    abslog2_variance = np.var(thetas_log2_abs)
     # print(f"variance {variance}")
     # print(f"length of thetas {len(thetas)}")
     n = len(thetas)
@@ -232,6 +236,9 @@ def summarize(thetas, alpha):
         log2_mean,
         log2_median,
         log2_variance,
+        abslog2_mean,
+        abslog2_median,
+        abslog2_variance,
     )
 
 
@@ -253,7 +260,10 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
     model_log2_theta_med = []  # 150
     model_log2_theta_mean = []  # 150
     model_log2_theta_var = []  # 150
-    model_mad = []  # 150
+    model_abslog2_theta_med = []  # 150
+    model_abslog2_theta_mean = []  # 150
+    model_abslog2_theta_var = []  # 150
+    model_mad = []
     CI_left = []
     CI_right = []
     geneID = []
@@ -282,6 +292,9 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
                     log2_mean,
                     log2_median,
                     log2_variance,
+                    abslog2_mean,
+                    abslog2_median,
+                    abslog2_variance,
                 ) = summarize(gene_thetas, 0.05)
                 # print(f"mad {mad}")
                 max_prob = getMaxProb_RMSE(gene_thetas)
@@ -299,6 +312,9 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
                 model_log2_theta_mean.append(log2_mean)
                 model_log2_theta_med.append(log2_median)
                 model_log2_theta_var.append(log2_variance)
+                model_abslog2_theta_mean.append(abslog2_mean)
+                model_abslog2_theta_med.append(abslog2_median)
+                model_abslog2_theta_var.append(abslog2_variance)
     df = {
         "geneID": geneID,
         "median_abs_deviation": model_mad,
@@ -311,6 +327,9 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
         "log2_posterior_median": model_log2_theta_med,
         "log2_posterior_mean": model_log2_theta_mean,
         "log2_posterior_variance": model_log2_theta_var,
+        "abslog2_posterior_median": model_abslog2_theta_med,
+        "abslog2_posterior_mean": model_abslog2_theta_mean,
+        "abslog2_posterior_variance": model_abslog2_theta_var,
     }
     df = pd.DataFrame(df)
     df["posterior_mean"] = df["posterior_mean"].apply(
