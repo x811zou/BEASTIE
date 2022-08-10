@@ -211,7 +211,7 @@ def summarize(thetas, alpha):
     thetas_log2_abs = [abs(log2(x)) for x in thetas]
     log2_mean = statistics.mean(thetas_log2)
     log2_median = statistics.median(thetas_log2)
-    abslog2_mean = statistics.mean(thetas_log2)
+    abslog2_mean = statistics.mean(thetas_log2_abs)
     abslog2_median = statistics.median(thetas_log2_abs)
     # print(f"median {median}")
     variance = np.var(thetas)
