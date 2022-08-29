@@ -130,38 +130,60 @@ def count_all_het_sites(
         for gene in geneList:
             # gene.getSubstrate() chr21
             # gene.getSubstrate().strip("chr")) 21
-            # print(f">>>> {gene.getID()}")
+            if DEBUG_GENES is not None:
+                print(f">>>>>>>> DEBUGGING GENE {gene.getID()}")
+                print(f">>>>>>>>")
+                print(
+                    f">>>>>>>> DEBUG1: Check every exon start-end region on each transcript"
+                )
+                print(f">>>>>>>>")
             if str(gene.getSubstrate().strip("chr")) == chrId:
                 Num_transcript = gene.getNumTranscripts()
                 chrom = gene.getSubstrate()  # column 1 --> chr21
                 for n in range(Num_transcript):
                     transcript = gene.getIthTranscript(n)
+                    if (
+                        DEBUG_GENES is not None
+                        and transcript.getId() == "ENST00000202917.5"
+                    ):
+                        print(f"{gene.getID()}-transcript {n} {transcript.getId()}")
                     # rawExons = transcript.UTR
                     # rawExons = transcript.exons
                     rawExons = transcript.getRawExons()
                     for exon in rawExons:
-                        begin = exon.getBegin()  # column 7
+
+                        begin = exon.getBegin() + 1  # column 7
+                        # print(begin)
                         end = exon.getEnd()  # column 8
                         exon_region = f"{chrId}:{begin}-{end}"
                         if not exon_region in exon_region_to_transcripts:
                             exon_region_to_transcripts[exon_region] = []
                         exon_region_to_transcripts[exon_region].append(transcript)
-                        # print(
-                        #     f"{gene.getID()}-transcript {n} {transcript.getId()} {chromN}:{begin}-{end}"
-                        # )
-                        # uncomment to debug duplicate transcript IDs as a possible optimization
-                        #     for existing in region_str_to_transcripts[region_str]:
-                        #         print(f"existing transcript @ {region_str} {existing.getTranscriptId()} != {transcript.getTranscriptId()}")
+                        if DEBUG_GENES is not None:
+                            print(f"{exon_region}")
+                            # uncomment to debug duplicate transcript IDs as a possible optimization
+                            # for existing in exon_region_to_transcripts[exon_region]:
+                            # print(
+                            #     f"      existing transcript @ {exon_region} {existing.getTranscriptId()} != {transcript.getTranscriptId()}"
+                            # )
 
         """
         construct a dict with unique exon region with VCF records {exon_region:VCF records}
         """
-        # print(exon_region_to_transcripts.keys())
+        if DEBUG_GENES is not None:
+            print(f">>>>>>>>")
+            print(f">>>>>>>> DEBUG2: list all unique exon regions")
+            print(f">>>>>>>>")
+            print(exon_region_to_transcripts.keys())
         # print(vcfFilename)
         exon_region_to_snp_infos = tabix_regions(
             exon_region_to_transcripts.keys(), vcfline_processor, vcfFilename
         )
-
+        if DEBUG_GENES is not None:
+            print(f">>>>>>>>")
+            print(f">>>>>>>> DEBUG3: list all snp info corresponding to exon region")
+            print(f">>>>>>>>")
+            print(exon_region_to_snp_infos)
         data = []
         variant_to_transcript_info = {}
         for exon_region in exon_region_to_snp_infos:
@@ -170,6 +192,8 @@ def count_all_het_sites(
             # transcript list contains transcripts from the same gene or different genes
             for snp_info in snp_infos:  # loop through each variant record
                 pos, rsid, genotype = snp_info
+                if DEBUG_GENES is not None:
+                    print(pos)
                 for transcript in transcripts:
                     # geneID = transcript.getGeneId()
                     assert chr == transcript.getSubstrate()
@@ -179,6 +203,7 @@ def count_all_het_sites(
                     variant_to_transcript_info[chr_pos].append(
                         (transcript, pos, rsid, genotype)
                     )
+
         # print(">> dict variant_to_transcript_info")
         # print(f"len of dic: {len(variant_to_transcript_info)}")
         # print(">> print")
