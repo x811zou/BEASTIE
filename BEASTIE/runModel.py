@@ -25,6 +25,8 @@ from .prepare_model import (
     significant_genes,
     update_model_input_lambda_phasing,
 )
+from .predict_lambda_GAM import predict_lambda_onrealdata
+from pickle import dump, load
 
 
 def parse_mpileup(
@@ -486,6 +488,7 @@ def run(
     #####
     ##### 2.6 logistic regression model predict switching phasing error, linear regression model predicts lambda
     #####
+
     logging.info("=================")
     logging.info("================= Starting step specific 2.6 regression model")
     logging.info(
@@ -499,12 +502,20 @@ def run(
                 os.path.basename(meta)
             )
         )
+    gam_model = load(
+        open("/home/scarlett/work/BEASTIE/BEASTIE/gam1_lambdamodel.pkl", "rb")
+    )
+    adjusted_alpha = alpha / data24_2.shape[0]
+    predict_lambda_onrealdata(
+        adjusted_alpha, file_for_lambda, file_for_lambda, gam_model
+    )
 
     predict_lambda_phasing_error = resource_filename(
         "BEASTIE", "predict_lambda_phasingError.R"
     )
     beastie_wd = resource_filename("BEASTIE", ".")
-    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {file_for_lambda} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd} {phasing_method}"
+
+    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {adjusted_alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {file_for_lambda} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd} {phasing_method}"
     runhelper(cmd)
     data26_1 = pd.read_csv(
         lambdaPredicted_file,
@@ -518,7 +529,7 @@ def run(
     )
     logging.info(
         "lambda prediction model: input alpha (family wise error rate) is {0}, adjusted after size of input {1} is {2}".format(
-            alpha, data26_1.shape[0], alpha / data24_1.shape[0]
+            alpha, data24_2.shape[0], adjusted_alpha
         )
     )
     logging.debug(
@@ -602,6 +613,7 @@ def run(
         prefix, base_modelin, result_path, picklename
     )
     logging.info("....... done with running binomial")
+
 
     #####
     ##### 2.9 generating output
