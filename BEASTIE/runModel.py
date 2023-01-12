@@ -502,9 +502,8 @@ def run(
                 os.path.basename(meta)
             )
         )
-    gam_model = load(
-        open("/home/scarlett/work/BEASTIE/BEASTIE/gam1_lambdamodel.pkl", "rb")
-    )
+    beastie_wd = resource_filename("BEASTIE", ".")
+    gam_model = load(open(beastie_wd + "/gam1_lambdamodel.pkl", "rb"))
     adjusted_alpha = alpha / data24_2.shape[0]
     predict_lambda_onrealdata(
         adjusted_alpha, file_for_lambda, file_for_lambda, gam_model
@@ -513,7 +512,6 @@ def run(
     predict_lambda_phasing_error = resource_filename(
         "BEASTIE", "predict_lambda_phasingError.R"
     )
-    beastie_wd = resource_filename("BEASTIE", ".")
 
     cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {adjusted_alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {file_for_lambda} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd} {phasing_method}"
     runhelper(cmd)
@@ -613,7 +611,6 @@ def run(
         prefix, base_modelin, result_path, picklename
     )
     logging.info("....... done with running binomial")
-
 
     #####
     ##### 2.9 generating output
