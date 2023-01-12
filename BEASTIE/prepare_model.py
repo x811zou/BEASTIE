@@ -669,8 +669,6 @@ def significant_genes(
     df_output_sub = df_output.drop(
         [
             "median.altRatio",
-            "log_lambda_minus1",
-            "predicted_lambda_plus1",
             "median_abs_deviation",
             "CI_left",
             "CI_right",
