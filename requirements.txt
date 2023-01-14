@@ -5,3 +5,4 @@ cyvcf2 == 0.30.11
 scipy == 1.5.4
 requests == 2.27.1
 pyjags == 1.3.8
+pygam == 0.8.0
