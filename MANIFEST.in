@@ -1,3 +1,4 @@
 include requirements.txt
 include BEASTIE/*.R
 include BEASTIE/*.rds
+include BEASTIE/*_lambdamodel.pkl
