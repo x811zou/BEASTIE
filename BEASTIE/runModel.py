@@ -653,19 +653,19 @@ def run(
         logging.info("....... remove TEMP folder {0}".format(tmp_path))
 
     data29_1 = pd.read_csv(outfilename, sep="\t", header=0, index_col=False)
-    data29_2 = pd.read_csv(outfilename_ase, sep="\t", header=0, index_col=False)
+    # data29_2 = pd.read_csv(outfilename_ase, sep="\t", header=0, index_col=False)
     logging.info(
         "output {0} has all {1} genes".format(
             os.path.basename(outfilename),
             data29_1.shape[0],
         )
     )
-    logging.info(
-        "output {0} has filtered {1} genes passing ASE cutoff {2}".format(
-            os.path.basename(outfilename_ase),
-            data29_2.shape[0],
-            ase_cutoff,
-        )
-    )
+    # logging.info(
+    #     "output {0} has filtered {1} genes passing ASE cutoff {2}".format(
+    #         os.path.basename(outfilename_ase),
+    #         data29_2.shape[0],
+    #         ase_cutoff,
+    #     )
+    # )
     logging.info("=================")
     logging.info(">>  Yep! You are done running BEASTIE!")

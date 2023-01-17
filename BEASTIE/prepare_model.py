@@ -665,6 +665,12 @@ def significant_genes(
         else:
             return 0
 
+    def beastie_linear(row):
+        if float(row["posterior_mass_support_ALT_linear"]) > ase_cutoff:
+            return 1
+        else:
+            return 0
+
     def NS(row, adjusted_alpha):
         if float(row["NaiveSum_pval"]) <= float(adjusted_alpha):
             return 1
@@ -678,10 +684,13 @@ def significant_genes(
             return 0
 
     df_output["beastie_ASE"] = df_output.apply(lambda row: beastie(row), axis=1)
+    df_output["beastie_ASE_linear"] = df_output.apply(
+        lambda row: beastie_linear(row), axis=1
+    )
     df_output["NS_ASE"] = df_output.apply(lambda row: NS(row, adjusted_alpha), axis=1)
     df_output["MS_ASE"] = df_output.apply(lambda row: MS(row, adjusted_alpha), axis=1)
 
-    ncount0 = df_output["posterior_mass_support_ALT"].sum()
+    ncount0 = df_output["beastie_ASE"].sum()
     logging.info(
         "{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}".format(
             ncount0,
@@ -691,7 +700,7 @@ def significant_genes(
             ase_cutoff,
         )
     )
-    ncount1 = df_output["posterior_mass_support_ALT_linear"].sum()
+    ncount1 = df_output["beastie_ASE_linear"].sum()
     logging.info(
         "{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}".format(
             ncount1,
