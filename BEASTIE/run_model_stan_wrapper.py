@@ -254,6 +254,7 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
     )  # names = ['geneID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda']
 
     prob_sum_lambda = []
+    prob_sum_lambda_linear = []
     model_theta_med = []  # 150
     model_theta_mean = []  # 150
     model_theta_var = []  # 150
@@ -283,6 +284,9 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
                 lambdas_choice = lambdas.loc[
                     lambdas["geneID"] == ID, "gam_lambda"
                 ].iloc[0]
+                lambdas_choice_linear = lambdas.loc[
+                    lambdas["geneID"] == ID, "predicted_lambda"
+                ].iloc[0]
 
                 (
                     mean,
@@ -303,8 +307,12 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
                 max_prob_lambda, sum_prob_lambda = getMaxProb_lambda(
                     gene_thetas, lambdas_choice
                 )
+                _, sum_prob_lambda_linear = getMaxProb_lambda(
+                    gene_thetas, lambdas_choice_linear
+                )
                 # i=i+int(KEEPER)
                 prob_sum_lambda.append(sum_prob_lambda)
+                prob_sum_lambda_linear.append(sum_prob_lambda_linear)
                 CI_left.append(round(left_CI, 3))
                 CI_right.append(round(right_CI, 3))
                 model_theta_mean.append(mean)
@@ -326,6 +334,7 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
         "CI_left": CI_left,
         "CI_right": CI_right,
         "posterior_mass_support_ALT": prob_sum_lambda,
+        "posterior_mass_support_ALT_linear": prob_sum_lambda_linear,
         "log2_posterior_median": model_log2_theta_med,
         "log2_posterior_mean": model_log2_theta_mean,
         "log2_posterior_variance": model_log2_theta_var,
