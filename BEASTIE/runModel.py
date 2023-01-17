@@ -635,6 +635,7 @@ def run(
                 os.path.basename(outfilename_ase)
             )
         )
+
     significant_genes(
         df_beastie,
         df_binomial,
@@ -644,6 +645,7 @@ def run(
         outfilename_ase,
         ase_cutoff,
         lambdaPredicted_file,
+        adjusted_alpha,
     )
     logging.info("....... done with significant_gene")
     if not SAVE_INT:
