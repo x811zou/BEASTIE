@@ -595,16 +595,6 @@ def significant_genes(
         )
     )
 
-    ncount = df_output[df_output["posterior_mass_support_ALT"] > ase_cutoff].count()[8]
-    logging.info(
-        "{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}".format(
-            ncount,
-            len(df_output),
-            round((ncount / len(df_output)) * 100, 3),
-            "posterior_mass_support_ALT",
-            ase_cutoff,
-        )
-    )
     # df_output["foldLog2MedSq_over_std"] = (
     #     abs(np.log2(df_output["posterior_median"]))
     # ) ** 2 / abs(np.log2(df_output["posterior_variance"]))
@@ -670,19 +660,19 @@ def significant_genes(
     df_output = df_output_bi
 
     def beastie(row):
-        if row["posterior_mass_support_ALT"] > ase_cutoff:
+        if float(row["posterior_mass_support_ALT"]) > ase_cutoff:
             return 1
         else:
             return 0
 
     def NS(row, adjusted_alpha):
-        if row["NaiveSum_pval"] <= adjusted_alpha:
+        if float(row["NaiveSum_pval"]) <= float(adjusted_alpha):
             return 1
         else:
             return 0
 
     def MS(row, adjusted_alpha):
-        if row["MajorSite_pval"] <= adjusted_alpha:
+        if float(row["MajorSite_pval"]) <= float(adjusted_alpha):
             return 1
         else:
             return 0
@@ -690,17 +680,65 @@ def significant_genes(
     df_output["beastie_ASE"] = df_output.apply(lambda row: beastie(row), axis=1)
     df_output["NS_ASE"] = df_output.apply(lambda row: NS(row, adjusted_alpha), axis=1)
     df_output["MS_ASE"] = df_output.apply(lambda row: MS(row, adjusted_alpha), axis=1)
+
+    ncount0 = df_output["posterior_mass_support_ALT"].sum()
+    logging.info(
+        "{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}".format(
+            ncount0,
+            len(df_output),
+            round((ncount0 / len(df_output)) * 100, 3),
+            "posterior_mass_support_ALT",
+            ase_cutoff,
+        )
+    )
+    ncount1 = df_output["posterior_mass_support_ALT_linear"].sum()
+    logging.info(
+        "{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}".format(
+            ncount1,
+            len(df_output),
+            round((ncount1 / len(df_output)) * 100, 3),
+            "posterior_mass_support_ALT_linear",
+            ase_cutoff,
+        )
+    )
+    ncount2 = df_output["NS_ASE"].sum()
+    logging.info(
+        "{} genes with ASE out of total genes {} ({}%) at @ {} <= adjusted alpha {}".format(
+            ncount2,
+            len(df_output),
+            round((ncount2 / len(df_output)) * 100, 3),
+            "Naive Sum",
+            adjusted_alpha,
+        )
+    )
+    ncount3 = df_output["MS_ASE"].sum()
+    logging.info(
+        "{} genes with ASE out of total genes {} ({}%) at @ {} <= adjusted alpha {}".format(
+            ncount3,
+            len(df_output),
+            round((ncount3 / len(df_output)) * 100, 3),
+            "Major Site",
+            adjusted_alpha,
+        )
+    )
     df_output_sub = df_output.drop(
         [
+            "X",
             "median.altRatio",
             "median_abs_deviation",
             "CI_left",
             "CI_right",
+            "abslog2_posterior_variance",
+            "abslog2_posterior_mean",
+            "abslog2_posterior_median",
+            "log2_posterior_variance",
+            "log2_posterior_mean",
+            "log2_posterior_median",
+            "median_abs_deviation",
         ],
         axis=1,
     )
-    print(df_output)
-    sys.exit()
+
     # outfilename="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/other_example/HG00096/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_ASE_all.tsv"
     # outfilename_ase="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/other_example/HG00096/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_ASE_cutoff_0.5_filtered.tsv"
     df_output.to_csv(outfilename, sep="\t", header=True, index=False)
