@@ -280,7 +280,9 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
             if len(gene_thetas) > 1:
                 # print(">>>> record")
                 geneID.append(ID)
-                lambdas_choice = lambdas.loc[lambdas["geneID"] == ID].iloc[0, 4]
+                lambdas_choice = lambdas.loc[
+                    lambdas["geneID"] == ID, "gam_lambda"
+                ].iloc[0]
 
                 (
                     mean,
