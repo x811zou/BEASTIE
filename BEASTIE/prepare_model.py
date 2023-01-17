@@ -576,6 +576,7 @@ def significant_genes(
     outfilename_ase,
     ase_cutoff,
     hetSNP_intersect_unique_lambdaPredicted_file,
+    adjusted_alpha,
 ):
     data_modeloutput = pd.read_csv(
         hetSNP_intersect_unique_lambdaPredicted_file, header=0, sep="\t"
@@ -604,39 +605,40 @@ def significant_genes(
             ase_cutoff,
         )
     )
-    df_output["foldLog2MedSq_over_std"] = (
-        abs(np.log2(df_output["posterior_median"]))
-    ) ** 2 / abs(np.log2(df_output["posterior_variance"]))
+    # df_output["foldLog2MedSq_over_std"] = (
+    #     abs(np.log2(df_output["posterior_median"]))
+    # ) ** 2 / abs(np.log2(df_output["posterior_variance"]))
     # df_output["foldLog2MedSq_over_var"]=df_output["foldLog2MedSq_over_var"].apply(lambda x: round(x, 3 - int(floor(log10(abs(x))))))
     df_output["median.altRatio"] = df_output["median.altRatio"].round(3)
     # df_output["extreme_val"] = df_output["foldLog2MedSq_over_var"].apply(lambda x: round(x, 3 - int(floor(log10(abs(x))))))
     extremes = scipy.stats.chi2.ppf(0.95, 1)
-    ncount2 = df_output[df_output["foldLog2MedSq_over_std"] > extremes].count()[8]
-    logging.debug(
-        "{} genes with ASE out of total genes {} ({}%) at @ {} > extreme values: {} = QCHISQ(p=0.95,df=1)".format(
-            ncount2,
-            len(df_output),
-            round((ncount2 / len(data_modeloutput)) * 100, 3),
-            "foldLog2MedSq_over_std",
-            extremes,
-        )
-    )
-    df_output = df_output.assign(
-        extreme_val=lambda dataframe: dataframe["foldLog2MedSq_over_std"].map(
-            lambda foldLog2MedSq_over_std: "Y"
-            if foldLog2MedSq_over_std > extremes
-            else "N"
-        )
-    )
-    df_output["ASE"] = df_output["posterior_mass_support_ALT"]
+    # ncount2 = df_output[df_output["foldLog2MedSq_over_std"] > extremes].count()[8]
+    # logging.debug(
+    #     "{} genes with ASE out of total genes {} ({}%) at @ {} > extreme values: {} = QCHISQ(p=0.95,df=1)".format(
+    #         ncount2,
+    #         len(df_output),
+    #         round((ncount2 / len(data_modeloutput)) * 100, 3),
+    #         "foldLog2MedSq_over_std",
+    #         extremes,
+    #     )
+    # )
+    # df_output = df_output.assign(
+    #     extreme_val=lambda dataframe: dataframe["foldLog2MedSq_over_std"].map(
+    #         lambda foldLog2MedSq_over_std: "Y"
+    #         if foldLog2MedSq_over_std > extremes
+    #         else "N"
+    #     )
+    # )
+    # df_output["ASE"] = df_output["posterior_mass_support_ALT"]
     # output that contain everything
-    df_output = df_output.assign(
-        ASE=lambda dataframe: dataframe["posterior_mass_support_ALT"].map(
-            lambda posterior_mass_support_ALT: "Y"
-            if posterior_mass_support_ALT > ase_cutoff
-            else "N"
-        )
-    )
+    # df_output = df_output.assign(
+    #     ASE=lambda dataframe: dataframe["posterior_mass_support_ALT"].map(
+    #         lambda posterior_mass_support_ALT: "Y"
+    #         if posterior_mass_support_ALT > ase_cutoff
+    #         else "N"
+    #     )
+    # )
+
     # subset output
     df_output_bi = pd.merge(df_output, df_binomial, on=["geneID"], how="inner")
 
@@ -666,20 +668,42 @@ def significant_genes(
     logging.info("....... done with dropping")
     # df_output = df_output_bi_adm
     df_output = df_output_bi
+
+    def beastie(row):
+        if row["posterior_mass_support_ALT"] > ase_cutoff:
+            return 1
+        else:
+            return 0
+
+    def NS(row, adjusted_alpha):
+        if row["NaiveSum_pval"] <= adjusted_alpha:
+            return 1
+        else:
+            return 0
+
+    def MS(row, adjusted_alpha):
+        if row["MajorSite_pval"] <= adjusted_alpha:
+            return 1
+        else:
+            return 0
+
+    df_output["beastie_ASE"] = df_output.apply(lambda row: beastie(row), axis=1)
+    df_output["NS_ASE"] = df_output.apply(lambda row: NS(row, adjusted_alpha), axis=1)
+    df_output["MS_ASE"] = df_output.apply(lambda row: MS(row, adjusted_alpha), axis=1)
     df_output_sub = df_output.drop(
         [
             "median.altRatio",
             "median_abs_deviation",
             "CI_left",
             "CI_right",
-            "foldLog2MedSq_over_std",
-            "extreme_val",
         ],
         axis=1,
     )
+    print(df_output)
+    sys.exit()
     # outfilename="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/other_example/HG00096/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_ASE_all.tsv"
     # outfilename_ase="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/other_example/HG00096/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_ASE_cutoff_0.5_filtered.tsv"
     df_output.to_csv(outfilename, sep="\t", header=True, index=False)
     df_output_sub.to_csv(outfilename_sub, sep="\t", header=True, index=False)
-    df_output_ase = df_output_sub[df_output_sub["ASE"] == "Y"]
-    df_output_ase.to_csv(outfilename_ase, sep="\t", header=True, index=False)
+    # df_output_ase = df_output_sub[df_output_sub["ASE"] == "Y"]
+    # df_output_ase.to_csv(outfilename_ase, sep="\t", header=True, index=False)
