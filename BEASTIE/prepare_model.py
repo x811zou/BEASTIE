@@ -733,10 +733,11 @@ def significant_genes(
     df_output_sub = df_output.drop(
         [
             "X",
-            "median.altRatio",
             "median_abs_deviation",
             "CI_left",
             "CI_right",
+            "gam_lambda",
+            "predicted_lambda",
             "abslog2_posterior_variance",
             "abslog2_posterior_mean",
             "abslog2_posterior_median",
@@ -744,6 +745,9 @@ def significant_genes(
             "log2_posterior_mean",
             "log2_posterior_median",
             "median_abs_deviation",
+            "Pseudo_pval",
+            "beastie_ASE_linear",
+            "MS_ASE",
         ],
         axis=1,
     )
