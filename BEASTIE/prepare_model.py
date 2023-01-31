@@ -457,7 +457,7 @@ def generate_modelCount(phased_filename):
         df_summary_3["total.patCount"] + df_summary_3["total.matCount"]
     )
 
-    df_summary_3 = df_summary_3.drop(["total.patCount", "total.matCount"], axis=1)
+    # df_summary_3 = df_summary_3.drop(["total.patCount", "total.matCount"], axis=1)
     df_summary_3.to_csv(file_for_lambda, index=False, sep="\t", header=True)
 
     counter = 0
@@ -700,16 +700,16 @@ def significant_genes(
             ase_cutoff,
         )
     )
-    ncount1 = df_output["beastie_ASE_linear"].sum()
-    logging.info(
-        "{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}".format(
-            ncount1,
-            len(df_output),
-            round((ncount1 / len(df_output)) * 100, 3),
-            "posterior_mass_support_ALT_linear",
-            ase_cutoff,
-        )
-    )
+    # ncount1 = df_output["beastie_ASE_linear"].sum()
+    # logging.info(
+    #     "{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}".format(
+    #         ncount1,
+    #         len(df_output),
+    #         round((ncount1 / len(df_output)) * 100, 3),
+    #         "posterior_mass_support_ALT_linear",
+    #         ase_cutoff,
+    #     )
+    # )
     ncount2 = df_output["NS_ASE"].sum()
     logging.info(
         "{} genes with ASE out of total genes {} ({}%) at @ {} <= adjusted alpha {}".format(
