@@ -684,9 +684,9 @@ def significant_genes(
             return 0
 
     df_output["beastie_ASE"] = df_output.apply(lambda row: beastie(row), axis=1)
-    df_output["beastie_ASE_linear"] = df_output.apply(
-        lambda row: beastie_linear(row), axis=1
-    )
+    # df_output["beastie_ASE_linear"] = df_output.apply(
+    #     lambda row: beastie_linear(row), axis=1
+    # )
     df_output["NS_ASE"] = df_output.apply(lambda row: NS(row, adjusted_alpha), axis=1)
     df_output["MS_ASE"] = df_output.apply(lambda row: MS(row, adjusted_alpha), axis=1)
 
@@ -746,7 +746,6 @@ def significant_genes(
             "log2_posterior_median",
             "median_abs_deviation",
             "Pseudo_pval",
-            "beastie_ASE_linear",
         ],
         axis=1,
     )
