@@ -747,7 +747,6 @@ def significant_genes(
             "median_abs_deviation",
             "Pseudo_pval",
             "beastie_ASE_linear",
-            "MS_ASE",
         ],
         axis=1,
     )

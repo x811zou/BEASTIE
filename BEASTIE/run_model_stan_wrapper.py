@@ -334,7 +334,6 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
         "CI_left": CI_left,
         "CI_right": CI_right,
         "posterior_mass_support_ALT": prob_sum_lambda,
-        "posterior_mass_support_ALT_linear": prob_sum_lambda_linear,
         "log2_posterior_median": model_log2_theta_med,
         "log2_posterior_mean": model_log2_theta_mean,
         "log2_posterior_variance": model_log2_theta_var,
@@ -343,15 +342,18 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
         "abslog2_posterior_variance": model_abslog2_theta_var,
     }
     df = pd.DataFrame(df)
-    df["posterior_mean"] = df["posterior_mean"].apply(
-        lambda x: round(x, 3 - int(floor(log10(abs(x)))))
-    )
-    df["posterior_median"] = df["posterior_median"].apply(
-        lambda x: round(x, 3 - int(floor(log10(abs(x)))))
-    )
-    df["posterior_variance"] = df["posterior_variance"].apply(
-        lambda x: round(x, 3 - int(floor(log10(abs(x)))))
-    )
+    # df["posterior_mean"] = df["posterior_mean"].apply(
+    #     lambda x: round(x, 3 - int(floor(log10(abs(x)))))
+    # )
+    # df["posterior_median"] = df["posterior_median"].apply(
+    #     lambda x: round(x, 3 - int(floor(log10(abs(x)))))
+    # )
+    # df["posterior_variance"] = df["posterior_variance"].apply(
+    #     lambda x: round(x, 3 - int(floor(log10(abs(x)))))
+    # )
+    df["posterior_mean"] = df["posterior_mean"].apply(lambda x: round(x, 3))
+    df["posterior_median"] = df["posterior_median"].apply(lambda x: round(x, 3))
+    df["posterior_variance"] = df["posterior_variance"].apply(lambda x: round(x, 3))
     if "iBEASTIE" in model:
         modelname = "iBEASTIE"
     else:
@@ -408,7 +410,7 @@ def save_raw_theta(
 
 
 def run(
-    prefix, inFile, sigma, models, out0, lambdas_file, WARMUP, KEEPER, phasing_method
+    prefix, inFile, sigma, modelpath, out0, lambdas_file, WARMUP, KEEPER, phasing_method
 ):
     if phasing_method != "nophasing":
         out_BEASTIE = "iBEASTIE"
@@ -441,7 +443,7 @@ def run(
     if not os.path.isfile(out1):
         save_raw_theta(
             out1,
-            models,
+            modelpath,
             inFile,
             tmp_output_file,
             stan_output_file,
@@ -453,11 +455,11 @@ def run(
         )
     logging.info(
         "...... Finshed running {0} and saved raw theta at : {1}".format(
-            os.path.basename(models), os.path.dirname(out1)
+            os.path.basename(modelpath), os.path.dirname(out1)
         )
     )
     df = parse_stan_output(
-        out0, prefix, inFile, out1, KEEPER, lambdas_file, os.path.basename(models)
+        out0, prefix, inFile, out1, KEEPER, lambdas_file, os.path.basename(modelpath)
     )
     # step2
     return df, outname1
