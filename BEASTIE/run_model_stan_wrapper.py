@@ -23,6 +23,11 @@ def writeInitializationFile(filename):
     OUT.close()
 
 
+def writeOutputsFile(filename):
+    OUT = open(filename, "wt")
+    OUT.close()
+
+
 def writeReadCounts(fields, start, numReps, varName, OUT):
     print(varName, "<- c(", file=OUT, end="")
     for rep in range(numReps):
@@ -137,6 +142,7 @@ def runModel(
 ):
     if len(fields) >= 4:
         geneID = str(fields[0])
+        writeOutputsFile(stan_output_file)
         # logging.debug(geneID)
         if phasing_method == "nophasing":
             writeInputsFile(fields, tmp_output_file, sigma)
