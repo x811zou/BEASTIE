@@ -502,7 +502,7 @@ def run(
                 os.path.basename(meta)
             )
         )
-    gam_modelname = resource_filename("BEASTIE", "gam3_lambdamodel.pkl")
+    gam_modelname = resource_filename("BEASTIE", "gam4_lambdamodel.pkl")
     gam_model = load(open(gam_modelname, "rb"))
     adjusted_alpha = alpha / data24_2.shape[0]
     predict_lambda_onrealdata(
