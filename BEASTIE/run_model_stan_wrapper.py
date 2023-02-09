@@ -259,8 +259,8 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
         lambdas_file, delimiter="\t", header=0
     )  # names = ['geneID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda']
 
-    prob_sum_lambda = []
-    prob_sum_lambda_linear = []
+    prob_sum_lambda_gam4 = []
+    prob_sum_lambda_gam3 = []
     model_theta_med = []  # 150
     model_theta_mean = []  # 150
     model_theta_var = []  # 150
@@ -287,11 +287,11 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
             if len(gene_thetas) > 1:
                 # print(">>>> record")
                 geneID.append(ID)
-                lambdas_choice = lambdas.loc[
-                    lambdas["geneID"] == ID, "gam_lambda"
+                lambdas_choice_gam4 = lambdas.loc[
+                    lambdas["geneID"] == ID, "gam4_lambda"
                 ].iloc[0]
-                lambdas_choice_linear = lambdas.loc[
-                    lambdas["geneID"] == ID, "predicted_lambda"
+                lambdas_choice_gam3 = lambdas.loc[
+                    lambdas["geneID"] == ID, "gam3_lambda"
                 ].iloc[0]
 
                 (
@@ -310,15 +310,15 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
                 ) = summarize(gene_thetas, 0.05)
                 # print(f"mad {mad}")
                 max_prob = getMaxProb_RMSE(gene_thetas)
-                max_prob_lambda, sum_prob_lambda = getMaxProb_lambda(
-                    gene_thetas, lambdas_choice
+                max_prob_lambda, sum_prob_lambda_gam4 = getMaxProb_lambda(
+                    gene_thetas, lambdas_choice_gam4
                 )
-                _, sum_prob_lambda_linear = getMaxProb_lambda(
-                    gene_thetas, lambdas_choice_linear
+                _, sum_prob_lambda_gam3 = getMaxProb_lambda(
+                    gene_thetas, lambdas_choice_gam3
                 )
                 # i=i+int(KEEPER)
-                prob_sum_lambda.append(sum_prob_lambda)
-                prob_sum_lambda_linear.append(sum_prob_lambda_linear)
+                prob_sum_lambda_gam4.append(sum_prob_lambda_gam4)
+                prob_sum_lambda_gam3.append(sum_prob_lambda_gam3)
                 CI_left.append(round(left_CI, 3))
                 CI_right.append(round(right_CI, 3))
                 model_theta_mean.append(mean)
@@ -339,7 +339,8 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
         "posterior_variance": model_theta_var,
         "CI_left": CI_left,
         "CI_right": CI_right,
-        "posterior_mass_support_ALT": prob_sum_lambda,
+        "posterior_mass_support_ALT_gam4": prob_sum_lambda_gam4,
+        "posterior_mass_support_ALT_gam3": prob_sum_lambda_gam3,
         "log2_posterior_median": model_log2_theta_med,
         "log2_posterior_mean": model_log2_theta_mean,
         "log2_posterior_variance": model_log2_theta_var,

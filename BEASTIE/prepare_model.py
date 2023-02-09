@@ -659,14 +659,14 @@ def significant_genes(
     # df_output = df_output_bi_adm
     df_output = df_output_bi
 
-    def beastie(row):
-        if float(row["posterior_mass_support_ALT"]) > ase_cutoff:
+    def beastie_gam3(row):
+        if float(row["posterior_mass_support_ALT_gam3"]) > ase_cutoff:
             return 1
         else:
             return 0
 
-    def beastie_linear(row):
-        if float(row["posterior_mass_support_ALT_linear"]) > ase_cutoff:
+    def beastie_gam4(row):
+        if float(row["posterior_mass_support_ALT_gam4"]) > ase_cutoff:
             return 1
         else:
             return 0
@@ -683,20 +683,32 @@ def significant_genes(
         else:
             return 0
 
-    df_output["beastie_ASE"] = df_output.apply(lambda row: beastie(row), axis=1)
-    # df_output["beastie_ASE_linear"] = df_output.apply(
-    #     lambda row: beastie_linear(row), axis=1
-    # )
+    df_output["beastie_ASE_gam3"] = df_output.apply(
+        lambda row: beastie_gam3(row), axis=1
+    )
+    df_output["beastie_ASE_gam4"] = df_output.apply(
+        lambda row: beastie_gam4(row), axis=1
+    )
     df_output["NS_ASE"] = df_output.apply(lambda row: NS(row, adjusted_alpha), axis=1)
     df_output["MS_ASE"] = df_output.apply(lambda row: MS(row, adjusted_alpha), axis=1)
 
-    ncount0 = df_output["beastie_ASE"].sum()
+    ncount0 = df_output["beastie_ASE_gam3"].sum()
     logging.info(
         "{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}".format(
             ncount0,
             len(df_output),
             round((ncount0 / len(df_output)) * 100, 3),
-            "posterior_mass_support_ALT",
+            "posterior_mass_support_ALT_gam3",
+            ase_cutoff,
+        )
+    )
+    ncount02 = df_output["beastie_ASE_gam4"].sum()
+    logging.info(
+        "{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}".format(
+            ncount02,
+            len(df_output),
+            round((ncount02 / len(df_output)) * 100, 3),
+            "posterior_mass_support_ALT_gam4",
             ase_cutoff,
         )
     )
@@ -736,7 +748,8 @@ def significant_genes(
             "median_abs_deviation",
             "CI_left",
             "CI_right",
-            "gam_lambda",
+            "gam3_lambda",
+            "gam4_lambda",
             "predicted_lambda",
             "abslog2_posterior_variance",
             "abslog2_posterior_mean",

@@ -30,12 +30,20 @@ def get_lambda_from_gam(model, hets, totalcount, expected_type1error):
     return chosen_lambda
 
 
-def predict_lambda_onrealdata(expected_type1error, in_filename, out_filename, model):
+def predict_lambda_onrealdata(
+    expected_type1error, in_filename, out_filename, model3, model4
+):
     in_data = pd.read_csv(in_filename, sep="\t")
     # print(in_data)
-    in_data["gam_lambda"] = in_data.apply(
+    in_data["gam3_lambda"] = in_data.apply(
         lambda x: get_lambda_from_gam(
-            model, x["number.of.hets"], x["totalCount"], expected_type1error
+            model3, x["number.of.hets"], x["totalCount"], expected_type1error
+        ),
+        axis=1,
+    )
+    in_data["gam4_lambda"] = in_data.apply(
+        lambda x: get_lambda_from_gam(
+            model4, x["number.of.hets"], x["totalCount"], expected_type1error
         ),
         axis=1,
     )

@@ -502,19 +502,24 @@ def run(
                 os.path.basename(meta)
             )
         )
-    gam_modelname = resource_filename("BEASTIE", "gam4_lambdamodel.pkl")
-    gam_model = load(open(gam_modelname, "rb"))
     adjusted_alpha = alpha / data24_2.shape[0]
-    predict_lambda_onrealdata(
-        adjusted_alpha, file_for_lambda, file_for_lambda, gam_model
-    )
+    if not os.path.isfile(lambdaPredicted_file):
+        logging.info("....... lambda is not predicted: start predicting lambda")
+        gam_modelname3 = resource_filename("BEASTIE", "gam3_lambdamodel.pkl")
+        gam_modelname4 = resource_filename("BEASTIE", "gam4_lambdamodel.pkl")
+        gam3_model = load(open(gam_modelname3, "rb"))
+        gam4_model = load(open(gam_modelname4, "rb"))
 
-    predict_lambda_phasing_error = resource_filename(
-        "BEASTIE", "predict_lambda_phasingError.R"
-    )
-    beastie_wd = resource_filename("BEASTIE", ".")
-    cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {adjusted_alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {file_for_lambda} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd} {phasing_method}"
-    runhelper(cmd)
+        predict_lambda_onrealdata(
+            adjusted_alpha, file_for_lambda, file_for_lambda, gam3_model, gam4_model
+        )
+
+        predict_lambda_phasing_error = resource_filename(
+            "BEASTIE", "predict_lambda_phasingError.R"
+        )
+        beastie_wd = resource_filename("BEASTIE", ".")
+        cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {adjusted_alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {file_for_lambda} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd} {phasing_method}"
+        runhelper(cmd)
 
     data26_1 = pd.read_csv(
         lambdaPredicted_file,
