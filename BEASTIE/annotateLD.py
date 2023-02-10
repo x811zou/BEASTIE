@@ -40,14 +40,17 @@ def annotateLD(
         prev = cur
 
     with acquire_ldlink_token(ldlink_token, ldlink_token_db) as acquired_token:
-        ldlink_infos = fetch_ldpairs(
-            pairs,
-            ancestry,
-            chrpos_to_rsid,
-            acquired_token,
-            ldlink_cache_dir,
-        )
-    # df[["pair_pos", "r2", "d"]] = "NA"
+        try:
+            ldlink_infos = fetch_ldpairs(
+                pairs,
+                ancestry,
+                chrpos_to_rsid,
+                acquired_token,
+                ldlink_cache_dir,
+            )
+        except Exception as e:
+            logging.error(f"Error fetching LD pairs: {e}")
+            raise e
 
     for info in ldlink_infos:
         df.loc[info.pair[0], "pair_pos"] = info.pair[1].split(":")[1]
@@ -60,18 +63,23 @@ def annotateLD(
 LDPairInfo = namedtuple("LDPairInfo", ["pair", "r2", "d"])
 
 
+def pair_key(pair, pop):
+    return f"{pop}_{pair[0]}_{pair[1]}"
+
+
 def fetch_ldpairs(pairs, pop, chrpos_to_rsid, ldlink_token, cache_dir):
     Path(cache_dir).mkdir(parents=True, exist_ok=True)
     db = get_cache_con(os.path.join(cache_dir, "ldlink_cache.db"))
     ldlink_infos = []
     pairs_to_fetch = []
     cur = db.cursor()
+    in_clause = ",".join([f"'{pair_key(pair, pop)}'" for pair in pairs])
+    rows = cur.execute(
+        f"SELECT key, r2, d FROM ldpairs2 WHERE key IN ({in_clause})",
+    ).fetchall()
+    data_by_key = {row[0]: row[1:] for row in rows}
     for pair in pairs:
-        cur.execute(
-            "SELECT r2, d FROM ldpairs WHERE chrpos1 = ? AND chrpos2 = ? AND ancestry = ?",
-            (pair[0], pair[1], pop),
-        )
-        row = cur.fetchone()
+        row = data_by_key.get(pair_key(pair, pop))
         if not row:
             pairs_to_fetch.append(pair)
         else:
@@ -99,9 +107,9 @@ def fetch_ldpairs(pairs, pop, chrpos_to_rsid, ldlink_token, cache_dir):
         with db:
             cur = db.cursor()
             cur.executemany(
-                "INSERT OR IGNORE INTO ldpairs VALUES (?, ?, ?, ?, ?)",
+                "INSERT OR IGNORE INTO ldpairs2 VALUES (?, ?, ?)",
                 [
-                    (info.pair[0], info.pair[1], pop, info.r2, info.d)
+                    (pair_key(info.pair, pop), info.r2, info.d)
                     for info in fetched_ldpairs
                 ],
             )
@@ -117,19 +125,26 @@ def get_cache_con(db_path):
 
     with con:
         cur = con.cursor()
+
         cur.execute(
             """
-    CREATE TABLE IF NOT EXISTS ldpairs (
-        chrpos1 TEXT,
-        chrpos2 TEXT,
-        ancestry TEXT,
-        r2 REAL,
-        d REAL,
-
-        CONSTRAINT pair_pk PRIMARY KEY (chrpos1, chrpos2, ancestry)
-    )"""
+            SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ldpairs2';
+        """
         )
+        r = cur.fetchone()
+        if r[0] == 0:
+            logging.debug(f"Creating LDLink cache table ldpairs2")
+            cur.execute(
+                """
+        CREATE TABLE IF NOT EXISTS ldpairs2 (
+            key TEXT NOT NULL PRIMARY KEY,
+            r2 REAL,
+            d REAL
+        );"""
+            )
         cur.close()
+
+    logging.debug(f"Loaded LDLink cache from {db_path}")
 
     return con
 
