@@ -51,41 +51,26 @@ def isHeterozygous(genotype):
     return not genotype in HOMOZYGOUS_GENOTYPES
 
 
-def vcfline_processor(line):
-    fields = line.split("\t")
-    if len(fields) < 10:
-        print(f"bad field line: '{line}'")
-    assert len(fields) >= 10
+def make_vcfline_processor(require_pass):
+    def vcfline_processor(line):
+        nonlocal require_pass
+        fields = line.split("\t")
+        if len(fields) < 10:
+            print(f"bad field line: '{line}'")
+        assert len(fields) >= 10
+        if require_pass and fields[6] != "PASS":
+            return None
+        genotype = fields[9].split(":")[0]
 
-    if fields[6] != "PASS":
-        return None
+        if not isHeterozygous(genotype):
+            return None
 
-    genotype = fields[9].split(":")[0]
+        pos = int(fields[1])
+        rs = fields[2]
 
-    if not isHeterozygous(genotype):
-        return None
+        return (pos, rs, genotype)
 
-    pos = int(fields[1])
-    rs = fields[2]
-
-    return (pos, rs, genotype)
-
-
-def vcfline_processor_atacseq(line):
-    fields = line.split("\t")
-    if len(fields) < 10:
-        print(f"bad field line: '{line}'")
-    assert len(fields) >= 10
-
-    genotype = fields[9].split(":")[0]
-
-    if not isHeterozygous(genotype):
-        return None
-
-    pos = int(fields[1])
-    rs = fields[2]
-
-    return (pos, rs, genotype)
+    return vcfline_processor
 
 
 def count_all_het_sites(
@@ -94,6 +79,7 @@ def count_all_het_sites(
     chr_start,
     chr_end,
     gencode_path,
+    require_pass,
     DEBUG_GENES=None,
     **kwargs,
 ):
@@ -103,6 +89,8 @@ def count_all_het_sites(
     out_stream.write(
         "chr\tchrN\tpos\tgeneID\ttranscriptID\ttranscript_pos\tSNP_id\tgenotype\n"
     )
+
+    vcfline_processor = make_vcfline_processor(require_pass)
 
     for chrId in chrRange(chr_start, chr_end, include_x_chromosome):
         reader = GffTranscriptReader()
@@ -241,11 +229,7 @@ def count_all_het_sites(
     out_stream.close()
 
 
-def count_all_het_sites_forpeaks(
-    vcfFilename,
-    outputFilename,
-    annotation_file,
-):
+def count_all_het_sites_forpeaks(vcfFilename, outputFilename, annotation_file):
     out_stream = open(outputFilename, "w")
     out_stream.write(
         "chrN\tchr\tpos\tSNP_id\tgenotype\tpeak_start\tpeak_end\tpeakID\tgeneID\n"
@@ -263,8 +247,11 @@ def count_all_het_sites_forpeaks(
     """
     2. construct a dict with unique peak region with VCF records {peak_region:VCF records}
     """
+    vcfline_processor = make_vcfline_processor(False)
     peak_region_to_snp_infos = tabix_regions(
-        peak_region_to_IDs.keys(), vcfline_processor_atacseq, vcfFilename
+        peak_region_to_IDs.keys(),
+        vcfline_processor,
+        vcfFilename,
     )
     """
     3. write output data

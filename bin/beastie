@@ -210,6 +210,12 @@ def configure_extractHets_parser(parser):
         "--chr-end", help="Ending chromosome number", default=22, type=int
     )
     parser.add_argument(
+        "--not-require-pass",
+        help="not require PASS filtering on quality score in VCF fields[6]",
+        default=False,
+        action="store_true",
+    )
+    parser.add_argument(
         "--debug-gene",
         help="one specific geneID, for debugging purpose only",
         default=None,
@@ -222,6 +228,7 @@ def beastie_extractHets(args):
     chr_start = args.chr_start
     chr_end = args.chr_end
     annotation = args.gencode_dir
+    not_require_pass = args.not_require_pass
     debug_gene = args.debug_gene
     logging.basicConfig(
         format="%(asctime)-15s [%(levelname)s] %(message)s",
@@ -233,6 +240,7 @@ def beastie_extractHets(args):
         chr_start,
         chr_end,
         annotation,
+        not not_require_pass,
         debug_gene,
     )
 
@@ -260,15 +268,12 @@ def beastie_extractHetsATACseq(args):
     filename = args.output
     vcfgz_path_filename = args.vcfgz_file
     annotation = args.annotationFile
+    # require_pass = args.require_pass
     logging.basicConfig(
         format="%(asctime)-15s [%(levelname)s] %(message)s",
         level=logging.DEBUG,
     )
-    extractHets.count_all_het_sites_forpeaks(
-        vcfgz_path_filename,
-        filename,
-        annotation,
-    )
+    extractHets.count_all_het_sites_forpeaks(vcfgz_path_filename, filename, annotation)
 
 
 def beastie_runModel(args):
