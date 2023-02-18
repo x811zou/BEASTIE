@@ -228,7 +228,7 @@ def beastie_extractHets(args):
     chr_start = args.chr_start
     chr_end = args.chr_end
     annotation = args.gencode_dir
-    not_require_pass = args.not_require_pass
+    skip_require_pass = args.skip_require_pass
     debug_gene = args.debug_gene
     logging.basicConfig(
         format="%(asctime)-15s [%(levelname)s] %(message)s",
@@ -240,7 +240,7 @@ def beastie_extractHets(args):
         chr_start,
         chr_end,
         annotation,
-        not not_require_pass,
+        not skip_require_pass,
         debug_gene,
     )
 
@@ -268,7 +268,6 @@ def beastie_extractHetsATACseq(args):
     filename = args.output
     vcfgz_path_filename = args.vcfgz_file
     annotation = args.annotationFile
-    # require_pass = args.require_pass
     logging.basicConfig(
         format="%(asctime)-15s [%(levelname)s] %(message)s",
         level=logging.DEBUG,
