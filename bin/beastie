@@ -210,7 +210,7 @@ def configure_extractHets_parser(parser):
         "--chr-end", help="Ending chromosome number", default=22, type=int
     )
     parser.add_argument(
-        "--not-require-pass",
+        "--skip-require-pass",
         help="not require PASS filtering on quality score in VCF fields[6]",
         default=False,
         action="store_true",
