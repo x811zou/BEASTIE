@@ -3,6 +3,8 @@
 # Copyright (C) Xue Zou (xue.zou@duke.edu)
 # =========================================================================
 import argparse
+import logging
+import multiprocessing
 import pandas as pd
 import numpy as np
 
@@ -15,41 +17,79 @@ def logit(p):
     return np.log(p) - np.log(1 - p)
 
 
-def get_lambda_from_gam(model, hets, totalcount, expected_type1error):
-    # preapre input
-    data = [[hets, totalcount, np.log(lam)] for lam in np.linspace(1, 3, 3000)]
+def get_lambda_from_gam_pre_partition(
+    model, hets, totalcount, expected_type1error, candidate_log_lambdas
+):
+    logit_expected_type1error = logit(expected_type1error)
+
+    INITIAL_PREDICTION_COUNT = int(np.ceil(np.sqrt(len(candidate_log_lambdas))))
+
+    initial_is = np.linspace(
+        0, len(candidate_log_lambdas) - 1, INITIAL_PREDICTION_COUNT
+    ).astype(int)
+    initial_log_lambdas = candidate_log_lambdas[initial_is]
+    initial_predictions = model.predict(
+        [[hets, totalcount, lam] for lam in initial_log_lambdas]
+    )
+
+    for i in range(1, INITIAL_PREDICTION_COUNT):
+        if initial_predictions[i] < logit_expected_type1error:
+            min_i = initial_is[i - 1] if i > 0 else 0
+            max_i = initial_is[i]
+            break
+
+    partitioned_candidate_log_lambdas = candidate_log_lambdas[min_i : max_i + 1]
+
+    return get_lambda_from_gam(
+        model,
+        hets,
+        totalcount,
+        expected_type1error,
+        partitioned_candidate_log_lambdas,
+    )
+
+
+def get_lambda_from_gam(
+    model, hets, totalcount, expected_type1error, candidate_log_lambdas
+):
+    # prepare input
+    data = [[hets, totalcount, lam] for lam in candidate_log_lambdas]
+
     # prediction
-    prediction = model.predict(data)
+    prediction = inv_logit(model.predict(data))
     chosen_lambda = 3
-    # print(f"hets: %s totalcount: %s" % (hets, totalcount))
-    if min(inv_logit(prediction)) <= expected_type1error:
+    if min(prediction) <= expected_type1error:
         chosen_lambda = np.exp(
-            data[np.where(inv_logit(prediction) <= expected_type1error)[0][0]][2]
+            data[np.where(prediction <= expected_type1error)[0][0]][2]
         )
-    # print(f"hets: %s totalcount: %s - lambda: %s" % (hets, totalcount, chosen_lambda))
     return chosen_lambda
 
 
 def predict_lambda_onrealdata(
-    expected_type1error, in_filename, out_filename, model3, model4
+    expected_type1error, in_filename, out_filename, modelByName
 ):
     in_data = pd.read_csv(in_filename, sep="\t")
-    # print(in_data)
-    in_data["gam3_lambda"] = in_data.apply(
-        lambda x: get_lambda_from_gam(
-            model3, x["number.of.hets"], x["totalCount"], expected_type1error
-        ),
-        axis=1,
-    )
-    in_data["gam4_lambda"] = in_data.apply(
-        lambda x: get_lambda_from_gam(
-            model4, x["number.of.hets"], x["totalCount"], expected_type1error
-        ),
-        axis=1,
-    )
-    # print(in_data)
+    candidate_log_lambdas = np.log(np.linspace(1, 3, 3000))
+
+    with multiprocessing.Pool() as pool:
+        for model_name, model in modelByName.items():
+            column_data = pool.starmap(
+                get_lambda_from_gam_pre_partition,
+                [
+                    (
+                        model,
+                        x["number.of.hets"],
+                        x["totalCount"],
+                        expected_type1error,
+                        candidate_log_lambdas,
+                    )
+                    for _, x in in_data.iterrows()
+                ],
+            )
+            in_data[model_name] = column_data
+
     in_data.to_csv(out_filename, sep="\t")
-    print(f"model input with GAM predicted lambda saved to %s" % str(out_filename))
+    logging.info(f"model input with GAM predicted lambda saved to {out_filename}")
 
 
 def main():
