@@ -515,8 +515,8 @@ def run(
             file_for_lambda,
             file_for_lambda,
             {
-                "gam3": gam3_model,
-                "gam4": gam4_model,
+                "gam3_lambda": gam3_model,
+                "gam4_lambda": gam4_model,
             },
         )
 
