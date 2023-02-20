@@ -616,7 +616,10 @@ def run(
         logging.error("....... model output is empty, please try again!")
         sys.exit(1)
 
-    df_adm = ADM_for_real_data.run(prefix, base_modelin, result_path, picklename)
+    logging.info("....... start processing ADM")
+    adm_out_path = os.path.join(result_path, f"{prefix}_ASE_ADM.tsv")
+    df_adm = ADM_for_real_data.run(base_modelin, adm_out_path)
+    logging.info("....... saved ADM output to {0}".format(adm_out_path))
     logging.info("....... done with running ADM method")
 
     df_binomial = binomial_for_real_data.run(
