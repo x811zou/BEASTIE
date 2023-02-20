@@ -2,11 +2,14 @@
 # =========================================================================
 # Copyright (C) Xue Zou (xue.zou@duke.edu)
 # =========================================================================
+import multiprocessing
 import os
 import pickle
 import logging
 import statistics
 import subprocess
+import tempfile
+import time
 import numpy as np
 import pandas as pd
 from math import floor, log10, log2
@@ -156,7 +159,6 @@ def runModel(
         )
         # print(cmd)
         # logging.debug(cmd)
-        # runhelper(cmd)  # Parse MCMC output
         subprocess.run(
             cmd,
             shell=True,
@@ -382,46 +384,69 @@ def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model
     return df
 
 
-def save_raw_theta(
-    out0,
-    models,
-    input_file,
-    tmp_output_file,
-    stan_output_file,
-    init_file,
+def run_model_worker_initializer(
+    tmp_dir,
+    model,
     sigma,
     WARMUP,
     KEEPER,
     phasing_method,
 ):
-    model_theta = {}  # 150
-    with open(input_file, "rt") as IN:
-        i = 0
-        for line in IN:
-            i += 1
-            # logging.debug(line)
-            fields = line.rstrip().split()
-            # logging.debug(fields)
-            geneID, thetas = runModel(
-                models,
-                fields,
-                tmp_output_file,
-                stan_output_file,
-                init_file,
-                sigma,
-                WARMUP,
-                KEEPER,
-                phasing_method,
-            )
-            # model_theta.extend(thetas)
-            model_theta[geneID] = thetas
-    logging.debug(
-        ".... Number of genes : {0}, and length of thetas: {1}".format(
-            i, len(model_theta)
-        )
+    global g_model, g_sigma, g_WARMUP, g_KEEPER, g_phasing_method
+    g_model = model
+    g_sigma = sigma
+    g_WARMUP = WARMUP
+    g_KEEPER = KEEPER
+    g_phasing_method = phasing_method
+
+    global g_tmp_output_file, g_stan_output_file, g_init_file
+    g_tmp_output_file = tempfile.NamedTemporaryFile(dir=tmp_dir, delete=False).name
+    g_stan_output_file = tempfile.NamedTemporaryFile(dir=tmp_dir, delete=False).name
+    g_init_file = tempfile.NamedTemporaryFile(dir=tmp_dir, delete=False).name
+
+
+def run_model_worker(line):
+    global g_model, g_tmp_output_file, g_stan_output_file, g_init_file, g_sigma, g_WARMUP, g_KEEPER, g_phasing_method
+
+    fields = line.rstrip().split()
+    geneID, thetas = runModel(
+        g_model,
+        fields,
+        g_tmp_output_file,
+        g_stan_output_file,
+        g_init_file,
+        g_sigma,
+        g_WARMUP,
+        g_KEEPER,
+        g_phasing_method,
     )
-    pickle.dump(model_theta, open(out0, "wb"))
-    # print(model_theta)
+    return geneID, thetas
+
+
+def save_raw_theta_parallel(
+    input_filepath,
+    out_filepath,
+    model,
+    sigma,
+    WARMUP,
+    KEEPER,
+    phasing_method,
+):
+    processes = os.cpu_count()
+    with tempfile.TemporaryDirectory() as tmp_dir, multiprocessing.Pool(
+        processes=processes,
+        initializer=run_model_worker_initializer,
+        initargs=(tmp_dir, model, sigma, WARMUP, KEEPER, phasing_method),
+    ) as pool, open(input_filepath, "rt") as input_file:
+        items = []
+        for item in pool.imap_unordered(run_model_worker, input_file):
+            items.append(item)
+            if len(items) % 500 == 0:
+                logging.info(f".... Processed thetas for {len(items)} genes")
+        logging.info(".... Processed thetas for all genes")
+
+    model_theta = dict(items)
+    pickle.dump(model_theta, open(out_filepath, "wb"))
 
 
 def run(
@@ -436,18 +461,12 @@ def run(
             WARMUP, KEEPER
         )
     )
-    tmpFile = "tmp_output.txt"
-    initFile = "initialization_stan.txt"
-    outFile = "stan_output.txt"
     out = os.path.join(out0, "output_pkl")
     out_path = os.path.join(out, out_BEASTIE)
     if not os.path.exists(out):
         os.makedirs(out)
     if not os.path.exists(out_path):
         os.makedirs(out_path)
-    tmp_output_file = os.path.join(out_path, tmpFile)
-    init_file = os.path.join(out_path, initFile)
-    stan_output_file = os.path.join(out_path, outFile)
     ###########################################################################################
     outname1 = "stan.pickle"
     out_path = os.path.join(out_path, "theta")
@@ -456,13 +475,10 @@ def run(
     out1 = os.path.join(out_path, outname1)
     # step1
     if not os.path.isfile(out1):
-        save_raw_theta(
+        save_raw_theta_parallel(
+            inFile,
             out1,
             modelpath,
-            inFile,
-            tmp_output_file,
-            stan_output_file,
-            init_file,
             sigma,
             WARMUP,
             KEEPER,
