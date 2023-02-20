@@ -94,12 +94,11 @@ def load_config_from_args(args):
 def run(config):
     output_path = config.output_dir
     today = date.today()
-    specification = f"chr{config.chr_start}-{config.chr_end}_alignBiasp{config.alignBiasP_cutoff}_a{config.alpha}_sinCov{config.min_single_cov}_totCov{config.min_total_cov}_W{config.WARMUP}K{config.KEEPER}"
+    specification = f"chr{config.chr_start}-{config.chr_end}_alignBiasp{config.alignBiasP_cutoff}_s{config.sigma}_a{config.alpha}_sinCov{config.min_single_cov}_totCov{config.min_total_cov}_W{config.WARMUP}K{config.KEEPER}"
     specification_path = os.path.join(output_path, specification)
     log_path = os.path.join(specification_path, "log")
     tmp_path = os.path.join(specification_path, "tmp")
-    model_output_name = str(config.modelName) + "_sigma" + str(config.sigma)
-    result_path = os.path.join(specification_path, model_output_name)
+    result_path = os.path.join(specification_path, config.modelName)
 
     Path(output_path).mkdir(parents=True, exist_ok=True)
     Path(specification_path).mkdir(parents=True, exist_ok=True)
@@ -107,7 +106,7 @@ def run(config):
     Path(tmp_path).mkdir(parents=True, exist_ok=True)
     Path(result_path).mkdir(parents=True, exist_ok=True)
 
-    log_filename = f"{config.prefix}-{today.strftime('%b-%d-%Y')}-{model_output_name}"
+    log_filename = f"{config.prefix}-{today.strftime('%b-%d-%Y')}-{config.modelName}"
     # stdout_stderr_filepath = os.path.join(log_path, f"{log_filename}.output")
     # stdout_stderr_file = open(stdout_stderr_filepath, "w")
     # sys.stdout = stdout_stderr_file

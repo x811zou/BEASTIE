@@ -420,9 +420,9 @@ def run(
     prefix, inFile, sigma, modelpath, out0, lambdas_file, WARMUP, KEEPER, phasing_method
 ):
     if phasing_method != "nophasing":
-        out_BEASTIE = "BEASTIE_phasing"
+        out_BEASTIE = "iBEASTIE"
     else:
-        out_BEASTIE = "BEASTIE_nophasing"
+        out_BEASTIE = "BEASTIE-fix-uniform"
     logging.debug(
         "Number of WARMUP samples is {0}, Number of posterior estimates is {1}".format(
             WARMUP, KEEPER
