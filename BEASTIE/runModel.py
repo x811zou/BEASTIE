@@ -10,6 +10,7 @@ import shutil
 import multiprocessing
 from pathlib import Path
 import pandas as pd
+import pickle
 from . import ADM_for_real_data
 from . import binomial_for_real_data
 from . import run_model_stan_wrapper
@@ -26,7 +27,6 @@ from .prepare_model import (
     update_model_input_lambda_phasing,
 )
 from .predict_lambda_GAM import predict_lambda_onrealdata
-from pickle import dump, load
 
 
 def parse_mpileup(
@@ -507,11 +507,17 @@ def run(
         logging.info("....... lambda is not predicted: start predicting lambda")
         gam_modelname3 = resource_filename("BEASTIE", "gam3_lambdamodel.pkl")
         gam_modelname4 = resource_filename("BEASTIE", "gam4_lambdamodel.pkl")
-        gam3_model = load(open(gam_modelname3, "rb"))
-        gam4_model = load(open(gam_modelname4, "rb"))
+        gam3_model = pickle.load(open(gam_modelname3, "rb"))
+        gam4_model = pickle.load(open(gam_modelname4, "rb"))
 
         predict_lambda_onrealdata(
-            adjusted_alpha, file_for_lambda, file_for_lambda, gam3_model, gam4_model
+            adjusted_alpha,
+            file_for_lambda,
+            file_for_lambda,
+            {
+                "gam3": gam3_model,
+                "gam4": gam4_model,
+            },
         )
 
         predict_lambda_phasing_error = resource_filename(
