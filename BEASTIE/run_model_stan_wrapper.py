@@ -489,8 +489,10 @@ def run(
             os.path.basename(modelpath), os.path.dirname(out1)
         )
     )
+    logging.info("...... Start parse_stan_output")
     df = parse_stan_output(
         out0, prefix, inFile, out1, KEEPER, lambdas_file, os.path.basename(modelpath)
     )
+    logging.info("...... Finish parse_stan_output")
     # step2
     return df, outname1

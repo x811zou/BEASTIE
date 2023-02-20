@@ -39,11 +39,9 @@ def filter_alignBias(
     tmp_path,
     binomialp_cutoff,
     genotypeErfiltered_hetSNP_intersect_pileup,
-    read_length,
     simulator_df=None,
     collected_alignmentBias_file=None,
 ):
-    base_out = os.path.splitext(genotypeErfiltered_hetSNP_intersect_pileup)[0]
     new_df = pd.read_csv(
         genotypeErfiltered_hetSNP_intersect_pileup, sep="\t", header=0, index_col=False
     )

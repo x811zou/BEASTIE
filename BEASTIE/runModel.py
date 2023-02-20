@@ -312,7 +312,6 @@ def run(
         tmp_path,
         binomialp_cutoff,
         filtered_hetSNP_intersect_pileup,
-        read_length,
         biased_variant,
         collected_alignmentBias_file,
     )
