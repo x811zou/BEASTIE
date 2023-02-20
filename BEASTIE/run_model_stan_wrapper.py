@@ -6,6 +6,7 @@ import os
 import pickle
 import logging
 import statistics
+import subprocess
 import numpy as np
 import pandas as pd
 from math import floor, log10, log2
@@ -155,7 +156,14 @@ def runModel(
         )
         # print(cmd)
         # logging.debug(cmd)
-        runhelper(cmd)  # Parse MCMC output
+        # runhelper(cmd)  # Parse MCMC output
+        subprocess.run(
+            cmd,
+            shell=True,
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         parser = StanParser(stan_output_file)
         thetas = parser.getVariable("theta")
         return geneID, thetas
