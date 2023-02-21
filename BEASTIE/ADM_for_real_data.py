@@ -19,19 +19,17 @@ def AA_estimate(A, R):
     return AA
 
 
-def fixed_simulator(D, M, N, estimate):
-    esti = []
-    for k in range(N):
-        AR = []
-        for i in range(M):
-            A = np.random.binomial(D[i], 0.5)
-            R = D[i] - A
-            AR.append(AA_estimate(A, R))
+def fixed_simulator(total_counts, num_iterations, estimate):
+    alternate_counts = np.random.binomial(
+        total_counts, 0.5, size=(num_iterations, len(total_counts))
+    )
+    reference_counts = total_counts - alternate_counts
+    AA = np.abs(alternate_counts - reference_counts) / (
+        alternate_counts + reference_counts
+    )
 
-        esti.append(statistics.mean(AR))
-    # find the tail
-    pval = 1 - percentileofscore(esti, estimate) / 100
-    # print("pvalue: "+str(pval))
+    means = np.mean(AA, axis=1)
+    pval = 1 - percentileofscore(means, estimate) / 100
     return pval
 
 
@@ -41,17 +39,16 @@ def getAA(fields):
         Mreps = int(fields[1])
         # Mreps = hets
         # p = float(theta)/(float(theta)+1)
-        depth = []
+        total_counts = []
         for rep in range(Mreps):
             A = float(fields[2 + rep * 2])
             R = float(fields[3 + rep * 2])
             estimate = abs(R - A) / (A + R)
             esti.append(estimate)
-            total_counts = A + R
-            depth.append(int(total_counts))
+            total_count = A + R
+            total_counts.append(int(total_count))
         avg_esti = statistics.mean(esti)
-        hets = Mreps
-        pval = fixed_simulator(depth, hets, 1000, avg_esti)
+        pval = fixed_simulator(total_counts, 1000, avg_esti)
     return round(avg_esti, 3), round(pval, 3)
 
 
@@ -63,8 +60,13 @@ def process_line(line):
 
 
 def run(in_path, out_path):
+    # parallel
     with open(in_path, "rt") as IN, multiprocessing.Pool() as pool:
         rows = pool.map(process_line, IN)
+
+    # serial
+    # with open(in_path, "rt") as IN:
+    #     rows = [process_line(line) for line in IN]
 
     logging.info("....... start saving ADM file")
     ADM_df = pd.DataFrame(
