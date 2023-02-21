@@ -2,10 +2,14 @@
 # =========================================================================
 # Copyright (C) Xue Zou (xue.zou@duke.edu)
 # =========================================================================
+import multiprocessing
 import os
 import pickle
 import logging
 import statistics
+import subprocess
+import tempfile
+import time
 import numpy as np
 import pandas as pd
 from math import floor, log10, log2
@@ -91,42 +95,22 @@ def getFieldIndex(label, fields):
     return index
 
 
-def getMaxProb_RMSE(thetas):
-    p_less1 = len([i for i in thetas if i < 1]) / len(thetas)
-    p_more1 = 1 - p_less1
-    max_prob1 = max(p_less1, p_more1)
-    # 2. transform thetas, and then calculate proportion
-    thetas_log2 = [log2(x) for x in thetas]
-    p_less2 = len([i for i in thetas_log2 if i < 0]) / len(thetas_log2)
-    p_more2 = 1 - p_less2
-    max_prob2 = max(p_less2, p_more2)
-    return max_prob1  # , RMSE
+def computeBeastieScoreLog2(log2_thetas, l):
+    assert l >= 1
 
-
-def getMaxProb_lambda(thetas, Lambda):
     # 1. no transformation
-    one_over_Lambda = float(1 / float(Lambda))
-    # changes maded in 07/22
-    min_l = one_over_Lambda  # min(Lambda,one_over_Lambda)
-    max_l = Lambda  # max(Lambda,one_over_Lambda)
-    #
-    p_less1 = len([i for i in thetas if i < min_l]) / len(thetas)
-    p_more1 = len([i for i in thetas if i > max_l]) / len(thetas)
-    lambda_prob1 = max(p_less1, p_more1)
-    # 2. transform thetas, and then calculate proportion
-    thetas_log2 = [math.log2(x) for x in thetas]
-    p_less2 = len([i for i in thetas_log2 if i < math.log2(one_over_Lambda)]) / len(
-        thetas
-    )
-    p_more2 = len([i for i in thetas_log2 if i > math.log2(float(Lambda))]) / len(
-        thetas
-    )
-    lambda_prob2 = max(p_less2, p_more2)
-    # 3. sum tail
-    lambda_sum1 = p_less1 + p_more1
-    # 4. sum tail  transform thetas, and then calculate proportion
-    lambda_sum2 = p_less2 + p_more2
-    return round(lambda_prob2, 3), round(lambda_sum2, 3)
+    min_l = 1 / l
+    max_l = l
+    min_l_log2 = math.log2(min_l)
+    max_l_log2 = math.log2(max_l)
+
+    n_less_log2 = np.count_nonzero(log2_thetas < min_l_log2)
+    n_more_log2 = np.count_nonzero(log2_thetas > max_l_log2)
+
+    n_total = len(log2_thetas)
+    max_log2_score = max(n_less_log2, n_more_log2) / n_total
+    sum_log2_score = (n_less_log2 + n_more_log2) / n_total
+    return max_log2_score, sum_log2_score
 
 
 def runModel(
@@ -155,50 +139,18 @@ def runModel(
         )
         # print(cmd)
         # logging.debug(cmd)
-        runhelper(cmd)  # Parse MCMC output
+        subprocess.run(
+            cmd,
+            shell=True,
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         parser = StanParser(stan_output_file)
         thetas = parser.getVariable("theta")
         return geneID, thetas
     else:
         logging.error("lines with no enough elements")
-
-
-def parse_lambda_validation_simulation(thetas, alphas, lambdas_file, lm):
-    with open(lambdas_file, "rt") as IN:
-        for idx, line in enumerate(IN):
-            if idx == lm - 1:
-                fields = line.rstrip().split()
-                # print(fields)
-                print("model %s - alpha %s - lambda: %s" % (lm, alphas[0], fields[0]))
-                prob_lambda1, _, sum_lambda1, _ = getMaxProb_lambda(
-                    thetas, float(fields[0])
-                )
-                print("model %s - alpha %s - lambda: %s" % (lm, alphas[1], fields[1]))
-                prob_lambda2, _, sum_lambda2, _ = getMaxProb_lambda(
-                    thetas, float(fields[1])
-                )
-                print("model %s - alpha %s - lambda: %s" % (lm, alphas[2], fields[2]))
-                prob_lambda3, _, sum_lambda3, _ = getMaxProb_lambda(
-                    thetas, float(fields[2])
-                )
-                return (
-                    prob_lambda1,
-                    sum_lambda1,
-                    prob_lambda2,
-                    sum_lambda2,
-                    prob_lambda3,
-                    sum_lambda3,
-                )
-
-
-# def getMedian(thetas):
-#     # Precondition: thetas is already sorted
-#     thetas.sort()
-#     n = len(thetas)
-#     mid = int(n / 2)
-#     if n % 2 == 0:
-#         return (thetas[mid - 1] + thetas[mid]) / 2.0
-#     return thetas[mid]
 
 
 def getCredibleInterval(thetas, alpha, n):
@@ -248,172 +200,165 @@ def summarize(thetas, alpha):
     )
 
 
-def parse_stan_output(out, prefix, input_file, out1, KEEPER, lambdas_file, model):
-    thetas = pickle.load(
-        open(
-            out1,
-            "rb",
-        )
-    )
-    lambdas = pd.read_csv(
-        lambdas_file, delimiter="\t", header=0
-    )  # names = ['geneID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda']
+def parse_stan_output_initializer(thetas, lambdas):
+    global g_thetas, g_lambdas
+    g_thetas = thetas
+    g_lambdas = lambdas
 
-    prob_sum_lambda_gam4 = []
-    prob_sum_lambda_gam3 = []
-    model_theta_med = []  # 150
-    model_theta_mean = []  # 150
-    model_theta_var = []  # 150
-    model_log2_theta_med = []  # 150
-    model_log2_theta_mean = []  # 150
-    model_log2_theta_var = []  # 150
-    model_abslog2_theta_med = []  # 150
-    model_abslog2_theta_mean = []  # 150
-    model_abslog2_theta_var = []  # 150
-    model_mad = []
-    CI_left = []
-    CI_right = []
-    geneID = []
-    with open(input_file, "rt") as IN:
-        # i=0
-        for line in IN:
-            fields = line.rstrip().split()
-            ID = fields[0]
-            # read the ith geneID
-            # j=i+int(KEEPER)-1
-            gene_thetas = thetas.get(ID)
-            # print(gene_thetas)
-            # print(len(gene_thetas))
-            if len(gene_thetas) > 1:
-                # print(">>>> record")
-                geneID.append(ID)
-                lambdas_choice_gam4 = lambdas.loc[
-                    lambdas["geneID"] == ID, "gam4_lambda"
-                ].iloc[0]
-                lambdas_choice_gam3 = lambdas.loc[
-                    lambdas["geneID"] == ID, "gam3_lambda"
-                ].iloc[0]
 
-                (
-                    mean,
-                    median,
-                    variance,
-                    left_CI,
-                    right_CI,
-                    mad,
-                    log2_mean,
-                    log2_median,
-                    log2_variance,
-                    abslog2_mean,
-                    abslog2_median,
-                    abslog2_variance,
-                ) = summarize(gene_thetas, 0.05)
-                # print(f"mad {mad}")
-                max_prob = getMaxProb_RMSE(gene_thetas)
-                max_prob_lambda, sum_prob_lambda_gam4 = getMaxProb_lambda(
-                    gene_thetas, lambdas_choice_gam4
-                )
-                _, sum_prob_lambda_gam3 = getMaxProb_lambda(
-                    gene_thetas, lambdas_choice_gam3
-                )
-                # i=i+int(KEEPER)
-                prob_sum_lambda_gam4.append(sum_prob_lambda_gam4)
-                prob_sum_lambda_gam3.append(sum_prob_lambda_gam3)
-                CI_left.append(round(left_CI, 3))
-                CI_right.append(round(right_CI, 3))
-                model_theta_mean.append(mean)
-                model_theta_med.append(median)
-                model_theta_var.append(variance)
-                model_mad.append(round(mad, 3))
-                model_log2_theta_mean.append(log2_mean)
-                model_log2_theta_med.append(log2_median)
-                model_log2_theta_var.append(log2_variance)
-                model_abslog2_theta_mean.append(abslog2_mean)
-                model_abslog2_theta_med.append(abslog2_median)
-                model_abslog2_theta_var.append(abslog2_variance)
-    df = {
-        "geneID": geneID,
-        "median_abs_deviation": model_mad,
-        "posterior_median": model_theta_med,
-        "posterior_mean": model_theta_mean,
-        "posterior_variance": model_theta_var,
-        "CI_left": CI_left,
-        "CI_right": CI_right,
-        "posterior_mass_support_ALT_gam4": prob_sum_lambda_gam4,
-        "posterior_mass_support_ALT_gam3": prob_sum_lambda_gam3,
-        "log2_posterior_median": model_log2_theta_med,
-        "log2_posterior_mean": model_log2_theta_mean,
-        "log2_posterior_variance": model_log2_theta_var,
-        "abslog2_posterior_median": model_abslog2_theta_med,
-        "abslog2_posterior_mean": model_abslog2_theta_mean,
-        "abslog2_posterior_variance": model_abslog2_theta_var,
-    }
-    df = pd.DataFrame(df)
-    # df["posterior_mean"] = df["posterior_mean"].apply(
-    #     lambda x: round(x, 3 - int(floor(log10(abs(x)))))
-    # )
-    # df["posterior_median"] = df["posterior_median"].apply(
-    #     lambda x: round(x, 3 - int(floor(log10(abs(x)))))
-    # )
-    # df["posterior_variance"] = df["posterior_variance"].apply(
-    #     lambda x: round(x, 3 - int(floor(log10(abs(x)))))
-    # )
-    df["posterior_mean"] = df["posterior_mean"].apply(lambda x: round(x, 3))
-    df["posterior_median"] = df["posterior_median"].apply(lambda x: round(x, 3))
-    df["posterior_variance"] = df["posterior_variance"].apply(lambda x: round(x, 3))
-    if "iBEASTIE" in model:
-        modelname = "iBEASTIE"
-    else:
-        modelname = "BEASTIE_fix_uniform"
-    df.to_csv(
-        out + "/" + prefix + "_ASE_" + modelname + ".tsv",
-        sep="\t",
-        header=True,
-        index=False,
+def parse_stan_output_worker(line):
+    global g_thetas, g_lambdas
+
+    fields = line.rstrip().split()
+    gene_id = fields[0]
+    gene_thetas = g_thetas.get(gene_id)
+    if not gene_thetas:
+        return None
+    lambdas_choice_gam4 = g_lambdas.loc[
+        g_lambdas["geneID"] == gene_id, "gam4_lambda"
+    ].iloc[0]
+    lambdas_choice_gam3 = g_lambdas.loc[
+        g_lambdas["geneID"] == gene_id, "gam3_lambda"
+    ].iloc[0]
+
+    (
+        mean,
+        median,
+        variance,
+        left_CI,
+        right_CI,
+        mad,
+        log2_mean,
+        log2_median,
+        log2_variance,
+        abslog2_mean,
+        abslog2_median,
+        abslog2_variance,
+    ) = summarize(gene_thetas, 0.05)
+    log2_thetas = np.log2(np.array(gene_thetas))
+    _, sum_prob_lambda_gam4 = computeBeastieScoreLog2(log2_thetas, lambdas_choice_gam4)
+    _, sum_prob_lambda_gam3 = computeBeastieScoreLog2(log2_thetas, lambdas_choice_gam3)
+
+    return (
+        gene_id,
+        round(mad, 3),
+        round(median, 3),
+        round(mean, 3),
+        round(variance, 3),
+        round(left_CI, 3),
+        round(right_CI, 3),
+        sum_prob_lambda_gam4,
+        sum_prob_lambda_gam3,
+        log2_median,
+        log2_mean,
+        log2_variance,
+        abslog2_median,
+        abslog2_mean,
+        abslog2_variance,
     )
+
+
+def parse_stan_output_new(input_file, thetas_file, lambdas_file):
+    thetas = pickle.load(open(thetas_file, "rb"))
+    # names = ['geneID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda']
+    lambdas = pd.read_csv(lambdas_file, delimiter="\t", header=0)
+
+    with open(input_file, "rt") as IN, multiprocessing.Pool(
+        initializer=parse_stan_output_initializer,
+        initargs=(
+            thetas,
+            lambdas,
+        ),
+    ) as pool:
+        rows = pool.map(parse_stan_output_worker, IN, chunksize=1)
+
+    df = pd.DataFrame(
+        rows,
+        columns=[
+            "geneID",
+            "median_abs_deviation",
+            "posterior_median",
+            "posterior_mean",
+            "posterior_variance",
+            "CI_left",
+            "CI_right",
+            "posterior_mass_support_ALT_gam4",
+            "posterior_mass_support_ALT_gam3",
+            "log2_posterior_median",
+            "log2_posterior_mean",
+            "log2_posterior_variance",
+            "abslog2_posterior_median",
+            "abslog2_posterior_mean",
+            "abslog2_posterior_variance",
+        ],
+    )
+
     return df
 
 
-def save_raw_theta(
-    out0,
-    models,
-    input_file,
-    tmp_output_file,
-    stan_output_file,
-    init_file,
+def run_model_worker_initializer(
+    tmp_dir,
+    model,
     sigma,
     WARMUP,
     KEEPER,
     phasing_method,
 ):
-    model_theta = {}  # 150
-    with open(input_file, "rt") as IN:
-        i = 0
-        for line in IN:
-            i += 1
-            # logging.debug(line)
-            fields = line.rstrip().split()
-            # logging.debug(fields)
-            geneID, thetas = runModel(
-                models,
-                fields,
-                tmp_output_file,
-                stan_output_file,
-                init_file,
-                sigma,
-                WARMUP,
-                KEEPER,
-                phasing_method,
-            )
-            # model_theta.extend(thetas)
-            model_theta[geneID] = thetas
-    logging.debug(
-        ".... Number of genes : {0}, and length of thetas: {1}".format(
-            i, len(model_theta)
-        )
+    global g_model, g_sigma, g_WARMUP, g_KEEPER, g_phasing_method
+    g_model = model
+    g_sigma = sigma
+    g_WARMUP = WARMUP
+    g_KEEPER = KEEPER
+    g_phasing_method = phasing_method
+
+    global g_tmp_output_file, g_stan_output_file, g_init_file
+    g_tmp_output_file = tempfile.NamedTemporaryFile(dir=tmp_dir, delete=False).name
+    g_stan_output_file = tempfile.NamedTemporaryFile(dir=tmp_dir, delete=False).name
+    g_init_file = tempfile.NamedTemporaryFile(dir=tmp_dir, delete=False).name
+
+
+def run_model_worker(line):
+    global g_model, g_tmp_output_file, g_stan_output_file, g_init_file, g_sigma, g_WARMUP, g_KEEPER, g_phasing_method
+
+    fields = line.rstrip().split()
+    geneID, thetas = runModel(
+        g_model,
+        fields,
+        g_tmp_output_file,
+        g_stan_output_file,
+        g_init_file,
+        g_sigma,
+        g_WARMUP,
+        g_KEEPER,
+        g_phasing_method,
     )
-    pickle.dump(model_theta, open(out0, "wb"))
-    # print(model_theta)
+    return geneID, thetas
+
+
+def save_raw_theta_parallel(
+    input_filepath,
+    out_filepath,
+    model,
+    sigma,
+    WARMUP,
+    KEEPER,
+    phasing_method,
+):
+    processes = os.cpu_count()
+    with tempfile.TemporaryDirectory() as tmp_dir, multiprocessing.Pool(
+        processes=processes,
+        initializer=run_model_worker_initializer,
+        initargs=(tmp_dir, model, sigma, WARMUP, KEEPER, phasing_method),
+    ) as pool, open(input_filepath, "rt") as input_file:
+        items = []
+        for item in pool.imap_unordered(run_model_worker, input_file):
+            items.append(item)
+            if len(items) % 500 == 0:
+                logging.info(f".... Processed thetas for {len(items)} genes")
+        logging.info(".... Processed thetas for all genes")
+
+    model_theta = dict(items)
+    pickle.dump(model_theta, open(out_filepath, "wb"))
 
 
 def run(
@@ -428,33 +373,24 @@ def run(
             WARMUP, KEEPER
         )
     )
-    tmpFile = "tmp_output.txt"
-    initFile = "initialization_stan.txt"
-    outFile = "stan_output.txt"
     out = os.path.join(out0, "output_pkl")
     out_path = os.path.join(out, out_BEASTIE)
     if not os.path.exists(out):
         os.makedirs(out)
     if not os.path.exists(out_path):
         os.makedirs(out_path)
-    tmp_output_file = os.path.join(out_path, tmpFile)
-    init_file = os.path.join(out_path, initFile)
-    stan_output_file = os.path.join(out_path, outFile)
     ###########################################################################################
     outname1 = "stan.pickle"
     out_path = os.path.join(out_path, "theta")
     if not os.path.exists(out_path):
         os.makedirs(out_path)
-    out1 = os.path.join(out_path, outname1)
+    thetas_file = os.path.join(out_path, outname1)
     # step1
-    if not os.path.isfile(out1):
-        save_raw_theta(
-            out1,
-            modelpath,
+    if not os.path.isfile(thetas_file):
+        save_raw_theta_parallel(
             inFile,
-            tmp_output_file,
-            stan_output_file,
-            init_file,
+            thetas_file,
+            modelpath,
             sigma,
             WARMUP,
             KEEPER,
@@ -462,11 +398,27 @@ def run(
         )
     logging.info(
         "...... Finshed running {0} and saved raw theta at : {1}".format(
-            os.path.basename(modelpath), os.path.dirname(out1)
+            os.path.basename(modelpath), os.path.dirname(thetas_file)
         )
     )
-    df = parse_stan_output(
-        out0, prefix, inFile, out1, KEEPER, lambdas_file, os.path.basename(modelpath)
+    logging.info("...... Start parse_stan_output")
+    # df = parse_stan_output(
+    #     out0, prefix, inFile, thetas_file, lambdas_file, os.path.basename(modelpath)
+    # )
+    df = parse_stan_output_new(inFile, thetas_file, lambdas_file)
+    logging.info("...... Finish parse_stan_output")
+
+    if "iBEASTIE" in os.path.basename(modelpath):
+        modelname = "iBEASTIE"
+    else:
+        modelname = "BEASTIE_fix_uniform"
+    parsed_output_path = os.path.join(out0, f"{prefix}_ASE_{modelname}.tsv")
+    df.to_csv(
+        parsed_output_path,
+        sep="\t",
+        header=True,
+        index=False,
     )
-    # step2
+    logging.info(f"...... Saved parsed output at {parsed_output_path}")
+
     return df, outname1

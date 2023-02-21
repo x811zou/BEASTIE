@@ -312,7 +312,6 @@ def run(
         tmp_path,
         binomialp_cutoff,
         filtered_hetSNP_intersect_pileup,
-        read_length,
         biased_variant,
         collected_alignmentBias_file,
     )
@@ -515,8 +514,8 @@ def run(
             file_for_lambda,
             file_for_lambda,
             {
-                "gam3": gam3_model,
-                "gam4": gam4_model,
+                "gam3_lambda": gam3_model,
+                "gam4_lambda": gam4_model,
             },
         )
 
@@ -616,13 +615,17 @@ def run(
         logging.error("....... model output is empty, please try again!")
         sys.exit(1)
 
-    df_adm = ADM_for_real_data.run(prefix, base_modelin, result_path, picklename)
+    logging.info("....... start processing ADM")
+    adm_out_path = os.path.join(result_path, f"{prefix}_ASE_ADM.tsv")
+    df_adm = ADM_for_real_data.run(base_modelin, adm_out_path)
+    logging.info("....... saved ADM output to {0}".format(adm_out_path))
     logging.info("....... done with running ADM method")
 
-    df_binomial = binomial_for_real_data.run(
-        prefix, base_modelin, result_path, picklename
-    )
+    df_binomial = binomial_for_real_data.run(base_modelin)
     logging.info("....... done with running binomial")
+    binomial_out_path = os.path.join(result_path, f"{prefix}_ASE_binomial.tsv")
+    df_binomial.to_csv(binomial_out_path, sep="\t", header=True, index=False)
+    logging.info("....... saved binomial to {0}".format(binomial_out_path))
 
     #####
     ##### 2.9 generating output

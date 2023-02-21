@@ -12,9 +12,6 @@ import pandas as pd
 from pkg_resources import resource_filename
 
 
-MAX_WORKERS = 4
-
-
 def annotateAF(af_path, ancestry, hetSNP, out_AF):
     ancestry_map = {
         "EUR": "EUR",
@@ -103,9 +100,9 @@ def annotateCHRLines(
 def annotateAFConstantMemoryParallel(af_path, ancestry, hetSNP, out_AF):
     logging.info("..... start annotating AF with parallel constant memory join")
 
-    with multiprocessing.Pool(MAX_WORKERS) as pool, open(
-        hetSNP, newline=""
-    ) as hetSNPfile, open(out_AF, "w", newline="") as outFile:
+    with multiprocessing.Pool() as pool, open(hetSNP, newline="") as hetSNPfile, open(
+        out_AF, "w", newline=""
+    ) as outFile:
         hetSNP_reader = csv.reader(hetSNPfile, delimiter="\t", dialect="unix")
         hetSNP_header = next(hetSNP_reader)
 
