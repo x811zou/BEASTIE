@@ -3,6 +3,7 @@
 # Copyright (C) Xue Zou (xue.zou@duke.edu)
 # =========================================================================
 import logging
+import multiprocessing
 import os
 import os.path
 import pickle
@@ -111,98 +112,33 @@ def getBaseline_pooled(fields, depth, hets):
         return (None, None, None, None)
 
 
-def run(prefix, inFile, out, picklename):
-    outfix = picklename
-    out_path = os.path.join(out, "output_pkl", "binomial")
-    # First site
-    out_path_1 = os.path.join(out_path, "FS_esti")
-    out_path_2 = os.path.join(out_path, "FS_p")
-    # naive sum
-    out_path_3 = os.path.join(out_path, "NS_esti")
-    out_path_4 = os.path.join(out_path, "NS_p")
-    # pseudo phasing
-    out_path_5 = os.path.join(out_path, "pseudo_esti")
-    out_path_6 = os.path.join(out_path, "pseudo_p")
-    # major site
-    out_path_7 = os.path.join(out_path, "MS_esti")
-    out_path_8 = os.path.join(out_path, "MS_p")
+def worker(line):
+    fields = line.rstrip().split()
+    geneID = fields[0]
+    h = int(fields[1])
+    d = int(fields[2]) + int(fields[3])
+    FS_esti, FS_prob, MS_esti, MS_prob = getBaseline(fields, d)
+    NS_esti, NS_prob, pseudo_esti, pseudo_p = getBaseline_pooled(fields, d, h)
+    return (
+        geneID,
+        FS_esti,
+        FS_prob,
+        NS_esti,
+        NS_prob,
+        pseudo_esti,
+        pseudo_p,
+        MS_esti,
+        MS_prob,
+    )
 
-    Path(out_path_1).mkdir(parents=True, exist_ok=True)
-    Path(out_path_2).mkdir(parents=True, exist_ok=True)
-    Path(out_path_3).mkdir(parents=True, exist_ok=True)
-    Path(out_path_4).mkdir(parents=True, exist_ok=True)
-    Path(out_path_5).mkdir(parents=True, exist_ok=True)
-    Path(out_path_6).mkdir(parents=True, exist_ok=True)
-    Path(out_path_7).mkdir(parents=True, exist_ok=True)
-    Path(out_path_8).mkdir(parents=True, exist_ok=True)
 
-    out1 = out_path_1 + str(outfix)
-    out2 = out_path_2 + str(outfix)
-    out3 = out_path_3 + str(outfix)
-    out4 = out_path_4 + str(outfix)
-    out5 = out_path_5 + str(outfix)
-    out6 = out_path_6 + str(outfix)
-    out7 = out_path_7 + str(outfix)
-    out8 = out_path_8 + str(outfix)
-
-    pseudo_esti_list = []
-    pseudo_p_list = []
-    FS_esti_list = []
-    FS_p_list = []
-    NS_esti_list = []
-    NS_p_list = []
-    MS_esti_list = []
-    MS_p_list = []
-
-    gene = []
-
-    # if (os.path.isfile(out7)) and (os.path.isfile(out8)) and (os.path.isfile(out3)) and (os.path.isfile(out4)):
-    #     logging.info('... binomial Already Processed {0}'.format(str(outfix)))
-    # else:
-    counter = 0
-    with open(inFile, "rt") as IN:
-        # logging.info('... read}')
-        # inFile="/Users/scarlett/Documents/Allen_lab/github/BEASTIE/BEASTIE_example/HG00096_chr21/output/s-0.5_a-0.05_sinCov0_totCov1_W1000K1000/HG00096_chr21_hetSNP_intersected_filtered.TEMP.modelinput.tsv"
-        for line in IN:
-            counter += 1
-            # print(counter)
-            # print(line)
-            # logging.info('{0}'.format(line))
-            fields = line.rstrip().split()
-            geneID = fields[0]
-            gene.append(geneID)
-            # logging.info('... gene {0}'.format(geneID))
-            h = fields[1]
-            d = int(fields[2]) + int(fields[3])
-            FS_esti, FS_prob, MS_esti, MS_prob = getBaseline(fields, int(d))
-            NS_esti, NS_prob, pseudo_esti, pseudo_p = getBaseline_pooled(
-                fields, int(d), int(h)
-            )
-            # print("%s - %s - %s -%s"%(geneID,counter,SS_esti,NS_esti))
-            # logging.info('... gene {0} - SS_esti {1} - SS_prob {2} - MS_esti {3} - MS_prob {4} -NS_esti {5}'.format(geneID,SS_esti,SS_prob,MS_esti,MS_prob,NS_esti))
-            FS_esti_list.append(FS_esti)
-            FS_p_list.append(FS_prob)
-            NS_esti_list.append(NS_esti)
-            NS_p_list.append(NS_prob)
-            pseudo_esti_list.append(pseudo_esti)
-            pseudo_p_list.append(pseudo_p)
-            MS_esti_list.append(MS_esti)
-            MS_p_list.append(MS_prob)
+def run(inFile):
+    rows = []
+    with open(inFile, "rt") as IN, multiprocessing.Pool() as pool:
+        rows = pool.map(worker, IN)
 
     binomial_df = pd.DataFrame(
-        np.column_stack(
-            [
-                gene,
-                FS_esti_list,
-                FS_p_list,
-                NS_esti_list,
-                NS_p_list,
-                pseudo_esti_list,
-                pseudo_p_list,
-                MS_esti_list,
-                MS_p_list,
-            ]
-        ),
+        rows,
         columns=[
             "geneID",
             "FirstSite_esti",
@@ -215,20 +151,4 @@ def run(prefix, inFile, out, picklename):
             "MajorSite_pval",
         ],
     )
-    # logging.info('binomial_df {}'.format(binomial_df.head(5)))
-    binomial_df.to_csv(
-        out + "/" + prefix + "_ASE_binomial.tsv", sep="\t", header=True, index=False
-    )
-    logging.info("..... NS_p_list size {0}".format(len(NS_p_list)))
-    logging.info("..... FS_p_list size {0}".format(len(FS_p_list)))
-    logging.info("..... pseudo_p_list size {0}".format(len(pseudo_p_list)))
-    logging.info("..... MS_p_list size {0}".format(len(MS_p_list)))
-    pickle.dump(FS_esti_list, open(out1, "wb"))
-    pickle.dump(FS_p_list, open(out2, "wb"))
-    pickle.dump(NS_esti_list, open(out3, "wb"))
-    pickle.dump(NS_p_list, open(out4, "wb"))
-    pickle.dump(pseudo_esti_list, open(out5, "wb"))
-    pickle.dump(pseudo_p_list, open(out6, "wb"))
-    pickle.dump(MS_esti_list, open(out7, "wb"))
-    pickle.dump(MS_p_list, open(out8, "wb"))
     return binomial_df

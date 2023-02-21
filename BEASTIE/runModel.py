@@ -621,10 +621,11 @@ def run(
     logging.info("....... saved ADM output to {0}".format(adm_out_path))
     logging.info("....... done with running ADM method")
 
-    df_binomial = binomial_for_real_data.run(
-        prefix, base_modelin, result_path, picklename
-    )
+    df_binomial = binomial_for_real_data.run(base_modelin)
     logging.info("....... done with running binomial")
+    binomial_out_path = os.path.join(result_path, f"{prefix}_ASE_binomial.tsv")
+    df_binomial.to_csv(binomial_out_path, sep="\t", header=True, index=False)
+    logging.info("....... saved binomial to {0}".format(binomial_out_path))
 
     #####
     ##### 2.9 generating output
