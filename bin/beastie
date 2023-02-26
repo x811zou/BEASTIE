@@ -7,10 +7,9 @@ import sys
 
 
 def beastie_filterGenotypingError(args):
-    prefix = args.prefix if args.prefix is not None else args.vcf_sample_name
+    sample = args.sample
     vcfgz = args.vcfgz_file
-    vcf_sample_name = args.vcf_sample_name
-    output_path = args.beastie_outdir
+    output_path = args.out_dir
     chr_start = args.chr_start
     chr_end = args.chr_end
     af_path = args.af_dir
@@ -20,10 +19,9 @@ def beastie_filterGenotypingError(args):
     het_snp_file = args.input_het_snp_file
     min_single_count = args.min_single_cov
     min_total_count = args.min_total_cov
-    genotypeEr_file = args.outfile
+    genotypeEr_file = args.genotype_error_file
     genotypeEr_cutoff = args.genotypeEr_cutoff
     filtered_het_snp_file = args.filtered_het_snp_file
-    foldername = args.foldername
     n_warmup = args.warmup
     n_keeper = args.keeper
     RE_ITERATE = args.iterate
@@ -35,8 +33,7 @@ def beastie_filterGenotypingError(args):
         level=logging.DEBUG,
     )
     filterGenotypingError.run(
-        prefix,
-        vcf_sample_name,
+        sample,
         output_path,
         af_path,
         vcfgz,
@@ -51,7 +48,6 @@ def beastie_filterGenotypingError(args):
         pileup,
         genotypeEr_cutoff,
         filtered_het_snp_file,
-        foldername,
         n_warmup,
         n_keeper,
         RE_ITERATE,
@@ -64,16 +60,12 @@ def configure_filterGenotypingError_parser(parser):
     parser.set_defaults(func=beastie_filterGenotypingError)
 
     parser.add_argument(
-        "--prefix",
-        help="Prefix for output files, default is --vcf-sample-name value.",
-    )
-    parser.add_argument(
         "--vcfgz-file",
         help="Path to VCFGZ file",
         required=True,
     )
     parser.add_argument(
-        "--vcf-sample-name",
+        "--sample",
         help="Name of sample in VCF file (ex HG00096).",
         required=True,
     )
@@ -136,18 +128,14 @@ def configure_filterGenotypingError_parser(parser):
         required=True,
     )
     parser.add_argument(
-        "--beastie-outdir",
+        "--out-dir",
         help="Path to directory where beastie output will be placed.",
         required=True,
     )
     parser.add_argument(
-        "--outfile",
+        "--genotype-error-file",
         help="full path to genotyping Error filtered hetSNP file",
         required=True,
-    )
-    parser.add_argument(
-        "--foldername",
-        default="filterGenotypingError",
     )
     parser.add_argument(
         "--warmup",

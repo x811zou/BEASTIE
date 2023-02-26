@@ -24,6 +24,7 @@ from scipy.stats import fisher_exact
 from .run_jags import genotype_bugs_model
 from datetime import date
 
+
 def parse_mpileup(
     input_file, output_file, vcf_sample_name, vcfgz, min_total_cov, min_single_cov
 ):
@@ -117,7 +118,16 @@ def calculate_N_for_CI(p, CI, Z_score):
 
 
 def process_gene(
-    data, mu, var, n_warmup, n_keeper, CI, Z_score,iterate=None, pcutoff_low=None, pcutoff_high=None,
+    data,
+    mu,
+    var,
+    n_warmup,
+    n_keeper,
+    CI,
+    Z_score,
+    iterate=None,
+    pcutoff_low=None,
+    pcutoff_high=None,
 ):
     data_sub = data[["chrN", "pos", "refCount", "altCount"]]
     data_rest = data_sub[(data_sub["refCount"] != 0) & (data_sub["altCount"] != 0)]
@@ -254,12 +264,14 @@ def filter_genotypeEr(
     df_before_filter.to_csv(beforeFilter_filename, index=False, sep="\t", header=True)
     # het SNPs in genotyping error testing
     df_testedsites = df_before_filter[df_before_filter["genotypeTest"].notnull()]
-    # 
+    #
     df_after_filter = df_before_filter[
         (df_before_filter["genotypeTest"] > genotypeEr_cutoff)
         | (df_before_filter["genotypeTest"].isnull())
-        ]
-    df_testedsites_fail = df_testedsites[df_testedsites["genotypeTest"] <= genotypeEr_cutoff]
+    ]
+    df_testedsites_fail = df_testedsites[
+        df_testedsites["genotypeTest"] <= genotypeEr_cutoff
+    ]
     # biased_df_ss = new_df_testedsites[new_df_testedsites["genotypeTest"] < pcutoff_low]
     # biased_df_nss = new_df_testedsites[
     #     new_df_testedsites["genotypeTest"] > pcutoff_high
@@ -365,8 +377,7 @@ def filter_genotypeEr(
 
 
 def run(
-    prefix,
-    vcf_sample_name,
+    sample,
     output_path,
     af_path,
     vcfgz,
@@ -381,7 +392,6 @@ def run(
     pileup,
     genotypeEr_cutoff,
     filtered_hetSNP_filename,
-    foldername,
     n_warmup,
     n_keeper,
     RE_ITERATE,
@@ -391,18 +401,22 @@ def run(
     #####
     ##### 1.1 Check input file existence
     #####
-    tmp_path = output_path + "/" + foldername
+    tmp_path = output_path + "/tmp"
     today = date.today()
-    log_path = os.path.join(tmp_path, "log")
+    log_path = os.path.join(output_path, "log")
+    Path(output_path).mkdir(parents=True, exist_ok=True)
     Path(log_path).mkdir(parents=True, exist_ok=True)
-    log_filename = f"{prefix}-{today.strftime('%b-%d-%Y')}"
+    Path(tmp_path).mkdir(parents=True, exist_ok=True)
+    log_filename = f"{sample}-{today.strftime('%b-%d-%Y')}"
     logname = os.path.join(log_path, f"{log_filename}.log")
     if os.path.isfile(logname):
         os.remove(logname)
     #
     logger = logging.getLogger("")
     logger.setLevel(logging.DEBUG)
-    handler = logging.handlers.RotatingFileHandler(logname, maxBytes=(1048576*5), backupCount=7)
+    handler = logging.handlers.RotatingFileHandler(
+        logname, maxBytes=(1048576 * 5), backupCount=7
+    )
     formatter = logging.Formatter("%(asctime)-15s [%(levelname)s] %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
@@ -418,7 +432,7 @@ def run(
     #####
     logging.info("=================")
     logging.info("================= Starting common step 1.2")
-    hetSNP_AF = os.path.join(tmp_path, f"{prefix}_hetSNP_AF{chr_suffix}.tsv")
+    hetSNP_AF = os.path.join(tmp_path, f"{sample}_hetSNP_AF{chr_suffix}.tsv")
     if os.path.isfile(hetSNP_AF):
         logging.info("================= Skipping common step 1.2")
         logging.info("=================")
@@ -455,14 +469,14 @@ def run(
     with multiprocessing.Pool(2) as pool:
         handles = []
         parsed_pileup = os.path.join(
-            tmp_path, f"{prefix}_parsed_pileup{chr_suffix}.tsv"
+            tmp_path, f"{sample}_parsed_pileup{chr_suffix}.tsv"
         )
         handle = pool.apply_async(
             parse_mpileup,
             (
                 pileup,
                 parsed_pileup,
-                vcf_sample_name,
+                sample,
                 vcfgz,
                 min_total_cov,
                 min_single_cov,
@@ -480,7 +494,7 @@ def run(
     ##### 1.4 Combine hetSNPs and parsed mpileup & thinning reads: one reads only count once
     #####
     hetSNP_intersect_pileup = os.path.join(
-        tmp_path, f"TEMP.{prefix}_hetSNP_intersected_filtered.tsv"
+        tmp_path, f"TEMP.{sample}_hetSNP_intersected_filtered.tsv"
     )
     logging.info("=================")
     logging.info("================= Starting specific step 1.4")
