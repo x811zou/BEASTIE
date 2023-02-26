@@ -608,6 +608,7 @@ def run(
         WARMUP,
         KEEPER,
         phasing_method,
+        ancestry,
     )
     if df_beastie.shape[0] > 2:
         logging.info("....... done with running model {0}!".format(model))
