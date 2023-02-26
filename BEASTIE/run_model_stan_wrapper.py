@@ -362,7 +362,16 @@ def save_raw_theta_parallel(
 
 
 def run(
-    prefix, inFile, sigma, modelpath, out0, lambdas_file, WARMUP, KEEPER, phasing_method
+    prefix,
+    inFile,
+    sigma,
+    modelpath,
+    out0,
+    lambdas_file,
+    WARMUP,
+    KEEPER,
+    phasing_method,
+    ancestry,
 ):
     if phasing_method != "nophasing":
         out_BEASTIE = "iBEASTIE"
@@ -406,6 +415,7 @@ def run(
     #     out0, prefix, inFile, thetas_file, lambdas_file, os.path.basename(modelpath)
     # )
     df = parse_stan_output_new(inFile, thetas_file, lambdas_file)
+    df["ancestry"] = ancestry
     logging.info("...... Finish parse_stan_output")
 
     if "iBEASTIE" in os.path.basename(modelpath):
