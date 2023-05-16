@@ -401,7 +401,7 @@ def run(
     #####
     ##### 1.1 Check input file existence
     #####
-    tmp_path = output_path + "/tmp"
+    tmp_path = os.path.join(output_path, "tmp")
     today = date.today()
     log_path = os.path.join(output_path, "log")
     Path(output_path).mkdir(parents=True, exist_ok=True)
