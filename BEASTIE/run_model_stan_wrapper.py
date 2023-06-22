@@ -139,13 +139,18 @@ def runModel(
         )
         # print(cmd)
         # logging.debug(cmd)
-        subprocess.run(
-            cmd,
-            shell=True,
-            check=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        try:
+            subprocess.run(
+                cmd,
+                shell=True,
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except Exception as e:
+            logging.error("STAN MODEL FAILED")
+            logging.error(fields)
+            raise e
         parser = StanParser(stan_output_file)
         thetas = parser.getVariable("theta")
         return geneID, thetas

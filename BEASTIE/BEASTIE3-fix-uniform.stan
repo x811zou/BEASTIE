@@ -1,3 +1,7 @@
+// =======================================================================
+// This is version of BEASTIE that has uniform prior
+// =======================================================================
+
 functions {
 real forward(real pi,real p,int M,int[] A,int[] R,int fix) {
     real even=binomial_lpmf(A[fix]|A[fix]+R[fix],p);

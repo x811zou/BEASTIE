@@ -32,21 +32,24 @@ def get_lambda_from_gam_pre_partition(
         [[hets, totalcount, lam] for lam in initial_log_lambdas]
     )
 
+    min_i = None
     for i in range(1, INITIAL_PREDICTION_COUNT):
         if initial_predictions[i] < logit_expected_type1error:
             min_i = initial_is[i - 1] if i > 0 else 0
             max_i = initial_is[i]
             break
 
-    partitioned_candidate_log_lambdas = candidate_log_lambdas[min_i : max_i + 1]
-
-    return get_lambda_from_gam(
-        model,
-        hets,
-        totalcount,
-        expected_type1error,
-        partitioned_candidate_log_lambdas,
-    )
+    if min_i is not None:
+        partitioned_candidate_log_lambdas = candidate_log_lambdas[min_i : max_i + 1]
+        return get_lambda_from_gam(
+            model,
+            hets,
+            totalcount,
+            expected_type1error,
+            partitioned_candidate_log_lambdas,
+        )
+    else:
+        return np.log(3)
 
 
 def get_lambda_from_gam(
