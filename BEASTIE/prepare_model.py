@@ -21,8 +21,6 @@ def change_phasing(data):
     data["patCount"] = data["refCount"]
     data["matCount"] = data["altCount"]
     reference_row = data.iloc[0]
-    # print(reference_row)
-    # print(int(reference_row["e_paternal"]))
     if not isnan(int(reference_row["e_paternal"])):
         for x in range(1, row_n):
             row = data.iloc[x]
@@ -227,9 +225,8 @@ def re_allocateReads(
                 shapeit2 = pd.read_csv(
                     shapeit2_input,
                     sep="\t",
-                    header=None,
+                    header=0,
                     index_col=False,
-                    names=["chr", "pos", "ref", "alt", "e_paternal", "e_maternal"],
                 )
                 hetSNP_shapeit2 = hetSNP_intersect_unique_filtered.merge(
                     shapeit2, how="inner", on=["chr", "pos"]
@@ -242,7 +239,7 @@ def re_allocateReads(
                     )
                 )
                 phasing_data = hetSNP_shapeit2
-            #### version2: VCF phasing
+                #### version2: VCF phasing
             elif version == "VCF":
                 hetSNP_intersect_unique_filtered = hetSNP_intersect_unique_filtered[
                     (hetSNP_intersect_unique_filtered["genotype"] != "1/0")
@@ -254,6 +251,7 @@ def re_allocateReads(
                     "|", expand=True
                 )
                 phasing_data = hetSNP_intersect_unique_filtered
+            ### cleaning
             geneIDs = phasing_data["geneID"].unique()
             new_df = pd.DataFrame()
             for gene in geneIDs:
