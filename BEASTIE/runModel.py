@@ -231,6 +231,7 @@ def run(
     LD_token,
     ldlink_cache_dir,
     ldlink_token_db,
+    gam_model_name,
 ):
     #####
     ##### 2.1 Check input file existence
@@ -504,18 +505,15 @@ def run(
     adjusted_alpha = alpha / data24_2.shape[0]
     if not os.path.isfile(lambdaPredicted_file):
         logging.info("....... lambda is not predicted: start predicting lambda")
-        gam_modelname3 = resource_filename("BEASTIE", "gam3_lambdamodel.pkl")
-        gam_modelname4 = resource_filename("BEASTIE", "gam4_lambdamodel.pkl")
-        gam3_model = pickle.load(open(gam_modelname3, "rb"))
-        gam4_model = pickle.load(open(gam_modelname4, "rb"))
+        gam_modelname = resource_filename("BEASTIE", gam_model_name)
+        gam_model = pickle.load(open(gam_modelname, "rb"))
 
         predict_lambda_onrealdata(
             adjusted_alpha,
             file_for_lambda,
             file_for_lambda,
             {
-                "gam3_lambda": gam3_model,
-                "gam4_lambda": gam4_model,
+                "gam_lambda": gam_model,
             },
         )
 
@@ -650,7 +648,6 @@ def run(
                 os.path.basename(outfilename_ase)
             )
         )
-
     significant_genes(
         df_beastie,
         df_binomial,

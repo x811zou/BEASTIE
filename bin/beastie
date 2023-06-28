@@ -406,7 +406,11 @@ def configure_runModel():
         "--ldlink-token-db",
         help="Path to database containing ldlink tokens for running parallel jobs.",
     )
-
+    parser.add_argument(
+        "--gam-model-name",
+        help="gam model name",
+        default="iBEASTIE4_s0.7_GAM/gam4_lambdamodel.pkl",
+    )
     extractHets_parser = subparsers.add_parser(
         "extractHets",
         help="extract heterozygous bi-allelic SNPs for specific chromosomes from gencode annotation for RNAseq",

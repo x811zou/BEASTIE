@@ -45,6 +45,7 @@ ConfigurationData = namedtuple(
         "output_dir",
         "ldlink_cache_dir",
         "ldlink_token_db",
+        "gam_model_name",
     ],
 )
 
@@ -83,6 +84,7 @@ def load_config_from_args(args):
         ldlink_token_db=os.path.expanduser(args.ldlink_token_db)
         if args.ldlink_token_db
         else None,
+        gam_model_name=args.gam_model_name if args.gam_model_name is None else "iBEASTIE4_s0.7_GAM/gam4_lambdamodel.pkl",
     )
 
 
@@ -160,4 +162,5 @@ def run(config):
         config.LD_token,
         config.ldlink_cache_dir,
         config.ldlink_token_db,
+        config.gam_model_name,
     )
