@@ -1,0 +1,16 @@
+X0:hets
+X1:totalcount
+X2:log10_lambda
+Y: log10_type1error
+
+# single term models
+GAM1=LinearGAM(s(0) + s(1) + s(2))  
+GAM2:LinearGAM(s(0, spline_order=3, lam=0.6,n_splines=5, edge_knots=[1, 18], constraints='monotonic_inc') + s(1, lam=0.6, spline_order=3, n_splines=5, constraints='monotonic_dec') + s(2, lam=20, spline_order=3, n_splines=5, constraints='monotonic_dec', edge_knots=[log(1.1), log(3)])) 
+
+# interaction term models
+GAM3=LinearGAM(s(0) + te(1,2))  #grid search lam=0.001 r2 = 0.9885
+GAM4:LinearGAM(s(0, lam=0.6, spline_order=3, n_splines=5, edge_knots=[1, 18],constraints='monotonic_inc') + te(1, 2, lam=0.6, spline_order=3, n_splines=15,constraints='monotonic_dec'))  #r2 = 0.9737
+
+# het-1 gene model, only totalcount and log10_lambda
+GAM5=LinearGAM(s(1) + s(2))
+GAM6=LinearGAM(te(1,2))
