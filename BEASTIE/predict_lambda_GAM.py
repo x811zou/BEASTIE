@@ -59,11 +59,12 @@ def get_lambda_from_gam(
     data = [[hets, totalcount, lam] for lam in candidate_log_lambdas]
 
     # prediction
-    prediction = inv_logit(model.predict(data))
+    #prediction = inv_logit(model.predict(data))
+    prediction = model.predict(data)
     chosen_lambda = 3
-    if min(prediction) <= expected_type1error:
-        chosen_lambda = np.exp(
-            data[np.where(prediction <= expected_type1error)[0][0]][2]
+    if min(10**(prediction)) <= expected_type1error:
+        chosen_lambda = 10**(
+            data[np.where(10**(prediction) <= expected_type1error)[0][0]][2]
         )
     return chosen_lambda
 
