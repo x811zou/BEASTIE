@@ -135,7 +135,7 @@ def filter_alignBias(
                 no_alignment_bias.shape[0],
                 round(
                     no_alignment_bias.shape[0] / overlapped_variants.shape[0] * 100,
-                    2,
+                    10,
                 ),
                 binomialp_cutoff,
             )
@@ -656,7 +656,7 @@ def significant_genes(
     df_output = df_output_bi
 
     def beastie_gam(row):
-        if float(row["posterior_mass_support_ALT_gam"]) > ase_cutoff:
+        if float(row["posterior_mass_support_ALT_gam"]) >= 0.5:
             return 1
         else:
             return 0
@@ -672,33 +672,53 @@ def significant_genes(
             return 1
         else:
             return 0
+    def beta11(row, adjusted_alpha):
+        if float(row["beta_1_1_pval"]) <= float(adjusted_alpha):
+            return 1
+        else:
+            return 0
+    def beta1010(row, adjusted_alpha):
+        if float(row["beta_10_10_pval"]) <= float(adjusted_alpha):
+            return 1
+        else:
+            return 0
+    def beta2020(row, adjusted_alpha):
+        if float(row["beta_20_20_pval"]) <= float(adjusted_alpha):
+            return 1
+        else:
+            return 0
+    def beta5050(row, adjusted_alpha):
+        if float(row["beta_50_50_pval"]) <= float(adjusted_alpha):
+            return 1
+        else:
+            return 0
+    def beta100100(row, adjusted_alpha):
+        if float(row["beta_100_100_pval"]) <= float(adjusted_alpha):
+            return 1
+        else:
+            return 0
 
     df_output["beastie_ASE_gam"] = df_output.apply(
         lambda row: beastie_gam(row), axis=1
     )
     df_output["NS_ASE"] = df_output.apply(lambda row: NS(row, adjusted_alpha), axis=1)
     df_output["MS_ASE"] = df_output.apply(lambda row: MS(row, adjusted_alpha), axis=1)
+    df_output["beta11_ASE"] = df_output.apply(lambda row: beta11(row, adjusted_alpha), axis=1)
+    df_output["beta1010_ASE"] = df_output.apply(lambda row: beta1010(row, adjusted_alpha), axis=1)
+    df_output["beta2020_ASE"] = df_output.apply(lambda row: beta2020(row, adjusted_alpha), axis=1)
+    df_output["beta5050_ASE"] = df_output.apply(lambda row: beta5050(row, adjusted_alpha), axis=1)
+    df_output["beta100100_ASE"] = df_output.apply(lambda row: beta100100(row, adjusted_alpha), axis=1)
 
-    ncount02 = df_output["beastie_ASE_gam"].sum()
+    ncount1 = df_output["beastie_ASE_gam"].sum()
     logging.info(
         "{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}".format(
-            ncount02,
+            ncount1,
             len(df_output),
-            round((ncount02 / len(df_output)) * 100, 3),
+            round((ncount1 / len(df_output)) * 100, 3),
             "posterior_mass_support_ALT_gam",
             ase_cutoff,
         )
     )
-    # ncount1 = df_output["beastie_ASE_linear"].sum()
-    # logging.info(
-    #     "{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}".format(
-    #         ncount1,
-    #         len(df_output),
-    #         round((ncount1 / len(df_output)) * 100, 3),
-    #         "posterior_mass_support_ALT_linear",
-    #         ase_cutoff,
-    #     )
-    # )
     ncount2 = df_output["NS_ASE"].sum()
     logging.info(
         "{} genes with ASE out of total genes {} ({}%) at @ {} <= adjusted alpha {}".format(
@@ -716,6 +736,56 @@ def significant_genes(
             len(df_output),
             round((ncount3 / len(df_output)) * 100, 3),
             "Major Site",
+            adjusted_alpha,
+        )
+    )
+    ncount4 = df_output["beta11_ASE"].sum()
+    logging.info(
+        "{} genes with ASE out of total genes {} ({}%) at @ {} <= adjusted alpha {}".format(
+            ncount4,
+            len(df_output),
+            round((ncount4 / len(df_output)) * 100, 3),
+            "beta_1_1",
+            adjusted_alpha,
+        )
+    )
+    ncount5 = df_output["beta1010_ASE"].sum()
+    logging.info(
+        "{} genes with ASE out of total genes {} ({}%) at @ {} <= adjusted alpha {}".format(
+            ncount5,
+            len(df_output),
+            round((ncount5 / len(df_output)) * 100, 3),
+            "beta_10_10",
+            adjusted_alpha,
+        )
+    )
+    ncount6 = df_output["beta2020_ASE"].sum()
+    logging.info(
+        "{} genes with ASE out of total genes {} ({}%) at @ {} <= adjusted alpha {}".format(
+            ncount6,
+            len(df_output),
+            round((ncount6 / len(df_output)) * 100, 3),
+            "beta_20_20",
+            adjusted_alpha,
+        )
+    )
+    ncount7 = df_output["beta5050_ASE"].sum()
+    logging.info(
+        "{} genes with ASE out of total genes {} ({}%) at @ {} <= adjusted alpha {}".format(
+            ncount7,
+            len(df_output),
+            round((ncount7 / len(df_output)) * 100, 3),
+            "beta_50_50",
+            adjusted_alpha,
+        )
+    )
+    ncount8 = df_output["beta100100_ASE"].sum()
+    logging.info(
+        "{} genes with ASE out of total genes {} ({}%) at @ {} <= adjusted alpha {}".format(
+            ncount8,
+            len(df_output),
+            round((ncount8 / len(df_output)) * 100, 3),
+            "beta_100_100",
             adjusted_alpha,
         )
     )
