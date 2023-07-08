@@ -60,10 +60,10 @@ def getBaseline(fields, depth):
         MS_prob = stats.binom_test(max_A, max_A + max_R, p=0.5, alternative="two-sided")
         # logging.info('... MS_prob - {}'.format(MS_prob))
         return (
-            round(FS_esti, 3),
-            round(FS_prob, 3),
-            round(MS_esti, 3),
-            round(MS_prob, 3),
+            round(FS_esti, 10),
+            round(FS_prob, 10),
+            round(MS_esti, 10),
+            round(MS_prob, 10),
         )
     else:
         return (None, None, None, None)
@@ -103,15 +103,51 @@ def getBaseline_pooled(fields, depth, hets):
         # logging.info('... NS_esti: {0}, NS_prob: {1}'.format(NS_esti,NS_prob))
         # logging.info('... pseudo_esti: {0}, pseudo_prob: {1}'.format(pseudo_esti,pseudo_p))
         return (
-            round(NS_esti, 3),
-            round(NS_prob, 3),
-            round(pseudo_esti, 3),
-            round(pseudo_p, 3),
+            round(NS_esti, 10),
+            round(NS_prob, 10),
+            round(pseudo_esti, 10),
+            round(pseudo_p, 10),
         )
     else:
         return (None, None, None, None)
 
+def get_2sided_pval(A, AR, alpha, beta):
+    pval_2sided = 2 * min(
+        stats.betabinom.cdf(A, AR, alpha, beta),
+        1 - stats.betabinom.cdf(A, AR, alpha, beta),
+    )
+    return pval_2sided
 
+def getBatabinomial_pooled(fields):
+    if len(fields) >= 4:
+        Mreps = int(fields[1])
+        pooled_A = 0
+        pooled_R = 0
+        pooled_min = 0
+        for rep in range(Mreps):
+            A = float(fields[2 + rep * 2])
+            R = float(fields[3 + rep * 2])
+            pooled_A = pooled_A + A
+            pooled_R = pooled_R + R
+            pooled_min = pooled_min + min(A, R)
+        sum_AR = pooled_A + pooled_R
+
+        p_value_11 = get_2sided_pval(pooled_A, sum_AR, 1, 1)
+        p_value_1010 = get_2sided_pval(pooled_A, sum_AR, 10, 10)
+        p_value_2020 = get_2sided_pval(pooled_A, sum_AR, 20, 20)
+        p_value_5050 = get_2sided_pval(pooled_A, sum_AR, 50, 50)
+        p_value_100100 = get_2sided_pval(pooled_A, sum_AR, 100, 100)
+
+        return (
+            round(p_value_11, 10),
+            round(p_value_1010, 10),
+            round(p_value_2020, 10),
+            round(p_value_5050, 10),
+            round(p_value_100100, 10),
+        )
+    else:
+        return (None, None, None,None,None)
+    
 def worker(line):
     fields = line.rstrip().split()
     geneID = fields[0]
@@ -119,6 +155,7 @@ def worker(line):
     d = int(fields[2]) + int(fields[3])
     FS_esti, FS_prob, MS_esti, MS_prob = getBaseline(fields, d)
     NS_esti, NS_prob, pseudo_esti, pseudo_p = getBaseline_pooled(fields, d, h)
+    beta_1_1_pval,beta_10_10_pval,beta_20_20_pval,beta_50_50_pval,beta_100_100_pval=getBatabinomial_pooled(fields)
     return (
         geneID,
         FS_esti,
@@ -129,6 +166,11 @@ def worker(line):
         pseudo_p,
         MS_esti,
         MS_prob,
+        beta_1_1_pval,
+        beta_10_10_pval,
+        beta_20_20_pval,
+        beta_50_50_pval,
+        beta_100_100_pval,
     )
 
 
@@ -149,6 +191,11 @@ def run(inFile):
             "Pseudo_pval",
             "MajorSite_esti",
             "MajorSite_pval",
+            "beta_1_1_pval",
+            "beta_10_10_pval",
+            "beta_20_20_pval",
+            "beta_50_50_pval",
+            "beta_100_100_pval",
         ],
     )
     return binomial_df
