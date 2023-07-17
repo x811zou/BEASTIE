@@ -437,6 +437,7 @@ def run(
                 os.path.dirname(file_for_lambda),
             )
         )
+
     #####
     ##### 2.5 Annotation LD
     #####
@@ -485,10 +486,10 @@ def run(
             )
     else:
         logging.info("....... Phasing not provided: skip annotating LD information")
+
     #####
     ##### 2.6 logistic regression model predict switching phasing error, linear regression model predicts lambda
     #####
-
     logging.info("=================")
     logging.info("================= Starting step specific 2.6 regression model")
     logging.info(
@@ -506,22 +507,21 @@ def run(
     if not os.path.isfile(lambdaPredicted_file):
         logging.info("....... lambda is not predicted: start predicting lambda")
         gam_modelname = resource_filename("BEASTIE", gam_model_name)
+        logging.info(f"....... using gam model {gam_model_name}")
         gam_model = pickle.load(open(gam_modelname, "rb"))
 
         predict_lambda_onrealdata(
             adjusted_alpha,
             file_for_lambda,
-            file_for_lambda,
+            lambdaPredicted_file,
             {
                 "gam_lambda": gam_model,
             },
         )
 
-        predict_lambda_phasing_error = resource_filename(
-            "BEASTIE", "predict_lambda_phasingError.R"
-        )
+        predict_lambda_phasing_error = resource_filename("BEASTIE", "predict_lambda_phasingError.R")
         beastie_wd = resource_filename("BEASTIE", ".")
-        cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {adjusted_alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {file_for_lambda} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd} {phasing_method}"
+        cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {adjusted_alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {lambdaPredicted_file} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd} {phasing_method}"
         runhelper(cmd)
 
     data26_1 = pd.read_csv(
