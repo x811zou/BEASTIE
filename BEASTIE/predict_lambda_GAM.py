@@ -7,74 +7,71 @@ import logging
 import multiprocessing
 import pandas as pd
 import numpy as np
-
-
-def inv_logit(p):
-    return np.exp(p) / (1 + np.exp(p))
-
-
+from scipy.special import expit
+import sys
 def logit(p):
     return np.log(p) - np.log(1 - p)
 
 
 def get_lambda_from_gam_pre_partition(
-    model, hets, totalcount, expected_type1error, candidate_log_lambdas
+    model, hets, totalcount, expected_type1error, candidate_lambdas
 ):
-    logit_expected_type1error = logit(expected_type1error)
-
-    INITIAL_PREDICTION_COUNT = int(np.ceil(np.sqrt(len(candidate_log_lambdas))))
+    INITIAL_PREDICTION_COUNT = int(np.ceil(np.sqrt(len(candidate_lambdas))))
+    log_hets=np.log(hets)
+    log_totalcount=np.log(totalcount)
 
     initial_is = np.linspace(
-        0, len(candidate_log_lambdas) - 1, INITIAL_PREDICTION_COUNT
+        0, len(candidate_lambdas) - 1, INITIAL_PREDICTION_COUNT
     ).astype(int)
-    initial_log_lambdas = candidate_log_lambdas[initial_is]
+    initial_lambdas = candidate_lambdas[initial_is]
     initial_predictions = model.predict(
-        [[hets, totalcount, lam] for lam in initial_log_lambdas]
+        [[log_hets, log_totalcount, np.log(lam-1+0.001)] for lam in initial_lambdas]
     )
 
     min_i = None
     for i in range(1, INITIAL_PREDICTION_COUNT):
-        if initial_predictions[i] < logit_expected_type1error:
+        if initial_predictions[i] < logit(expected_type1error):
             min_i = initial_is[i - 1] if i > 0 else 0
             max_i = initial_is[i]
             break
 
     if min_i is not None:
-        partitioned_candidate_log_lambdas = candidate_log_lambdas[min_i : max_i + 1]
+        partitioned_candidate_lambdas = candidate_lambdas[min_i : max_i + 1]
         return get_lambda_from_gam(
             model,
-            hets,
-            totalcount,
+            log_hets,
+            log_totalcount,
             expected_type1error,
-            partitioned_candidate_log_lambdas,
+            partitioned_candidate_lambdas,
         )
     else:
-        return np.log(3)
+        return 3
 
 
 def get_lambda_from_gam(
-    model, hets, totalcount, expected_type1error, candidate_log_lambdas
+    model, hets, totalcount, expected_type1error, candidate_lambdas
 ):
     # prepare input
-    data = [[hets, totalcount, lam] for lam in candidate_log_lambdas]
+    data = [[hets, totalcount, np.log(lam-1+0.001)] for lam in candidate_lambdas]
 
     # prediction
-    #prediction = inv_logit(model.predict(data))
     prediction = model.predict(data)
     chosen_lambda = 3
-    if min(10**(prediction)) <= expected_type1error:
-        chosen_lambda = 10**(
-            data[np.where(10**(prediction) <= expected_type1error)[0][0]][2]
-        )
-    return chosen_lambda
+    #print(f"hets: %s totalcount: %s" % (hets, totalcount))
+    #print(prediction)
+    #print(expit(prediction))
+    if min(expit(prediction)) <= expected_type1error:
+        chosen_lambda=np.exp(data[np.where(expit(prediction) <= expected_type1error)[0][0]][2])+1
+    return round(chosen_lambda,10)
 
 
 def predict_lambda_onrealdata(
     expected_type1error, in_filename, out_filename, modelByName
 ):
     in_data = pd.read_csv(in_filename, sep="\t")
-    candidate_log_lambdas = np.log(np.linspace(1, 3, 3000))
-
+    candidate_lambdas = np.linspace(1, 3, 2000)
+    # for model_name, model in modelByName.items():
+    #     in_data[model_name] = in_data.apply(lambda x: get_lambda_from_gam(model, x["number.of.hets"], x["totalCount"], expected_type1error, candidate_lambdas),axis=1,)
     with multiprocessing.Pool() as pool:
         for model_name, model in modelByName.items():
             column_data = pool.starmap(
@@ -85,7 +82,7 @@ def predict_lambda_onrealdata(
                         x["number.of.hets"],
                         x["totalCount"],
                         expected_type1error,
-                        candidate_log_lambdas,
+                        candidate_lambdas,
                     )
                     for _, x in in_data.iterrows()
                 ],
