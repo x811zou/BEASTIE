@@ -656,7 +656,7 @@ def significant_genes(
     df_output = df_output_bi
 
     def beastie_gam(row):
-        if float(row["posterior_mass_support_ALT_gam"]) >= 0.5:
+        if float(row["posterior_mass_support_ALT_gam"]) > ase_cutoff:
             return 1
         else:
             return 0
@@ -791,12 +791,9 @@ def significant_genes(
     )
     df_output_sub = df_output.drop(
         [
-            "X",
             "median_abs_deviation",
             "CI_left",
             "CI_right",
-            "gam_lambda",
-            "predicted_lambda",
             "abslog2_posterior_variance",
             "abslog2_posterior_mean",
             "abslog2_posterior_median",
