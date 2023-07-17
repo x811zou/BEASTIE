@@ -365,7 +365,7 @@ def configure_runModel():
     parser.add_argument(
         "--model",
         help="stan model name (iBEASTIE2,iBEASTIE2-improper,BEASTIE3-fix-uniform)",
-        default="iBEASTIE2",
+        default="iBEASTIE3",
     )
     parser.add_argument(
         "--nophasing",
@@ -409,7 +409,7 @@ def configure_runModel():
     parser.add_argument(
         "--gam-model-name",
         help="gam model name",
-        default="iBEASTIE4_s0.7_GAM/gam4_lambdamodel.pkl",
+        default="iBEASTIE3_s0.7_GAM/gam4_lambdamodel.pkl",
     )
     extractHets_parser = subparsers.add_parser(
         "extractHets",
