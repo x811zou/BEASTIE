@@ -57,24 +57,24 @@ predict_lambda_realdata <- function(alpha, in_data, out_data, model) {
 }
 
 ############################################## 1. predict lambda #####################################################
-if (grepl("phasedByVCF", hetSNP_intersect_unique_forlambda_file, fixed = T)) {
-  print("using BEASTIE fitted model to predict lambda!")
-  lambda.fit.simulation <- readRDS(file.path(beastie_wd, "LinearReg_BEASTIE_fitted_model_lambda_loglambdaminus1.rds"))
-} else {
-  print("using iBEASTIE fitted model to predict lambda!")
-  lambda.fit.simulation <- readRDS(file.path(beastie_wd, "LinearReg_iBEASTIE_fitted_model_lambda_loglambdaminus1.rds"))
-}
+# if (grepl("phasedByVCF", hetSNP_intersect_unique_forlambda_file, fixed = T)) {
+#   print("using BEASTIE fitted model to predict lambda!")
+#   lambda.fit.simulation <- readRDS(file.path(beastie_wd, "LinearReg_BEASTIE_fitted_model_lambda_loglambdaminus1.rds"))
+# } else {
+#   print("using iBEASTIE fitted model to predict lambda!")
+#   lambda.fit.simulation <- readRDS(file.path(beastie_wd, "LinearReg_iBEASTIE_fitted_model_lambda_loglambdaminus1.rds"))
+# }
 
-in_data <- read.delim(file.path(hetSNP_intersect_unique_forlambda_file), header = TRUE, sep = "\t")
+# in_data <- read.delim(file.path(hetSNP_intersect_unique_forlambda_file), header = TRUE, sep = "\t")
 
-size <- dim(in_data)[1]
-out_data <- hetSNP_intersect_unique_lambdaPredicted_file
-# adjusted_alpha=as.numeric(alpha)/as.numeric(size)
-if (!file.exists(out_data)) {
-  predicted_df <- predict_lambda_realdata(as.numeric(adjusted_alpha), in_data, out_data, lambda.fit.simulation)
-} else {
-  print("lambda prediction file exists!")
-}
+# size <- dim(in_data)[1]
+# out_data <- hetSNP_intersect_unique_lambdaPredicted_file
+# # adjusted_alpha=as.numeric(alpha)/as.numeric(size)
+# if (!file.exists(out_data)) {
+#   predicted_df <- predict_lambda_realdata(as.numeric(adjusted_alpha), in_data, out_data, lambda.fit.simulation)
+# } else {
+#   print("lambda prediction file exists!")
+# }
 
 ################################################ 2 predict phasing error ###################################
 if (!file.exists(meta_error) && (phasing_method != "nophasing")) {
