@@ -74,17 +74,15 @@ def load_config_from_args(args):
         chr_start=args.chr_start,
         chr_end=args.chr_end,
         LD_token=args.ld_token,
-        modelName=args.model if args.nophasing is None else "BEASTIE3-fix-uniform",
+        modelName=args.model,
         STAN=args.STAN,
         SAVE_INT=args.save_intermediate,
         WARMUP=args.warmup,
         KEEPER=args.keeper,
         output_dir=args.output_dir,
         ldlink_cache_dir=os.path.expanduser(args.ldlink_cache_dir),
-        ldlink_token_db=os.path.expanduser(args.ldlink_token_db)
-        if args.ldlink_token_db
-        else None,
-        gam_model_name=args.gam_model_name if args.gam_model_name is None else "iBEASTIE4_s0.7_GAM/gam4_lambdamodel.pkl",
+        ldlink_token_db=os.path.expanduser(args.ldlink_token_db) if args.ldlink_token_db else None,
+        gam_model_name=args.gam_model_name,
     )
 
 
