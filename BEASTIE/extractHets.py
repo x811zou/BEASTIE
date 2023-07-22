@@ -192,8 +192,8 @@ def count_all_het_sites(
                         (transcript, pos, rsid, genotype)
                     )
 
-        # print(">> dict variant_to_transcript_info")
-        # print(f"len of dic: {len(variant_to_transcript_info)}")
+        #print(">> dict variant_to_transcript_info")
+        #print(f"len of dic: {len(variant_to_transcript_info)}")
         # print(">> print")
         for chr_pos in variant_to_transcript_info:
             gene_ids = set(
