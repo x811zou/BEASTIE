@@ -10,8 +10,8 @@ RUN mv cmdstan-2.27.0 cmdstan
 WORKDIR /cmdstan
 RUN make build
 
-COPY BEASTIE/iBEASTIE2.stan .
-RUN make iBEASTIE2
+COPY BEASTIE/iBEASTIE3.stan .
+RUN make iBEASTIE3
 
 COPY BEASTIE/BEASTIE3-fix-uniform.stan .
 RUN make BEASTIE3-fix-uniform
