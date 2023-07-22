@@ -73,7 +73,7 @@ RUN apt-get update \
 
 RUN ln -s /usr/bin/python3.8 /usr/bin/python
 
-COPY --from=CMDSTAN /cmdstan/iBEASTIE2 /usr/local/bin
+COPY --from=CMDSTAN /cmdstan/iBEASTIE3 /usr/local/bin
 COPY --from=CMDSTAN /cmdstan/BEASTIE3-fix-uniform /usr/local/bin
 COPY --from=tabix /htslib/tabix /usr/local/bin
 
