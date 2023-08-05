@@ -523,7 +523,7 @@ def run(
         beastie_wd = resource_filename("BEASTIE", ".")
         cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {adjusted_alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {lambdaPredicted_file} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd} {phasing_method}"
         runhelper(cmd)
-
+    sys.exit()
     data26_1 = pd.read_csv(
         lambdaPredicted_file,
         sep="\t",
