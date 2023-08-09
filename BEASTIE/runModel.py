@@ -507,9 +507,8 @@ def run(
     if not os.path.isfile(lambdaPredicted_file):
         logging.info("....... lambda is not predicted: start predicting lambda")
         gam_modelname = resource_filename("BEASTIE", gam_model_name)
-        logging.info(f"....... using gam model {gam_model_name}")
+        logging.info(f"....... using gam model {gam_modelname}")
         gam_model = pickle.load(open(gam_modelname, "rb"))
-
         predict_lambda_onrealdata(
             adjusted_alpha,
             file_for_lambda,
@@ -523,7 +522,7 @@ def run(
         beastie_wd = resource_filename("BEASTIE", ".")
         cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {adjusted_alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {lambdaPredicted_file} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd} {phasing_method}"
         runhelper(cmd)
-    sys.exit()
+
     data26_1 = pd.read_csv(
         lambdaPredicted_file,
         sep="\t",
