@@ -22,8 +22,8 @@ if (length(args) == 0) {
 #### call library
 suppressMessages(library("readr"))
 suppressMessages(library("dplyr"))
-#library(glmnetUtils)
-
+suppressMessages(library(glmnetUtils))
+#suppressMessages(library(glmnet))
 
 adjusted_alpha <- args[1]
 tmp <- paste0(args[2], "/", sep = "")
