@@ -59,8 +59,10 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update \
   && apt-get install -y --no-install-recommends make gcc g++ r-base-core r-base-dev libstdc++6 libicu-dev libxml2-dev libbz2-dev libssl-dev libcurl4-openssl-dev
 
-#RUN R -e 'install.packages("glmnetUtils", dependencies=T, repos="http://cran.us.r-project.org", Ncpus=4); if (!library(glmnetUtils, logical.return=T)) quit(status=10)'
-
+#RUN R -e 'install.packages("glmnet", dependencies=T,repos="http://cran.us.r-project.org")'
+#RUN R -e 'install.packages("glmnetUtils", dependencies=T,repos="http://cran.us.r-project.org")'
+#RUN R -e 'install.packages("glmnet", dependencies=T, repos="http://cran.us.r-project.org", Ncpus=4); if (!library(glmnet, logical.return=T)) quit(status=10)'
+RUN R -e 'install.packages("glmnetUtils", dependencies=T, repos="http://cran.us.r-project.org", Ncpus=4); if (!library(glmnetUtils, logical.return=T)) quit(status=10)'
 
 FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND noninteractive
