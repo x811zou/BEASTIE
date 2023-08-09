@@ -51,18 +51,24 @@ COPY . .
 RUN make clean dist
 RUN pip install Cython==0.29.24 && pip install numpy==1.21.0 && pip install dist/*.whl
 
-
-
-
 FROM ubuntu:20.04 AS rpackages
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update \
   && apt-get install -y --no-install-recommends make gcc g++ r-base-core r-base-dev libstdc++6 libicu-dev libxml2-dev libbz2-dev libssl-dev libcurl4-openssl-dev
 
-#RUN R -e 'install.packages("glmnet", dependencies=T,repos="http://cran.us.r-project.org")'
-#RUN R -e 'install.packages("glmnetUtils", dependencies=T,repos="http://cran.us.r-project.org")'
-#RUN R -e 'install.packages("glmnet", dependencies=T, repos="http://cran.us.r-project.org", Ncpus=4); if (!library(glmnet, logical.return=T)) quit(status=10)'
-RUN R -e 'install.packages("glmnetUtils", dependencies=T, repos="http://cran.us.r-project.org", Ncpus=4); if (!library(glmnetUtils, logical.return=T)) quit(status=10)'
+FROM rocker/r-base:latest
+
+RUN apt-get update && apt-get install -y \
+  libssl-dev \
+  libcurl4-gnutls-dev \
+  libxml2-dev \
+  libsasl2-dev
+
+# Install dependencies first
+RUN R -e "install.packages(c('Matrix', 'survival', 'RcppEigen', 'glmnet'), dependencies=T, repos="https://cran.rstudio.com/", Ncpus=4); if (!library(glmnet, logical.return=T)) quit(status=10)')"
+
+# Then install glmnetUtils
+RUN R -e 'install.packages("glmnetUtils", dependencies=T, repos="https://cran.rstudio.com/", Ncpus=4); if (!library(glmnetUtils, logical.return=T)) quit(status=10)'
 
 FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND noninteractive
