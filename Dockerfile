@@ -56,19 +56,23 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update \
   && apt-get install -y --no-install-recommends make gcc g++ r-base-core r-base-dev libstdc++6 libicu-dev libxml2-dev libbz2-dev libssl-dev libcurl4-openssl-dev
 
-FROM rocker/r-base:latest
-
 RUN apt-get update && apt-get install -y \
   libssl-dev \
   libcurl4-gnutls-dev \
   libxml2-dev \
-  libsasl2-dev
+  libsasl2-dev \
+  wget
 
 # Install dependencies first
-RUN R -e "install.packages(c('Matrix', 'survival', 'RcppEigen', 'glmnet'), dependencies=T, repos="https://cran.rstudio.com/", Ncpus=4); if (!library(glmnet, logical.return=T)) quit(status=10)')"
-
-# Then install glmnetUtils
-RUN R -e 'install.packages("glmnetUtils", dependencies=T, repos="https://cran.rstudio.com/", Ncpus=4); if (!library(glmnetUtils, logical.return=T)) quit(status=10)'
+# Install 'remotes' package which offers install_version() function
+RUN Rscript -e 'install.packages(c("remotes"), repos = "http://cran.r-project.org")'
+RUN wget -P / https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-45.tar.gz
+RUN R -e 'install.packages("/lattice_0.20-45.tar.gz", repos = NULL, type="source"); if (!library(lattice, logical.return=T)) quit(status=10)'
+# Install other necessary packages
+RUN Rscript -e 'remotes::install_version("Matrix", version = "1.4.1", repos = "http://cran.us.r-project.org")'
+RUN Rscript -e 'remotes::install_version("readr", version = "1.3.1", repos = "http://cran.us.r-project.org")'
+RUN Rscript -e 'remotes::install_version("glmnetUtils", version = "1.1.8", repos = "http://cran.us.r-project.org")'
+#RUN R -e 'install.packages("glmnetUtils", dependencies=T, repos="https://cran.rstudio.com/", Ncpus=4); if (!library(glmnetUtils, logical.return=T)) quit(status=10)'
 
 FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND noninteractive

@@ -497,12 +497,7 @@ def run(
             os.path.basename(file_for_lambda)
         )
     )
-    if phasing_method != "nophasing":
-        logging.info(
-            "....... start predicting switching eror for {0}".format(
-                os.path.basename(meta)
-            )
-        )
+
     adjusted_alpha = alpha / data24_2.shape[0]
     if not os.path.isfile(lambdaPredicted_file):
         logging.info("....... lambda is not predicted: start predicting lambda")
@@ -517,19 +512,13 @@ def run(
                 "gam_lambda": gam_model,
             },
         )
-
-        predict_lambda_phasing_error = resource_filename("BEASTIE", "predict_lambda_phasingError.R")
-        beastie_wd = resource_filename("BEASTIE", ".")
-        cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {adjusted_alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {lambdaPredicted_file} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd} {phasing_method}"
-        runhelper(cmd)
-
+        logging.info(f"....... finish predicting lambda")
     data26_1 = pd.read_csv(
         lambdaPredicted_file,
         sep="\t",
         header=None,
         index_col=False,
     )
-
     logging.info(
         "lambda prediction model: input {0}".format(os.path.basename(file_for_lambda))
     )
@@ -544,6 +533,21 @@ def run(
             data26_1.shape[0],
         )
     )
+
+    if not os.path.isfile(meta_error):
+        if phasing_method != "nophasing":
+            logging.info(
+                "....... start predicting switching eror for {0}".format(
+                    os.path.basename(meta)
+                )
+            )
+        predict_lambda_phasing_error = resource_filename("BEASTIE", "predict_lambda_phasingError.R")
+        beastie_wd = resource_filename("BEASTIE", ".")
+        cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {adjusted_alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {lambdaPredicted_file} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd} {phasing_method}"
+        runhelper(cmd)
+        if os.path.isfile(meta_error):
+            logging.info(f"....... finish predicting error")
+
     if phasing_method != "nophasing":
         data26_2 = pd.read_csv(
             meta_error,
