@@ -397,6 +397,7 @@ def run(
     RE_ITERATE,
     pcutoff_low,
     pcutoff_high,
+    atacseq,
 ):
     #####
     ##### 1.1 Check input file existence
@@ -430,34 +431,41 @@ def run(
     #####
     ##### 1.2 Annotation: AF
     #####
-    logging.info("=================")
-    logging.info("================= Starting common step 1.2")
-    hetSNP_AF = os.path.join(tmp_path, f"{sample}_hetSNP_AF{chr_suffix}.tsv")
-    if os.path.isfile(hetSNP_AF):
-        logging.info("================= Skipping common step 1.2")
+    if atacseq is True:
         logging.info("=================")
+        logging.info("================= input data is ATACseq, skipping common step 1.2 annotating AF information")
+        hetSNP_AF=het_snp_file
+        data12 = pd.read_csv(het_snp_file, sep="\t", header=0, index_col=False)
     else:
-        logging.info("..... start annotating hetSNP from 1.1 with AF from 1000 Genome")
-        annotateAF(af_path, ancestry, het_snp_file, hetSNP_AF)
+        hetSNP_AF = os.path.join(tmp_path, f"{sample}_hetSNP_AF{chr_suffix}.tsv")
+        logging.info("=================")
+        logging.info("================= Starting common step 1.2")
+        hetSNP_AF = os.path.join(tmp_path, f"{sample}_hetSNP_AF{chr_suffix}.tsv")
+        if os.path.isfile(hetSNP_AF):
+            logging.info("================= Found hetSNP_AF file, skipping common step 1.2")
+            logging.info("=================")
+        else:
+            logging.info("..... start annotating hetSNP from 1.1 with AF from 1000 Genome")
+            annotateAF(af_path, ancestry, het_snp_file, hetSNP_AF)
 
-    data13 = pd.read_csv(hetSNP_AF, sep="\t", header=0, index_col=False)
-    logging.debug(
-        "output {0} annotates {1} het SNPs with AF annotation".format(
-            os.path.basename(hetSNP_AF), data13.shape[0]
-        )
-    )
-    if data13.shape[0] < 2:
-        os.remove(hetSNP_AF)
-        logging.error(
-            "....... existing annotated hetSNP with AF is empty, please try again!"
-        )
-        sys.exit(1)
-    else:
-        logging.info(
-            "....... {0} save to {1}".format(
-                os.path.basename(hetSNP_AF), os.path.dirname(hetSNP_AF)
+        data12 = pd.read_csv(hetSNP_AF, sep="\t", header=0, index_col=False)
+        logging.debug(
+            "output {0} annotates {1} het SNPs with AF annotation".format(
+                os.path.basename(hetSNP_AF), data12.shape[0]
             )
         )
+        if data12.shape[0] < 2:
+            os.remove(hetSNP_AF)
+            logging.error(
+                "....... existing annotated hetSNP with AF is empty, please try again!"
+            )
+            sys.exit(1)
+        else:
+            logging.info(
+                "....... {0} save to {1}".format(
+                    os.path.basename(hetSNP_AF), os.path.dirname(hetSNP_AF)
+                )
+            )
 
     #####
     ##### 1.3 Generate parsed pileup file : parse samtools mpile up output files
@@ -512,6 +520,7 @@ def run(
             min_total_cov,
             min_single_cov,
             hetSNP_intersect_pileup,
+            atacseq
         )
     else:
         logging.info("================= Skipping specific step 1.4")
@@ -542,38 +551,47 @@ def run(
     #####
     ##### 1.5 Use fisher exact test to filter variants with genotyping error
     #####
-
-    logging.info("=================")
-    logging.info("================= Starting specific step 1.5")
-    logging.info("....... start filtering variants with genotyping error")
-    logging.info(f">> JAGS model warm up {n_warmup}, keeper {n_keeper}")
-    if RE_ITERATE:
+    if atacseq is True:
+        logging.info("=================")
+        logging.info("================= Skipping specific step 1.5")
+        data14.to_csv(filtered_hetSNP_filename, index=False, sep="\t", header=True)
         logging.info(
-            f">> JAGS model iterate for SNPs with {pcutoff_low} <= p <= {pcutoff_high}"
-        )
-    filter_genotypeEr(
-        genotypeEr_cutoff,
-        hetSNP_intersect_pileup,
-        filtered_hetSNP_filename,
-        genotypeErfiltered_file,
-        n_warmup,
-        n_keeper,
-    )
-
-    # checking
-    data15 = pd.read_csv(genotypeErfiltered_file, sep="\t", header=0, index_col=False)
-    if data15.shape[0] < 2:
-        os.remove(genotypeErfiltered_file)
-        logging.error(
-            "....... existed {0} is empty, please try again!".format(
-                os.path.basename(genotypeErfiltered_file)
+            "....... output save to {0}".format(
+                os.path.basename(filtered_hetSNP_filename),
             )
         )
-        sys.exit(1)
     else:
-        logging.info(
-            "....... {0} save to {1}".format(
-                os.path.basename(genotypeErfiltered_file),
-                output_path,
+        logging.info("=================")
+        logging.info("================= Starting specific step 1.5")
+        logging.info("....... start filtering variants with genotyping error")
+        logging.info(f">> JAGS model warm up {n_warmup}, keeper {n_keeper}")
+        if RE_ITERATE:
+            logging.info(
+                f">> JAGS model iterate for SNPs with {pcutoff_low} <= p <= {pcutoff_high}"
             )
+        filter_genotypeEr(
+            genotypeEr_cutoff,
+            hetSNP_intersect_pileup,
+            filtered_hetSNP_filename,
+            genotypeErfiltered_file,
+            n_warmup,
+            n_keeper,
         )
+
+        # checking
+        data15 = pd.read_csv(genotypeErfiltered_file, sep="\t", header=0, index_col=False)
+        if data15.shape[0] < 2:
+            os.remove(genotypeErfiltered_file)
+            logging.error(
+                "....... existed {0} is empty, please try again!".format(
+                    os.path.basename(genotypeErfiltered_file)
+                )
+            )
+            sys.exit(1)
+        else:
+            logging.info(
+                "....... {0} save to {1}".format(
+                    os.path.basename(genotypeErfiltered_file),
+                    output_path,
+                )
+            )

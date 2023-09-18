@@ -174,28 +174,48 @@ def worker(line):
     )
 
 
-def run(inFile):
+def run(inFile,atacseq=False):
     rows = []
     with open(inFile, "rt") as IN, multiprocessing.Pool() as pool:
         rows = pool.map(worker, IN)
-
-    binomial_df = pd.DataFrame(
-        rows,
-        columns=[
-            "geneID",
-            "FirstSite_esti",
-            "FirstSite_pval",
-            "NaiveSum_esti",
-            "NaiveSum_pval",
-            "Pseudo_esti",
-            "Pseudo_pval",
-            "MajorSite_esti",
-            "MajorSite_pval",
-            "beta_1_1_pval",
-            "beta_10_10_pval",
-            "beta_20_20_pval",
-            "beta_50_50_pval",
-            "beta_100_100_pval",
-        ],
-    )
+    if atacseq is True:
+        binomial_df = pd.DataFrame(
+            rows,
+            columns=[
+                "peakID",
+                "FirstSite_esti",
+                "FirstSite_pval",
+                "NaiveSum_esti",
+                "NaiveSum_pval",
+                "Pseudo_esti",
+                "Pseudo_pval",
+                "MajorSite_esti",
+                "MajorSite_pval",
+                "beta_1_1_pval",
+                "beta_10_10_pval",
+                "beta_20_20_pval",
+                "beta_50_50_pval",
+                "beta_100_100_pval",
+            ],
+        )
+    else:
+        binomial_df = pd.DataFrame(
+            rows,
+            columns=[
+                "geneID",
+                "FirstSite_esti",
+                "FirstSite_pval",
+                "NaiveSum_esti",
+                "NaiveSum_pval",
+                "Pseudo_esti",
+                "Pseudo_pval",
+                "MajorSite_esti",
+                "MajorSite_pval",
+                "beta_1_1_pval",
+                "beta_10_10_pval",
+                "beta_20_20_pval",
+                "beta_50_50_pval",
+                "beta_100_100_pval",
+            ],
+        )
     return binomial_df

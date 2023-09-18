@@ -244,6 +244,7 @@ def count_all_het_sites_forpeaks(vcfFilename, outputFilename, annotation_file):
         for row in reader:
             key = f"{row['chrN']}:{row['peak_start']}-{row['peak_end']}"
             peak_region_to_IDs[key] = row
+
     """
     2. construct a dict with unique peak region with VCF records {peak_region:VCF records}
     """

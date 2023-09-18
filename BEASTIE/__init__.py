@@ -38,6 +38,8 @@ ConfigurationData = namedtuple(
         "chr_end",
         "LD_token",
         "modelName",
+        "nophasing",
+        "atacseq",
         "STAN",
         "SAVE_INT",
         "WARMUP",
@@ -75,6 +77,8 @@ def load_config_from_args(args):
         chr_end=args.chr_end,
         LD_token=args.ld_token,
         modelName=args.model,
+        nophasing=args.nophasing,
+        atacseq=args.atacseq,
         STAN=args.STAN,
         SAVE_INT=args.save_intermediate,
         WARMUP=args.warmup,
@@ -98,15 +102,24 @@ def run(config):
     specification_path = os.path.join(output_path, specification)
     log_path = os.path.join(specification_path, "log")
     tmp_path = os.path.join(specification_path, "tmp")
-    result_path = os.path.join(specification_path, config.modelName)
-
+    
     Path(output_path).mkdir(parents=True, exist_ok=True)
     Path(specification_path).mkdir(parents=True, exist_ok=True)
     Path(log_path).mkdir(parents=True, exist_ok=True)
     Path(tmp_path).mkdir(parents=True, exist_ok=True)
-    Path(result_path).mkdir(parents=True, exist_ok=True)
 
-    log_filename = f"{config.prefix}-{today.strftime('%b-%d-%Y')}-{config.modelName}"
+    if config.atacseq is True:
+        atacseq=True
+        nophasing = True
+        modelName = "BEASTIE3-fix-uniform"
+        ancestry = None
+    else:
+        modelName = config.modelName
+        nophasing = config.nophasing
+        ancestry == config.ancestry
+    result_path = os.path.join(specification_path, modelName)
+    Path(result_path).mkdir(parents=True, exist_ok=True)
+    log_filename = f"{config.prefix}-{today.strftime('%b-%d-%Y')}-{modelName}"
     # stdout_stderr_filepath = os.path.join(log_path, f"{log_filename}.output")
     # stdout_stderr_file = open(stdout_stderr_filepath, "w")
     # sys.stdout = stdout_stderr_file
@@ -145,7 +158,7 @@ def run(config):
         config.shapeit2,
         config.alignBiasP_cutoff,
         config.ase_cutoff,
-        os.path.join(config.STAN, config.modelName),
+        os.path.join(config.STAN, modelName),
         config.ancestry,
         config.chr_start,
         config.chr_end,
@@ -155,6 +168,8 @@ def run(config):
         config.alpha,
         config.sigma,
         config.SAVE_INT,
+        nophasing,
+        atacseq,
         config.WARMUP,
         config.KEEPER,
         config.LD_token,

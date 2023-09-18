@@ -59,7 +59,7 @@ def process_line(line):
     return gene, esti, pval
 
 
-def run(in_path, out_path):
+def run(in_path, out_path,atacseq=False):
     # parallel
     with open(in_path, "rt") as IN, multiprocessing.Pool() as pool:
         rows = pool.map(process_line, IN)
@@ -69,10 +69,16 @@ def run(in_path, out_path):
     #     rows = [process_line(line) for line in IN]
 
     logging.info("....... start saving ADM file")
-    ADM_df = pd.DataFrame(
-        rows,
-        columns=["geneID", "ADM_esti", "ADM_pval"],
-    )
+    if atacseq is True:
+        ADM_df = pd.DataFrame(
+            rows,
+            columns=["peakID", "ADM_esti", "ADM_pval"],
+        )
+    else:
+        ADM_df = pd.DataFrame(
+            rows,
+            columns=["geneID", "ADM_esti", "ADM_pval"],
+        )
     ADM_df.to_csv(out_path, sep="\t", header=True, index=False)
 
     return ADM_df
