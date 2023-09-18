@@ -1,7 +1,6 @@
 contig	position	variantID	refAllele	refCount	altAllele	altCount	totalCount	altRatio	if_Indel	if_SV	if_SNP	if_biallelic	lowMAPQDepth	lowBaseQDepth	rawDepth	otherCount
 1	752894	rsID1	G	0	T	0	0	0	NA	NA	NA	NA	0	0	0	0	
 1	753405	rsID2	C	0	T	0	0	0	NA	NA	NA	NA	0	0	1	1	
-1	753425	rsID2	C	1	T	0	1	0.0	N	N	Y	Y	0	0	1	0	
 1	753474	rsID2	C	0	T	0	0	0	NA	NA	NA	NA	0	0	0	0	
 1	753541	rsID2	C	1	T	0	1	0.0	N	N	Y	Y	0	0	2	1	
 1	754182	rsID2	C	0	T	0	0	0	NA	NA	NA	NA	0	0	0	0	

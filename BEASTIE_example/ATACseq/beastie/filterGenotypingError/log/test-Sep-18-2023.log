@@ -1,18 +1,18 @@
-2023-09-18 12:52:35,732 [INFO] ..... output saving to /mnt/ATACseq/beastie/filterGenotypingError/tmp
-2023-09-18 12:52:35,732 [INFO] Great! VCFGZ file /mnt/ATACseq/test.no_chr.content.SNPs.hets.vcf.gz and index /mnt/ATACseq/test.no_chr.content.SNPs.hets.vcf.gz.tbi exists.
-2023-09-18 12:52:35,732 [INFO] Great! pileup file /mnt/ATACseq/test.pileup.gz exists.
-2023-09-18 12:52:35,734 [DEBUG] output test_hetSNP.tsv has 16 het SNPs from VCF file
-2023-09-18 12:52:35,734 [INFO] =================
-2023-09-18 12:52:35,734 [INFO] ================= input data is ATACseq, skipping common step 1.2 annotating AF information
-2023-09-18 12:52:35,734 [INFO] =================
-2023-09-18 12:52:35,735 [INFO] ================= Starting common step 1.3
-2023-09-18 12:52:35,742 [INFO] ...... skipped parsing mpileup for /mnt/ATACseq/test.pileup.gz
-2023-09-18 12:52:35,744 [INFO] =================
-2023-09-18 12:52:35,744 [INFO] ================= Starting specific step 1.4
-2023-09-18 12:52:35,744 [INFO] ================= Skipping specific step 1.4
-2023-09-18 12:52:35,744 [INFO] =================
-2023-09-18 12:52:35,746 [DEBUG] output TEMP.test_hetSNP_intersected_filtered.tsv has 5 het SNPs with AF annotation after taking intersection between output from 1.2 and 1.3
-2023-09-18 12:52:35,746 [INFO] ....... TEMP.test_hetSNP_intersected_filtered.tsv save to /mnt/ATACseq/beastie/filterGenotypingError/tmp
-2023-09-18 12:52:35,746 [INFO] =================
-2023-09-18 12:52:35,746 [INFO] ================= Skipping specific step 1.5
-2023-09-18 12:52:35,747 [INFO] ....... output save to test_hetSNP_filtered.tsv
+2023-09-18 15:33:21,390 [INFO] ..... output saving to /mnt/ATACseq/beastie/filterGenotypingError/tmp
+2023-09-18 15:33:21,390 [INFO] Great! VCFGZ file /mnt/ATACseq/test.no_chr.content.SNPs.hets.vcf.gz and index /mnt/ATACseq/test.no_chr.content.SNPs.hets.vcf.gz.tbi exists.
+2023-09-18 15:33:21,390 [INFO] Great! pileup file /mnt/ATACseq/test.pileup.gz exists.
+2023-09-18 15:33:21,392 [DEBUG] output test_hetSNP.tsv has 15 het SNPs from VCF file
+2023-09-18 15:33:21,392 [INFO] =================
+2023-09-18 15:33:21,392 [INFO] ================= input data is ATACseq, skipping common step 1.2 annotating AF information
+2023-09-18 15:33:21,393 [INFO] =================
+2023-09-18 15:33:21,393 [INFO] ================= Starting common step 1.3
+2023-09-18 15:33:21,400 [INFO] ...... skipped parsing mpileup for /mnt/ATACseq/test.pileup.gz
+2023-09-18 15:33:21,402 [INFO] =================
+2023-09-18 15:33:21,402 [INFO] ================= Starting specific step 1.4
+2023-09-18 15:33:21,402 [INFO] ================= Skipping specific step 1.4
+2023-09-18 15:33:21,402 [INFO] =================
+2023-09-18 15:33:21,404 [DEBUG] output TEMP.test_hetSNP_intersected_filtered.tsv has 4 het SNPs with AF annotation after taking intersection between output from 1.2 and 1.3
+2023-09-18 15:33:21,404 [INFO] ....... TEMP.test_hetSNP_intersected_filtered.tsv save to /mnt/ATACseq/beastie/filterGenotypingError/tmp
+2023-09-18 15:33:21,404 [INFO] =================
+2023-09-18 15:33:21,404 [INFO] ================= Skipping specific step 1.5
+2023-09-18 15:33:21,405 [INFO] ....... output save to test_hetSNP_filtered.tsv
