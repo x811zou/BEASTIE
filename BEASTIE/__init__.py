@@ -109,14 +109,15 @@ def run(config):
     Path(tmp_path).mkdir(parents=True, exist_ok=True)
 
     if config.atacseq is True:
-        atacseq=True
+        atacseq = True
         nophasing = True
         modelName = "BEASTIE3-fix-uniform"
         ancestry = None
     else:
+        atacseq = False
         modelName = config.modelName
         nophasing = config.nophasing
-        ancestry == config.ancestry
+        ancestry = config.ancestry
     result_path = os.path.join(specification_path, modelName)
     Path(result_path).mkdir(parents=True, exist_ok=True)
     log_filename = f"{config.prefix}-{today.strftime('%b-%d-%Y')}-{modelName}"
