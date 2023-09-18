@@ -1,7 +1,6 @@
 chrN	chr	pos	SNP_id	genotype	peak_start	peak_end	peakID	geneID
 1	chr1	752894	rsID1	0/1	752894	762632	region1	gene1
 1	chr1	753405	rsID2	0/1	752894	762632	region1	gene1
-1	chr1	753425	rsID2	0/1	752894	762632	region1	gene1
 1	chr1	753474	rsID2	0/1	752894	762632	region1	gene1
 1	chr1	753541	rsID2	0/1	752894	762632	region1	gene1
 1	chr1	754182	rsID2	0/1	752894	762632	region1	gene1

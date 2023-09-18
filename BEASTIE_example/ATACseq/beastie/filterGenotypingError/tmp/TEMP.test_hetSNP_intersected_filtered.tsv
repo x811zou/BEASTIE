@@ -1,5 +1,4 @@
 chr	pos	chrN	SNP_id	genotype	peak_start	peak_end	peakID	geneID	contig	position	variantID	refCount	altCount	totalCount	altRatio	if_Indel	if_SV	if_SNP	if_biallelic
-chr1	753425	1	rsID2	0/1	752894	762632	region1	gene1	1	753425	rsID2	1	0	1	0.0	N	N	Y	Y
 chr1	753541	1	rsID2	0/1	752894	762632	region1	gene1	1	753541	rsID2	1	0	1	0.0	N	N	Y	Y
 chr1	1152631	1	rsID4	0/1	1133077	1378173	region2	gene2	1	1152631	rsID4	61	0	61	0.0	N	N	Y	Y
 chr1	1169086	1	rsID5	0/1	1133077	1378173	region2	gene2	1	1169086	rsID5	14	5	19	0.2631578947368421	N	N	Y	Y

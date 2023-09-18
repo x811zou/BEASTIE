@@ -137,7 +137,6 @@ def runModel(
             "%s sample num_samples=%s num_warmup=%s data file=%s init=%s output file=%s refresh=0"
             % (model, KEEPER, WARMUP, tmp_output_file, init_file, stan_output_file)
         )
-        # print(cmd)
         # logging.debug(cmd)
         try:
             subprocess.run(
