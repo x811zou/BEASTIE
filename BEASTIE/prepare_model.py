@@ -399,91 +399,173 @@ def add_simulationData(sim_filename):
     return simulator_df
 
 
-def generate_modelCount(phased_filename):
+def generate_modelCount(phased_filename,atacseq):
     base_out = os.path.splitext(phased_filename)[0]
     data = pd.read_csv(phased_filename, sep="\t", header=0, index_col=False)
-    data = data[
-        [
-            "chr",
-            "chrN",
-            "pos",
-            "patCount",
-            "matCount",
-            "totalCount",
-            "altRatio",
-            "rsid",
-            "AF",
-            "geneID",
-            "genotype",
+    if atacseq is True:
+        data = data[
+            [
+                "chr",
+                "chrN",
+                "pos",
+                "patCount",
+                "matCount",
+                "totalCount",
+                "altRatio",
+                "peakID",
+                "geneID",
+                "genotype",
+            ]
         ]
-    ]
-    file_for_lambda = "{0}.forlambda.tsv".format(base_out)
-    lambdaPredicted_file = "{0}.lambdaPredicted.tsv".format(base_out)
-    out_modelinput = "{0}.modelinput.tsv".format(base_out)
-    out_modelinput_error = "{0}.modelinput.w_error.tsv".format(base_out)
-
-    df_med = (
-        data.groupby(["geneID"])
-        .agg({"altRatio": "median"})
-        .reset_index()
-        .rename(columns={"altRatio": "median.altRatio"})
-    )
-
-    df_nhets = (
-        data.groupby(by="geneID")
-        .agg({"pos": pd.Series.nunique})
-        .rename(columns={"pos": "number.of.hets"})
-    )
-
-    df_totalref = (
-        data.groupby(by="geneID")
-        .agg({"patCount": "sum"})
-        .reset_index()
-        .rename(columns={"patCount": "total.patCount"})
-    )
-
-    df_totalalt = (
-        data.groupby(by="geneID")
-        .agg({"matCount": "sum"})
-        .reset_index()
-        .rename(columns={"matCount": "total.matCount"})
-    )
-    df_summary_1 = pd.merge(df_med, df_nhets, on=["geneID"], how="inner")
-    df_summary_2 = pd.merge(df_summary_1, df_totalref, on=["geneID"], how="inner")
-    df_summary_3 = pd.merge(df_summary_2, df_totalalt, on=["geneID"], how="inner")
-    df_summary_3["totalCount"] = (
-        df_summary_3["total.patCount"] + df_summary_3["total.matCount"]
-    )
-
-    # df_summary_3 = df_summary_3.drop(["total.patCount", "total.matCount"], axis=1)
-    df_summary_3.to_csv(file_for_lambda, index=False, sep="\t", header=True)
-
-    counter = 0
-    if not os.path.isfile(out_modelinput):
-        unique_gene = data["geneID"].unique()
-        rst = ""
-        for each in unique_gene:
-            counter += 1
-            idx = each
-            gene_lst = [idx, sum(data["geneID"] == each)] + list(
-                np.ravel(data[data["geneID"] == each][["matCount", "patCount"]].values)
-            )
-            rst += "\t".join([str(x) for x in gene_lst]) + "\n"
-        file1 = open(out_modelinput, "w")
-        file1.write(rst)
-        file1.close()
-        logging.debug(
-            "output {0} has {1} genes as input for stan model".format(
-                os.path.basename(out_modelinput), counter
-            )
+        file_for_lambda = "{0}.forlambda.tsv".format(base_out)
+        lambdaPredicted_file = "{0}.lambdaPredicted.tsv".format(base_out)
+        out_modelinput = "{0}.modelinput.tsv".format(base_out)
+        out_modelinput_error = "{0}.modelinput.w_error.tsv".format(base_out)
+        df_med = (
+            data.groupby(["peakID"])
+            .agg({"altRatio": "median"})
+            .reset_index()
+            .rename(columns={"altRatio": "median.altRatio"})
         )
+
+        df_nhets = (
+            data.groupby(by="peakID")
+            .agg({"pos": pd.Series.nunique})
+            .rename(columns={"pos": "number.of.hets"})
+        )
+
+        df_totalref = (
+            data.groupby(by="peakID")
+            .agg({"patCount": "sum"})
+            .reset_index()
+            .rename(columns={"patCount": "total.patCount"})
+        )
+
+        df_totalalt = (
+            data.groupby(by="peakID")
+            .agg({"matCount": "sum"})
+            .reset_index()
+            .rename(columns={"matCount": "total.matCount"})
+        )
+        df_summary_1 = pd.merge(df_med, df_nhets, on=["peakID"], how="inner")
+        df_summary_2 = pd.merge(df_summary_1, df_totalref, on=["peakID"], how="inner")
+        df_summary_3 = pd.merge(df_summary_2, df_totalalt, on=["peakID"], how="inner")
+        df_summary_3["totalCount"] = (
+            df_summary_3["total.patCount"] + df_summary_3["total.matCount"]
+        )
+
+        # df_summary_3 = df_summary_3.drop(["total.patCount", "total.matCount"], axis=1)
+        df_summary_3.to_csv(file_for_lambda, index=False, sep="\t", header=True)
+
+        counter = 0
+        if not os.path.isfile(out_modelinput):
+            unique_gene = data["peakID"].unique()
+            rst = ""
+            for each in unique_gene:
+                counter += 1
+                idx = each
+                gene_lst = [idx, sum(data["peakID"] == each)] + list(
+                    np.ravel(data[data["peakID"] == each][["matCount", "patCount"]].values)
+                )
+                rst += "\t".join([str(x) for x in gene_lst]) + "\n"
+            file1 = open(out_modelinput, "w")
+            file1.write(rst)
+            file1.close()
+            logging.debug(
+                "output {0} has {1} peaks as input for stan model".format(
+                    os.path.basename(out_modelinput), counter
+                )
+            )
+        else:
+            logging.info(
+                "....... {0} exists at {1}".format(
+                    os.path.basename(out_modelinput),
+                    os.path.dirname(out_modelinput),
+                )
+            )
     else:
-        logging.info(
-            "....... {0} exists at {1}".format(
-                os.path.basename(out_modelinput),
-                os.path.dirname(out_modelinput),
-            )
+        data = data[
+            [
+                "chr",
+                "chrN",
+                "pos",
+                "patCount",
+                "matCount",
+                "totalCount",
+                "altRatio",
+                "rsid",
+                "AF",
+                "geneID",
+                "genotype",
+            ]
+        ]
+        file_for_lambda = "{0}.forlambda.tsv".format(base_out)
+        lambdaPredicted_file = "{0}.lambdaPredicted.tsv".format(base_out)
+        out_modelinput = "{0}.modelinput.tsv".format(base_out)
+        out_modelinput_error = "{0}.modelinput.w_error.tsv".format(base_out)
+
+        df_med = (
+            data.groupby(["geneID"])
+            .agg({"altRatio": "median"})
+            .reset_index()
+            .rename(columns={"altRatio": "median.altRatio"})
         )
+
+        df_nhets = (
+            data.groupby(by="geneID")
+            .agg({"pos": pd.Series.nunique})
+            .rename(columns={"pos": "number.of.hets"})
+        )
+
+        df_totalref = (
+            data.groupby(by="geneID")
+            .agg({"patCount": "sum"})
+            .reset_index()
+            .rename(columns={"patCount": "total.patCount"})
+        )
+
+        df_totalalt = (
+            data.groupby(by="geneID")
+            .agg({"matCount": "sum"})
+            .reset_index()
+            .rename(columns={"matCount": "total.matCount"})
+        )
+        df_summary_1 = pd.merge(df_med, df_nhets, on=["geneID"], how="inner")
+        df_summary_2 = pd.merge(df_summary_1, df_totalref, on=["geneID"], how="inner")
+        df_summary_3 = pd.merge(df_summary_2, df_totalalt, on=["geneID"], how="inner")
+        df_summary_3["totalCount"] = (
+            df_summary_3["total.patCount"] + df_summary_3["total.matCount"]
+        )
+
+        # df_summary_3 = df_summary_3.drop(["total.patCount", "total.matCount"], axis=1)
+        df_summary_3.to_csv(file_for_lambda, index=False, sep="\t", header=True)
+
+        counter = 0
+        if not os.path.isfile(out_modelinput):
+            unique_gene = data["geneID"].unique()
+            rst = ""
+            for each in unique_gene:
+                counter += 1
+                idx = each
+                gene_lst = [idx, sum(data["geneID"] == each)] + list(
+                    np.ravel(data[data["geneID"] == each][["matCount", "patCount"]].values)
+                )
+                rst += "\t".join([str(x) for x in gene_lst]) + "\n"
+            file1 = open(out_modelinput, "w")
+            file1.write(rst)
+            file1.close()
+            logging.debug(
+                "output {0} has {1} genes as input for stan model".format(
+                    os.path.basename(out_modelinput), counter
+                )
+            )
+        else:
+            logging.info(
+                "....... {0} exists at {1}".format(
+                    os.path.basename(out_modelinput),
+                    os.path.dirname(out_modelinput),
+                )
+            )
     return (
         file_for_lambda,
         lambdaPredicted_file,
@@ -575,6 +657,7 @@ def significant_genes(
     ase_cutoff,
     hetSNP_intersect_unique_lambdaPredicted_file,
     adjusted_alpha,
+    atacseq,
 ):
     data_modeloutput = pd.read_csv(
         hetSNP_intersect_unique_lambdaPredicted_file, header=0, sep="\t"
@@ -585,8 +668,10 @@ def significant_genes(
         )
     )
     logging.debug("size of df_beastie {}".format(len(df_beastie)))
-
-    df_output = pd.merge(data_modeloutput, df_beastie, on=["geneID"], how="inner")
+    if atacseq is True:
+        df_output = pd.merge(data_modeloutput, df_beastie, on=["peakID"], how="inner")
+    else:
+        df_output = pd.merge(data_modeloutput, df_beastie, on=["geneID"], how="inner")
     logging.debug(
         "size of model output is {0} ; size of hetSNP_intersect_unique_lambdaPredicted_file is {1}; intersection size is {2}".format(
             len(df_beastie), len(data_modeloutput), len(df_output)
@@ -628,8 +713,11 @@ def significant_genes(
     # )
 
     # subset output
-    df_output_bi = pd.merge(df_output, df_binomial, on=["geneID"], how="inner")
-
+    if atacseq is True:
+        df_output_bi = pd.merge(df_output, df_binomial, on=["peakID"], how="inner")
+    else:
+        df_output_bi = pd.merge(df_output, df_binomial, on=["geneID"], how="inner")
+ 
     if df_output_bi.shape[0] == 0:
         print(">> merged binomial with beastie is empty")
         df_output_bi = df_output
@@ -644,7 +732,10 @@ def significant_genes(
             ],
             axis=1,
         )
-    df_output_bi_adm = pd.merge(df_output_bi, df_adm, on=["geneID"], how="inner")
+    if atacseq is True:
+        df_output_bi_adm = pd.merge(df_output_bi, df_adm, on=["peakID"], how="inner")
+    else:
+        df_output_bi_adm = pd.merge(df_output_bi, df_adm, on=["geneID"], how="inner")
     # print(">> merged binomial with beastie and ADM")
     if df_output_bi_adm.shape[0] == 0:
         print(">> merged binomial with beastie and ADM is empty")

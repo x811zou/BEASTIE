@@ -28,6 +28,13 @@ def beastie_filterGenotypingError(args):
     pcutoff_low = args.pcutoff_low
     pcutoff_high = args.pcutoff_high
 
+    if args.atacseq is True:
+        ancestry = None
+        genotypeEr_file = None
+        atacseq = True
+    else:
+        atacseq = False
+
     logging.basicConfig(
         format="%(asctime)-15s [%(levelname)s] %(message)s",
         level=logging.DEBUG,
@@ -53,6 +60,7 @@ def beastie_filterGenotypingError(args):
         RE_ITERATE,
         pcutoff_low,
         pcutoff_high,
+        atacseq,
     )
 
 
@@ -77,20 +85,21 @@ def configure_filterGenotypingError_parser(parser):
     parser.add_argument(
         "--input-het-snp-file",
         help="Path to pre-generated het snps file.",
+        required=True,
     )
     parser.add_argument(
         "--filtered-het-snp-file",
         help="Path to filtered het snps file.",
+        required=True,
     )
     parser.add_argument(
         "--af-dir",
         help="Path to AF reference directory.  Should contain files AF_chr{1..22}.csv.gz",
-        required=True,
     )
     parser.add_argument(
         "--ancestry",
         help="Ancestry abbreviation (ex EUR, CEU, TSI, FIN, AFR, YRI, LWK, ...).",
-        required=True,
+        default=None,
     )
     parser.add_argument(
         "--min-total-cov",
@@ -135,7 +144,6 @@ def configure_filterGenotypingError_parser(parser):
     parser.add_argument(
         "--genotype-error-file",
         help="full path to genotyping Error filtered hetSNP file",
-        required=True,
     )
     parser.add_argument(
         "--warmup",
@@ -167,7 +175,12 @@ def configure_filterGenotypingError_parser(parser):
         default=False,
         action="store_true",
     )
-
+    parser.add_argument(
+        "--atacseq",
+        help="(1) this option indicates no phasing info will be used, (2) no, (3) if shapeit2 is provided will use providied phasing",
+        default=False,
+        type=bool,
+    )
 
 def configure_extractHets_parser(parser):
     parser.set_defaults(func=beastie_extractHets)
@@ -312,7 +325,7 @@ def configure_runModel():
     parser.add_argument(
         "--ancestry",
         help="Ancestry abbreviation (ex EUR, CEU, TSI, FIN, AFR, YRI, LWK, ...).",
-        required=True,
+        default=None,
     )
     parser.add_argument(
         "--min-total-cov",
@@ -364,12 +377,20 @@ def configure_runModel():
     )
     parser.add_argument(
         "--model",
-        help="stan model name (iBEASTIE2,iBEASTIE2-improper,BEASTIE3-fix-uniform)",
-        default="iBEASTIE3",
+        help="stan model name (iBEASTIE4,BEASTIE3-fix-uniform)",
+        default="iBEASTIE4",
     )
     parser.add_argument(
         "--nophasing",
-        help="(1) this option indicates no phasing info will be used, (2) default is VCF phasing, (3) if shapei2 is provided will use providied phasing",
+        help="(1) this option indicates no phasing info will be used, (2) default is VCF phasing, (3) if shapeit2 is provided will use providied phasing",
+        default=False,
+        type=bool,
+    )
+    parser.add_argument(
+        "--atacseq",
+        help="(1) this option indicates no phasing info will be used, (2) no, (3) if shapeit2 is provided will use providied phasing",
+        default=False,
+        type=bool,
     )
     parser.add_argument("--STAN", help="Path to STAN model.", default="/usr/local/bin/")
 

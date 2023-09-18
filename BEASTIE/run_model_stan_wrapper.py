@@ -210,8 +210,7 @@ def parse_stan_output_initializer(thetas, lambdas):
     g_thetas = thetas
     g_lambdas = lambdas
 
-
-def parse_stan_output_worker(line):
+def parse_stan_output_worker_atacseq(line):
     global g_thetas, g_lambdas
 
     fields = line.rstrip().split()
@@ -219,8 +218,9 @@ def parse_stan_output_worker(line):
     gene_thetas = g_thetas.get(gene_id)
     if not gene_thetas:
         return None
+
     lambdas_choice_gam = g_lambdas.loc[
-        g_lambdas["geneID"] == gene_id, "gam_lambda"
+        g_lambdas["peakID"] == gene_id, "gam_lambda"
     ].iloc[0]
 
     (
@@ -257,8 +257,53 @@ def parse_stan_output_worker(line):
         abslog2_variance,
     )
 
+def parse_stan_output_worker(line):
+    global g_thetas, g_lambdas
 
-def parse_stan_output_new(input_file, thetas_file, lambdas_file):
+    fields = line.rstrip().split()
+    gene_id = fields[0]
+    gene_thetas = g_thetas.get(gene_id)
+    if not gene_thetas:
+        return None
+    lambdas_choice_gam = g_lambdas.loc[
+        g_lambdas["peakID"] == gene_id, "gam_lambda"
+    ].iloc[0]
+    (
+        mean,
+        median,
+        variance,
+        left_CI,
+        right_CI,
+        mad,
+        log2_mean,
+        log2_median,
+        log2_variance,
+        abslog2_mean,
+        abslog2_median,
+        abslog2_variance,
+    ) = summarize(gene_thetas, 0.05)
+    log2_thetas = np.log2(np.array(gene_thetas))
+    _, sum_prob_lambda_gam = computeBeastieScoreLog2(log2_thetas, lambdas_choice_gam)
+
+    return (
+        gene_id,
+        round(mad, 3),
+        round(median, 3),
+        round(mean, 3),
+        round(variance, 3),
+        round(left_CI, 3),
+        round(right_CI, 3),
+        sum_prob_lambda_gam,
+        log2_median,
+        log2_mean,
+        log2_variance,
+        abslog2_median,
+        abslog2_mean,
+        abslog2_variance,
+    )
+
+
+def parse_stan_output_new(input_file, thetas_file, lambdas_file,atacseq):
     thetas = pickle.load(open(thetas_file, "rb"))
     # names = ['geneID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda']
     lambdas = pd.read_csv(lambdas_file, delimiter="\t", header=0)
@@ -270,27 +315,50 @@ def parse_stan_output_new(input_file, thetas_file, lambdas_file):
             lambdas,
         ),
     ) as pool:
-        rows = pool.map(parse_stan_output_worker, IN, chunksize=1)
-
-    df = pd.DataFrame(
-        rows,
-        columns=[
-            "geneID",
-            "median_abs_deviation",
-            "posterior_median",
-            "posterior_mean",
-            "posterior_variance",
-            "CI_left",
-            "CI_right",
-            "posterior_mass_support_ALT_gam",
-            "log2_posterior_median",
-            "log2_posterior_mean",
-            "log2_posterior_variance",
-            "abslog2_posterior_median",
-            "abslog2_posterior_mean",
-            "abslog2_posterior_variance",
-        ],
-    )
+        if atacseq is not True:
+            rows = pool.map(parse_stan_output_worker, IN, chunksize=1)
+        else:
+            rows = pool.map(parse_stan_output_worker_atacseq, IN, chunksize=1)
+    if atacseq is True:
+        df = pd.DataFrame(
+            rows,
+            columns=[
+                "peakID",
+                "median_abs_deviation",
+                "posterior_median",
+                "posterior_mean",
+                "posterior_variance",
+                "CI_left",
+                "CI_right",
+                "posterior_mass_support_ALT_gam",
+                "log2_posterior_median",
+                "log2_posterior_mean",
+                "log2_posterior_variance",
+                "abslog2_posterior_median",
+                "abslog2_posterior_mean",
+                "abslog2_posterior_variance",
+            ],
+        )
+    else:
+        df = pd.DataFrame(
+            rows,
+            columns=[
+                "geneID",
+                "median_abs_deviation",
+                "posterior_median",
+                "posterior_mean",
+                "posterior_variance",
+                "CI_left",
+                "CI_right",
+                "posterior_mass_support_ALT_gam",
+                "log2_posterior_median",
+                "log2_posterior_mean",
+                "log2_posterior_variance",
+                "abslog2_posterior_median",
+                "abslog2_posterior_mean",
+                "abslog2_posterior_variance",
+            ],
+        )
 
     return df
 
@@ -371,6 +439,7 @@ def run(
     KEEPER,
     phasing_method,
     ancestry,
+    atacseq,
 ):
     if phasing_method != "nophasing":
         out_BEASTIE = "iBEASTIE"
@@ -413,7 +482,7 @@ def run(
     # df = parse_stan_output(
     #     out0, prefix, inFile, thetas_file, lambdas_file, os.path.basename(modelpath)
     # )
-    df = parse_stan_output_new(inFile, thetas_file, lambdas_file)
+    df = parse_stan_output_new(inFile, thetas_file, lambdas_file,atacseq)
     df["ancestry"] = ancestry
     logging.info("...... Finish parse_stan_output")
 

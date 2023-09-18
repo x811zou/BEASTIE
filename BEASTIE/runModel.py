@@ -226,6 +226,8 @@ def run(
     alpha,
     sigma,
     SAVE_INT,
+    nophasing,
+    atacseq,
     WARMUP,
     KEEPER,
     LD_token,
@@ -281,6 +283,7 @@ def run(
                 handle.get()
     else:
         logging.info("....... simulator data is NOT provided, skip step")
+
     #####
     ##### 2.3 use simulation data to filter variants with alignment bias
     #####
@@ -307,34 +310,35 @@ def run(
                 )
             )
             biased_variant = add_simulationData(simulation_parsed_pileup)
-    # running
-    alignBiasfiltered_filename = filter_alignBias(
-        prefix,
-        tmp_path,
-        binomialp_cutoff,
-        filtered_hetSNP_intersect_pileup,
-        biased_variant,
-        collected_alignmentBias_file,
-    )
-    # checking
-    data23 = pd.read_csv(
-        alignBiasfiltered_filename, sep="\t", header=0, index_col=False
-    )
-    if data23.shape[0] < 2:
-        os.remove(alignBiasfiltered_filename)
-        logging.error(
-            "....... existed {0} is empty, please try again!".format(
-                os.path.basename(alignBiasfiltered_filename)
+            # running
+            alignBiasfiltered_filename = filter_alignBias(
+                prefix,
+                tmp_path,
+                binomialp_cutoff,
+                filtered_hetSNP_intersect_pileup,
+                biased_variant,
+                collected_alignmentBias_file,
             )
-        )
-        sys.exit(1)
-    else:
-        logging.info(
-            "....... {0} save to {1}".format(
-                os.path.basename(alignBiasfiltered_filename),
-                os.path.dirname(alignBiasfiltered_filename),
+            # checking
+            data23 = pd.read_csv(
+                alignBiasfiltered_filename, sep="\t", header=0, index_col=False
             )
-        )
+            if data23.shape[0] < 2:
+                os.remove(alignBiasfiltered_filename)
+                logging.error(
+                    "....... existed {0} is empty, please try again!".format(
+                        os.path.basename(alignBiasfiltered_filename)
+                    )
+                )
+                sys.exit(1)
+            else:
+                logging.info(
+                    "....... {0} save to {1}".format(
+                        os.path.basename(alignBiasfiltered_filename),
+                        os.path.dirname(alignBiasfiltered_filename),
+                    )
+                )
+
     #####
     ##### 2.4 phase data with shapeit2 or VCF
     #####
@@ -343,14 +347,14 @@ def run(
     logging.info(
         "....... start phasing with shapeit2 or VCF, convert data into model input format"
     )
-    if "BEASTIE3-fix-uniform" in model:
+    if atacseq is True or "BEASTIE3-fix-uniform" in model or nophasing is True:
         print(
-            "....... Phasing not provided: skip using phasing information from VCF file"
+            "....... Phasing not provided: skip using phasing information"
         )
         phasing_method = "nophasing"
-        phased_filename = (
-            f"{os.path.splitext(alignBiasfiltered_filename)[0]}.nophasing.tsv"
-        )
+        if simulation_pileup is None:
+            alignBiasfiltered_filename = filtered_hetSNP_intersect_pileup
+        phased_filename = os.path.join(tmp_path, f"{os.path.splitext(os.path.basename(alignBiasfiltered_filename))[0]}.nophasing.tsv")
         phase_difference_filename = None
     else:
         if shapeit2_file is None:
@@ -371,7 +375,7 @@ def run(
             phasing_method = "shapeit2"
             phased_filename = f"{os.path.splitext(alignBiasfiltered_filename)[0]}.phasedByshapeit2.tsv"
             phase_difference_filename = f"{os.path.splitext(alignBiasfiltered_filename)[0]}.phasingDifference.tsv"
-
+    
     # running
     phased_clean_filename = f"{os.path.splitext(phased_filename)[0]}.cleaned.tsv"
     re_allocateReads(
@@ -414,7 +418,7 @@ def run(
         lambdaPredicted_file,
         base_modelin,
         base_modelin_error,
-    ) = generate_modelCount(phased_clean_filename)
+    ) = generate_modelCount(phased_clean_filename,atacseq)
 
     data24_2 = pd.read_csv(file_for_lambda, sep="\t", header=0, index_col=False)
     logging.debug(
@@ -441,51 +445,52 @@ def run(
     #####
     ##### 2.5 Annotation LD
     #####
-    logging.info("=================")
-    logging.info("================= Starting specific step 2.5 annotate LD")
-    if phasing_method != "nophasing":
-        FORCE_ANNOTATE_LD = False
-        if FORCE_ANNOTATE_LD or not os.path.isfile(meta):
-            logging.info("....... Phasing provided: start annotating LD information")
-            logging.debug("input {0} ".format(os.path.basename(phased_clean_filename)))
-            annotateLD(
-                ancestry,
-                phased_clean_filename,
-                LD_token,
-                meta,
-                ldlink_cache_dir,
-                ldlink_token_db,
-            )
-        else:
-            logging.info("=================")
-            logging.info("================= Skipping specific step 2.5")
-        data25 = pd.read_csv(meta, sep="\t", header=0, index_col=False)
-        logging.debug(
-            "output {0} has {1} het SNPs for LD (d',r2) annotation".format(
-                os.path.basename(meta), data23.shape[0]
-            )
-        )
-        if data25.shape[0] < 2:
-            os.remove(meta)
-            logging.error(
-                "....... existed {0} is empty, please try again!".format(
-                    os.path.basename(meta)
+    if atacseq is not True:
+        logging.info("=================")
+        logging.info("================= Starting specific step 2.5 annotate LD")
+        if phasing_method != "nophasing":
+            FORCE_ANNOTATE_LD = False
+            if FORCE_ANNOTATE_LD or not os.path.isfile(meta):
+                logging.info("....... Phasing provided: start annotating LD information")
+                logging.debug("input {0} ".format(os.path.basename(phased_clean_filename)))
+                annotateLD(
+                    ancestry,
+                    phased_clean_filename,
+                    LD_token,
+                    meta,
+                    ldlink_cache_dir,
+                    ldlink_token_db,
+                )
+            else:
+                logging.info("=================")
+                logging.info("================= Skipping specific step 2.5")
+            data25 = pd.read_csv(meta, sep="\t", header=0, index_col=False)
+            logging.debug(
+                "output {0} has {1} het SNPs for LD (d',r2) annotation".format(
+                    os.path.basename(meta), data23.shape[0]
                 )
             )
-            sys.exit(1)
-        else:
-            for files in os.listdir(os.path.dirname(meta)):
-                if "TEMP_chr" in files:
-                    logging.info("..... remove created TEMP files: {0}".format(files))
-                    os.remove(os.path.dirname(meta) + "/" + files)
-            logging.info(
-                "....... {0} save to {1}".format(
-                    os.path.basename(meta),
-                    os.path.dirname(meta),
+            if data25.shape[0] < 2:
+                os.remove(meta)
+                logging.error(
+                    "....... existed {0} is empty, please try again!".format(
+                        os.path.basename(meta)
+                    )
                 )
-            )
-    else:
-        logging.info("....... Phasing not provided: skip annotating LD information")
+                sys.exit(1)
+            else:
+                for files in os.listdir(os.path.dirname(meta)):
+                    if "TEMP_chr" in files:
+                        logging.info("..... remove created TEMP files: {0}".format(files))
+                        os.remove(os.path.dirname(meta) + "/" + files)
+                logging.info(
+                    "....... {0} save to {1}".format(
+                        os.path.basename(meta),
+                        os.path.dirname(meta),
+                    )
+                )
+        else:
+            logging.info("....... Phasing not provided: skip annotating LD information")
 
     #####
     ##### 2.6 logistic regression model predict switching phasing error, linear regression model predicts lambda
@@ -610,8 +615,9 @@ def run(
         KEEPER,
         phasing_method,
         ancestry,
+        atacseq,
     )
-    if df_beastie.shape[0] > 2:
+    if df_beastie.shape[0] > 1:
         logging.info("....... done with running model {0}!".format(model))
     else:
         logging.error("....... model output is empty, please try again!")
@@ -619,11 +625,11 @@ def run(
 
     logging.info("....... start processing ADM")
     adm_out_path = os.path.join(result_path, f"{prefix}_ASE_ADM.tsv")
-    df_adm = ADM_for_real_data.run(base_modelin, adm_out_path)
+    df_adm = ADM_for_real_data.run(base_modelin, adm_out_path,atacseq)
     logging.info("....... saved ADM output to {0}".format(adm_out_path))
     logging.info("....... done with running ADM method")
 
-    df_binomial = binomial_for_real_data.run(base_modelin)
+    df_binomial = binomial_for_real_data.run(base_modelin,atacseq)
     logging.info("....... done with running binomial")
     binomial_out_path = os.path.join(result_path, f"{prefix}_ASE_binomial.tsv")
     df_binomial.to_csv(binomial_out_path, sep="\t", header=True, index=False)
@@ -661,6 +667,7 @@ def run(
         ase_cutoff,
         lambdaPredicted_file,
         adjusted_alpha,
+        atacseq,
     )
     logging.info("....... done with significant_gene")
     if not SAVE_INT:
