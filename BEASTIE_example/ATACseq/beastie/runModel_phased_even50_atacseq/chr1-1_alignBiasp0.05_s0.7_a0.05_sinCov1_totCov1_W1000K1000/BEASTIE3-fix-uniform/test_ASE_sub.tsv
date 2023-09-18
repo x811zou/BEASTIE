@@ -1,3 +1,3 @@
 Unnamed: 0	peakID	median.altRatio	number.of.hets	total.patCount	total.matCount	totalCount	gam_lambda	posterior_median	posterior_mean	posterior_variance	posterior_mass_support_ALT_gam	NaiveSum_pval	MajorSite_pval	beta_1_1_pval	beta_10_10_pval	beta_20_20_pval	beta_50_50_pval	beta_100_100_pval	beastie_ASE_gam	NS_ASE	MS_ASE
-0	region1	0.0	2	2	0	2	1.4382186093	0.916	1.04	0.281	0.448	0.5	1.0	0.6666666667	0.5238095238	0.512195122	0.504950495	0.5024875622	0	0	0
-1	region2	0.0	3	76	5	81	1.5032511256	0.185	0.19	0.002	1.0	0.0	0.0	0.1463414634	1.97128e-05	8.98e-08	0.0	0.0	1	1	1
+0	region1	0.0	1	1	0	1	1.4122056028	0.933	1.024	0.213	0.432	1.0	1.0	1.0	1.0	1.0	1.0	1.0	0	0	0
+1	region2	0.0	3	76	5	81	1.5032511256	0.179	0.183	0.002	1.0	0.0	0.0	0.1463414634	1.97128e-05	8.98e-08	0.0	0.0	1	1	1

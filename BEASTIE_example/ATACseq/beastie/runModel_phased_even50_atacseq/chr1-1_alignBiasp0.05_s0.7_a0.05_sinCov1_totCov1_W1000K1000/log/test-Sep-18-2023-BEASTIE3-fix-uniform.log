@@ -1,72 +1,68 @@
-2023-09-18 12:52:36,401 [INFO] >> Starting running BEASTIE
-2023-09-18 12:52:36,401 [INFO] ======================================== 
-2023-09-18 12:52:36,401 [INFO] ======================================== Processing simulation raw data & Preparing input in a format required for BEASTIE model
-2023-09-18 12:52:36,401 [INFO] ======================================== 
-2023-09-18 12:52:36,401 [INFO] =================
-2023-09-18 12:52:36,401 [INFO] ================= Starting specific step 2.1
-2023-09-18 12:52:36,401 [INFO] ....... start checking file existence
-2023-09-18 12:52:36,401 [INFO] Great! VCFGZ file /mnt/ATACseq/test.no_chr.content.SNPs.hets.vcf.gz and index /mnt/ATACseq/test.no_chr.content.SNPs.hets.vcf.gz.tbi exists.
-2023-09-18 12:52:36,403 [DEBUG] output test_hetSNP_filtered.tsv has 5 het SNPs from VCF file
-2023-09-18 12:52:36,403 [INFO] We will generate intermedate file test.meta.tsv ...
-2023-09-18 12:52:36,403 [INFO] We will generate intermedate file test.meta.w_error.tsv ...
-2023-09-18 12:52:36,403 [INFO] We will generate intermediate file TEMP.test_hetSNP_intersected_filtered.forLambda.tsv ...
-2023-09-18 12:52:36,403 [INFO] We will generate intermediate file TEMP.test_hetSNP_intersected_filtered.lambdaPredicted.tsv ...
-2023-09-18 12:52:36,403 [INFO] =================
-2023-09-18 12:52:36,403 [INFO] ================= Starting specific step 2.2
-2023-09-18 12:52:36,403 [INFO] ....... start parsing simulation pileup data
-2023-09-18 12:52:36,403 [INFO] ....... simulator data is NOT provided, skip step
-2023-09-18 12:52:36,403 [INFO] =================
-2023-09-18 12:52:36,403 [INFO] ================= Starting specific step 2.3 aligmment bias filtering using simulation data
-2023-09-18 12:52:36,403 [INFO] ....... start filtering variants with alignment bias
-2023-09-18 12:52:36,403 [INFO] ....... alignment Bias SNP list is NOT provided, skip
-2023-09-18 12:52:36,403 [INFO] ....... simulator data is NOT provided, skip step
-2023-09-18 12:52:36,403 [INFO] =================
-2023-09-18 12:52:36,403 [INFO] ================= Starting specific step 2.4 phase data
-2023-09-18 12:52:36,403 [INFO] ....... start phasing with shapeit2 or VCF, convert data into model input format
-2023-09-18 12:52:36,406 [DEBUG] size of filtered hetSNP unique is 5 ; phased data size is 5, phased data after cleaning size is 5
-2023-09-18 12:52:36,407 [INFO] ....... test_hetSNP_filtered.nophasing.tsv save to /mnt/ATACseq/beastie/runModel_phased_even50_atacseq/chr1-1_alignBiasp0.05_s0.7_a0.05_sinCov1_totCov1_W1000K1000/tmp
-2023-09-18 12:52:36,407 [INFO] ....... start converting data into model input format
-2023-09-18 12:52:36,407 [INFO] ....... start converting test_hetSNP_filtered.nophasing.cleaned.tsv for model input
-2023-09-18 12:52:36,417 [DEBUG] output test_hetSNP_filtered.nophasing.cleaned.modelinput.tsv has 2 peaks as input for stan model
-2023-09-18 12:52:36,418 [DEBUG] output test_hetSNP_filtered.nophasing.cleaned.forlambda.tsv has 2 genes for lambda prediction
-2023-09-18 12:52:36,418 [INFO] ....... test_hetSNP_filtered.nophasing.cleaned.forlambda.tsv save to /mnt/ATACseq/beastie/runModel_phased_even50_atacseq/chr1-1_alignBiasp0.05_s0.7_a0.05_sinCov1_totCov1_W1000K1000/tmp
-2023-09-18 12:52:36,418 [INFO] =================
-2023-09-18 12:52:36,418 [INFO] ================= Starting step specific 2.6 regression model
-2023-09-18 12:52:36,418 [INFO] ....... start predicting lambda for test_hetSNP_filtered.nophasing.cleaned.forlambda.tsv
-2023-09-18 12:52:36,418 [INFO] ....... lambda is not predicted: start predicting lambda
-2023-09-18 12:52:36,418 [INFO] ....... using gam model /home/scarlett/github/BEASTIE/BEASTIE/iBEASTIE3_s0.7_GAM/gam4_lambdamodel.pkl
-2023-09-18 12:52:36,456 [INFO] model input with GAM predicted lambda saved to /mnt/ATACseq/beastie/runModel_phased_even50_atacseq/chr1-1_alignBiasp0.05_s0.7_a0.05_sinCov1_totCov1_W1000K1000/tmp/test_hetSNP_filtered.nophasing.cleaned.lambdaPredicted.tsv
-2023-09-18 12:52:36,457 [INFO] ....... finish predicting lambda
-2023-09-18 12:52:36,458 [INFO] lambda prediction model: input test_hetSNP_filtered.nophasing.cleaned.forlambda.tsv
-2023-09-18 12:52:36,458 [INFO] lambda prediction model: input alpha (family wise error rate) is 0.05, adjusted after size of input 2 is 0.025
-2023-09-18 12:52:36,458 [DEBUG] output test_hetSNP_filtered.nophasing.cleaned.lambdaPredicted.tsv has 3 genes with lambda prediction
-2023-09-18 12:52:37,221 [INFO] =================
-2023-09-18 12:52:37,221 [INFO] ================= Starting specific step 2.8 running STAN model
-2023-09-18 12:52:37,221 [INFO] ....... start running /usr/local/bin/BEASTIE3-fix-uniform model
-2023-09-18 12:52:37,221 [DEBUG] Number of WARMUP samples is 1000, Number of posterior estimates is 1000
-2023-09-18 12:52:37,259 [INFO] .... Processed thetas for all genes
-2023-09-18 12:52:37,263 [INFO] ...... Finshed running BEASTIE3-fix-uniform and saved raw theta at : /mnt/ATACseq/beastie/runModel_phased_even50_atacseq/chr1-1_alignBiasp0.05_s0.7_a0.05_sinCov1_totCov1_W1000K1000/BEASTIE3-fix-uniform/output_pkl/BEASTIE-fix-uniform/theta
-2023-09-18 12:52:37,263 [INFO] ...... Start parse_stan_output
-2023-09-18 12:52:37,290 [INFO] ...... Finish parse_stan_output
-2023-09-18 12:52:37,290 [INFO] ...... Saved parsed output at /mnt/ATACseq/beastie/runModel_phased_even50_atacseq/chr1-1_alignBiasp0.05_s0.7_a0.05_sinCov1_totCov1_W1000K1000/BEASTIE3-fix-uniform/test_ASE_BEASTIE_fix_uniform.tsv
-2023-09-18 12:52:37,290 [INFO] ....... done with running model /usr/local/bin/BEASTIE3-fix-uniform!
-2023-09-18 12:52:37,290 [INFO] ....... start processing ADM
-2023-09-18 12:52:37,311 [INFO] ....... start saving ADM file
-2023-09-18 12:52:37,313 [INFO] ....... saved ADM output to /mnt/ATACseq/beastie/runModel_phased_even50_atacseq/chr1-1_alignBiasp0.05_s0.7_a0.05_sinCov1_totCov1_W1000K1000/BEASTIE3-fix-uniform/test_ASE_ADM.tsv
-2023-09-18 12:52:37,313 [INFO] ....... done with running ADM method
-2023-09-18 12:52:37,344 [INFO] ....... done with running binomial
-2023-09-18 12:52:37,344 [INFO] ....... saved binomial to /mnt/ATACseq/beastie/runModel_phased_even50_atacseq/chr1-1_alignBiasp0.05_s0.7_a0.05_sinCov1_totCov1_W1000K1000/BEASTIE3-fix-uniform/test_ASE_binomial.tsv
-2023-09-18 12:52:37,344 [INFO] =================
-2023-09-18 12:52:37,345 [INFO] ================= Starting specific step 2.9 generating output files
-2023-09-18 12:52:37,345 [INFO] ....... start generating gene list
-2023-09-18 12:52:37,346 [DEBUG] size of hetSNP_intersect_unique_lambdaPredicted_file file 2
-2023-09-18 12:52:37,346 [DEBUG] size of df_beastie 2
-2023-09-18 12:52:37,348 [DEBUG] size of model output is 2 ; size of hetSNP_intersect_unique_lambdaPredicted_file is 2; intersection size is 2
-2023-09-18 12:52:37,351 [INFO] ....... done with dropping
-2023-09-18 12:52:37,354 [INFO] 1 genes with ASE out of total genes 2 (50.0%) at @ posterior_mass_support_ALT_gam > ASE cutoff 0.5
-2023-09-18 12:52:37,354 [INFO] 1 genes with ASE out of total genes 2 (50.0%) at @ Naive Sum <= adjusted alpha 0.025
-2023-09-18 12:52:37,354 [INFO] 1 genes with ASE out of total genes 2 (50.0%) at @ Major Site <= adjusted alpha 0.025
-2023-09-18 12:52:37,355 [INFO] ....... done with significant_gene
-2023-09-18 12:52:37,357 [INFO] output test_ASE_all.tsv has all 2 genes
-2023-09-18 12:52:37,357 [INFO] =================
-2023-09-18 12:52:37,357 [INFO] >>  Yep! You are done running BEASTIE!
+2023-09-18 15:33:22,076 [INFO] >> Starting running BEASTIE
+2023-09-18 15:33:22,076 [INFO] ======================================== 
+2023-09-18 15:33:22,076 [INFO] ======================================== Processing simulation raw data & Preparing input in a format required for BEASTIE model
+2023-09-18 15:33:22,076 [INFO] ======================================== 
+2023-09-18 15:33:22,076 [INFO] =================
+2023-09-18 15:33:22,076 [INFO] ================= Starting specific step 2.1
+2023-09-18 15:33:22,076 [INFO] ....... start checking file existence
+2023-09-18 15:33:22,076 [INFO] Great! VCFGZ file /mnt/ATACseq/test.no_chr.content.SNPs.hets.vcf.gz and index /mnt/ATACseq/test.no_chr.content.SNPs.hets.vcf.gz.tbi exists.
+2023-09-18 15:33:22,078 [DEBUG] output test_hetSNP_filtered.tsv has 4 het SNPs from VCF file
+2023-09-18 15:33:22,078 [INFO] We will generate intermedate file test.meta.tsv ...
+2023-09-18 15:33:22,078 [INFO] We will generate intermedate file test.meta.w_error.tsv ...
+2023-09-18 15:33:22,078 [INFO] We will generate intermediate file TEMP.test_hetSNP_intersected_filtered.forLambda.tsv ...
+2023-09-18 15:33:22,078 [INFO] We will generate intermediate file TEMP.test_hetSNP_intersected_filtered.lambdaPredicted.tsv ...
+2023-09-18 15:33:22,078 [INFO] =================
+2023-09-18 15:33:22,078 [INFO] ================= Starting specific step 2.2
+2023-09-18 15:33:22,078 [INFO] ....... start parsing simulation pileup data
+2023-09-18 15:33:22,078 [INFO] ....... simulator data is NOT provided, skip step
+2023-09-18 15:33:22,078 [INFO] =================
+2023-09-18 15:33:22,078 [INFO] ================= Starting specific step 2.3 aligmment bias filtering using simulation data
+2023-09-18 15:33:22,078 [INFO] ....... start filtering variants with alignment bias
+2023-09-18 15:33:22,078 [INFO] ....... alignment Bias SNP list is NOT provided, skip
+2023-09-18 15:33:22,078 [INFO] ....... simulator data is NOT provided, skip step
+2023-09-18 15:33:22,078 [INFO] =================
+2023-09-18 15:33:22,078 [INFO] ================= Starting specific step 2.4 phase data
+2023-09-18 15:33:22,079 [INFO] ....... start phasing with shapeit2 or VCF, convert data into model input format
+2023-09-18 15:33:22,079 [INFO] ....... phased data is pre-existed! test_hetSNP_filtered.nophasing.tsv
+2023-09-18 15:33:22,080 [INFO] ....... test_hetSNP_filtered.nophasing.tsv save to /mnt/ATACseq/beastie/runModel_phased_even50_atacseq/chr1-1_alignBiasp0.05_s0.7_a0.05_sinCov1_totCov1_W1000K1000/tmp
+2023-09-18 15:33:22,080 [INFO] ....... start converting data into model input format
+2023-09-18 15:33:22,081 [INFO] ....... start converting test_hetSNP_filtered.nophasing.cleaned.tsv for model input
+2023-09-18 15:33:22,089 [INFO] ....... test_hetSNP_filtered.nophasing.cleaned.modelinput.tsv exists at /mnt/ATACseq/beastie/runModel_phased_even50_atacseq/chr1-1_alignBiasp0.05_s0.7_a0.05_sinCov1_totCov1_W1000K1000/tmp
+2023-09-18 15:33:22,090 [DEBUG] output test_hetSNP_filtered.nophasing.cleaned.forlambda.tsv has 2 genes for lambda prediction
+2023-09-18 15:33:22,090 [INFO] ....... test_hetSNP_filtered.nophasing.cleaned.forlambda.tsv save to /mnt/ATACseq/beastie/runModel_phased_even50_atacseq/chr1-1_alignBiasp0.05_s0.7_a0.05_sinCov1_totCov1_W1000K1000/tmp
+2023-09-18 15:33:22,090 [INFO] =================
+2023-09-18 15:33:22,090 [INFO] ================= Starting step specific 2.6 regression model
+2023-09-18 15:33:22,090 [INFO] ....... start predicting lambda for test_hetSNP_filtered.nophasing.cleaned.forlambda.tsv
+2023-09-18 15:33:22,091 [INFO] lambda prediction model: input test_hetSNP_filtered.nophasing.cleaned.forlambda.tsv
+2023-09-18 15:33:22,091 [INFO] lambda prediction model: input alpha (family wise error rate) is 0.05, adjusted after size of input 2 is 0.025
+2023-09-18 15:33:22,091 [DEBUG] output test_hetSNP_filtered.nophasing.cleaned.lambdaPredicted.tsv has 3 genes with lambda prediction
+2023-09-18 15:33:22,815 [INFO] =================
+2023-09-18 15:33:22,816 [INFO] ================= Starting specific step 2.8 running STAN model
+2023-09-18 15:33:22,816 [INFO] ....... start running /usr/local/bin/BEASTIE3-fix-uniform model
+2023-09-18 15:33:22,816 [DEBUG] Number of WARMUP samples is 1000, Number of posterior estimates is 1000
+2023-09-18 15:33:22,854 [INFO] .... Processed thetas for all genes
+2023-09-18 15:33:22,858 [INFO] ...... Finshed running BEASTIE3-fix-uniform and saved raw theta at : /mnt/ATACseq/beastie/runModel_phased_even50_atacseq/chr1-1_alignBiasp0.05_s0.7_a0.05_sinCov1_totCov1_W1000K1000/BEASTIE3-fix-uniform/output_pkl/BEASTIE-fix-uniform/theta
+2023-09-18 15:33:22,858 [INFO] ...... Start parse_stan_output
+2023-09-18 15:33:22,884 [INFO] ...... Finish parse_stan_output
+2023-09-18 15:33:22,884 [INFO] ...... Saved parsed output at /mnt/ATACseq/beastie/runModel_phased_even50_atacseq/chr1-1_alignBiasp0.05_s0.7_a0.05_sinCov1_totCov1_W1000K1000/BEASTIE3-fix-uniform/test_ASE_BEASTIE_fix_uniform.tsv
+2023-09-18 15:33:22,884 [INFO] ....... done with running model /usr/local/bin/BEASTIE3-fix-uniform!
+2023-09-18 15:33:22,884 [INFO] ....... start processing ADM
+2023-09-18 15:33:22,905 [INFO] ....... start saving ADM file
+2023-09-18 15:33:22,906 [INFO] ....... saved ADM output to /mnt/ATACseq/beastie/runModel_phased_even50_atacseq/chr1-1_alignBiasp0.05_s0.7_a0.05_sinCov1_totCov1_W1000K1000/BEASTIE3-fix-uniform/test_ASE_ADM.tsv
+2023-09-18 15:33:22,906 [INFO] ....... done with running ADM method
+2023-09-18 15:33:22,929 [INFO] ....... done with running binomial
+2023-09-18 15:33:22,930 [INFO] ....... saved binomial to /mnt/ATACseq/beastie/runModel_phased_even50_atacseq/chr1-1_alignBiasp0.05_s0.7_a0.05_sinCov1_totCov1_W1000K1000/BEASTIE3-fix-uniform/test_ASE_binomial.tsv
+2023-09-18 15:33:22,930 [INFO] =================
+2023-09-18 15:33:22,930 [INFO] ================= Starting specific step 2.9 generating output files
+2023-09-18 15:33:22,930 [INFO] ....... start generating gene list
+2023-09-18 15:33:22,931 [DEBUG] size of hetSNP_intersect_unique_lambdaPredicted_file file 2
+2023-09-18 15:33:22,931 [DEBUG] size of df_beastie 2
+2023-09-18 15:33:22,933 [DEBUG] size of model output is 2 ; size of hetSNP_intersect_unique_lambdaPredicted_file is 2; intersection size is 2
+2023-09-18 15:33:22,936 [INFO] ....... done with dropping
+2023-09-18 15:33:22,938 [INFO] 1 genes with ASE out of total genes 2 (50.0%) at @ posterior_mass_support_ALT_gam > ASE cutoff 0.5
+2023-09-18 15:33:22,938 [INFO] 1 genes with ASE out of total genes 2 (50.0%) at @ Naive Sum <= adjusted alpha 0.025
+2023-09-18 15:33:22,938 [INFO] 1 genes with ASE out of total genes 2 (50.0%) at @ Major Site <= adjusted alpha 0.025
+2023-09-18 15:33:22,939 [INFO] ....... done with significant_gene
+2023-09-18 15:33:22,940 [INFO] output test_ASE_all.tsv has all 2 genes
+2023-09-18 15:33:22,940 [INFO] =================
+2023-09-18 15:33:22,940 [INFO] >>  Yep! You are done running BEASTIE!
