@@ -765,31 +765,31 @@ def significant_genes(
             return 1
         else:
             return 0
-    def beta11(row, adjusted_alpha):
-        if float(row["beta_1_1_pval"]) <= float(adjusted_alpha):
-            return 1
-        else:
-            return 0
-    def beta1010(row, adjusted_alpha):
-        if float(row["beta_10_10_pval"]) <= float(adjusted_alpha):
-            return 1
-        else:
-            return 0
-    def beta2020(row, adjusted_alpha):
-        if float(row["beta_20_20_pval"]) <= float(adjusted_alpha):
-            return 1
-        else:
-            return 0
-    def beta5050(row, adjusted_alpha):
-        if float(row["beta_50_50_pval"]) <= float(adjusted_alpha):
-            return 1
-        else:
-            return 0
-    def beta100100(row, adjusted_alpha):
-        if float(row["beta_100_100_pval"]) <= float(adjusted_alpha):
-            return 1
-        else:
-            return 0
+    # def beta11(row, adjusted_alpha):
+    #     if float(row["beta_1_1_pval"]) <= float(adjusted_alpha):
+    #         return 1
+    #     else:
+    #         return 0
+    # def beta1010(row, adjusted_alpha):
+    #     if float(row["beta_10_10_pval"]) <= float(adjusted_alpha):
+    #         return 1
+    #     else:
+    #         return 0
+    # def beta2020(row, adjusted_alpha):
+    #     if float(row["beta_20_20_pval"]) <= float(adjusted_alpha):
+    #         return 1
+    #     else:
+    #         return 0
+    # def beta5050(row, adjusted_alpha):
+    #     if float(row["beta_50_50_pval"]) <= float(adjusted_alpha):
+    #         return 1
+    #     else:
+    #         return 0
+    # def beta100100(row, adjusted_alpha):
+    #     if float(row["beta_100_100_pval"]) <= float(adjusted_alpha):
+    #         return 1
+    #     else:
+    #         return 0
 
     df_output["beastie_ASE_gam"] = df_output.apply(
         lambda row: beastie_gam(row), axis=1

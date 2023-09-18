@@ -483,7 +483,8 @@ def run(
     #     out0, prefix, inFile, thetas_file, lambdas_file, os.path.basename(modelpath)
     # )
     df = parse_stan_output_new(inFile, thetas_file, lambdas_file,atacseq)
-    df["ancestry"] = ancestry
+    if atacseq is not True:
+        df["ancestry"] = ancestry
     logging.info("...... Finish parse_stan_output")
 
     if "iBEASTIE" in os.path.basename(modelpath):
