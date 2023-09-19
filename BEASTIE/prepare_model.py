@@ -670,8 +670,10 @@ def significant_genes(
     logging.debug("size of df_beastie {}".format(len(df_beastie)))
     if atacseq is True:
         df_output = pd.merge(data_modeloutput, df_beastie, on=["peakID"], how="inner")
+        keyword = "peak"
     else:
         df_output = pd.merge(data_modeloutput, df_beastie, on=["geneID"], how="inner")
+        keyword = "gene"
     logging.debug(
         "size of model output is {0} ; size of hetSNP_intersect_unique_lambdaPredicted_file is {1}; intersection size is {2}".format(
             len(df_beastie), len(data_modeloutput), len(df_output)
@@ -804,8 +806,10 @@ def significant_genes(
 
     ncount1 = df_output["beastie_ASE_gam"].sum()
     logging.info(
-        "{} genes with ASE out of total genes {} ({}%) at @ {} > ASE cutoff {}".format(
+        "{} {}s with ASE out of total {}s {} ({}%) at @ {} > ASE cutoff {}".format(
             ncount1,
+            keyword,
+            keyword,
             len(df_output),
             round((ncount1 / len(df_output)) * 100, 3),
             "posterior_mass_support_ALT_gam",
@@ -814,8 +818,10 @@ def significant_genes(
     )
     ncount2 = df_output["NS_ASE"].sum()
     logging.info(
-        "{} genes with ASE out of total genes {} ({}%) at @ {} <= adjusted alpha {}".format(
+        "{} {}s with ASE out of total {}s {} ({}%) at @ {} <= adjusted alpha {}".format(
             ncount2,
+            keyword,
+            keyword,
             len(df_output),
             round((ncount2 / len(df_output)) * 100, 3),
             "Naive Sum",
@@ -824,8 +830,10 @@ def significant_genes(
     )
     ncount3 = df_output["MS_ASE"].sum()
     logging.info(
-        "{} genes with ASE out of total genes {} ({}%) at @ {} <= adjusted alpha {}".format(
+        "{} {}s with ASE out of total {}s {} ({}%) at @ {} <= adjusted alpha {}".format(
             ncount3,
+            keyword,
+            keyword,
             len(df_output),
             round((ncount3 / len(df_output)) * 100, 3),
             "Major Site",
