@@ -28,6 +28,9 @@ def writeInitializationFile(filename):
 
 
 def writeOutputsFile(filename):
+    if not os.path.exists(filename):
+        with open(filename, 'w') as file:
+            pass
     OUT = open(filename, "wt")
     OUT.close()
 
@@ -167,6 +170,7 @@ def getCredibleInterval(thetas, alpha, n):
 
 
 def summarize(thetas, alpha):
+    thetas = [float(value) for value in thetas]
     mean = statistics.mean(thetas)
     median = statistics.median(thetas)
     thetas_log2 = [log2(x) for x in thetas]
@@ -302,7 +306,7 @@ def parse_stan_output_worker(line):
     )
 
 
-def parse_stan_output_new(input_file, thetas_file, lambdas_file,atacseq):
+def parse_stan_output_new(input_file, thetas_file, lambdas_file,atacseq=False):
     thetas = pickle.load(open(thetas_file, "rb"))
     # names = ['geneID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda']
     lambdas = pd.read_csv(lambdas_file, delimiter="\t", header=0)

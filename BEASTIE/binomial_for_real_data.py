@@ -20,7 +20,7 @@ from scipy import stats
 #     return count_p
 
 
-def getBaseline(fields, depth):
+def getBaseline(fields, depth=None):
     if len(fields) >= 4:
         ############
         # count_p = create_binomial_library(depth)
@@ -69,7 +69,7 @@ def getBaseline(fields, depth):
         return (None, None, None, None)
 
 
-def getBaseline_pooled(fields, depth, hets):
+def getBaseline_pooled(fields, depth=None, hets=None):
     if len(fields) >= 4:
         base_thetas = []
         Mreps = int(fields[1])
