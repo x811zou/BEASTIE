@@ -19,7 +19,6 @@ from scipy import stats
 #         count_p[i] = binom.cdf(i, int(depth), 0.5)
 #     return count_p
 
-
 def getBaseline(fields, depth=None):
     if len(fields) >= 4:
         ############
@@ -69,7 +68,11 @@ def getBaseline(fields, depth=None):
         return (None, None, None, None)
 
 
+<<<<<<< HEAD
 def getBaseline_pooled(fields, depth=None, hets=None):
+=======
+def getBaseline_pooled(fields):
+>>>>>>> 11af5538a2fa916c44176414eb447db69f2b110e
     if len(fields) >= 4:
         base_thetas = []
         Mreps = int(fields[1])
@@ -153,8 +156,8 @@ def worker(line):
     geneID = fields[0]
     h = int(fields[1])
     d = int(fields[2]) + int(fields[3])
-    FS_esti, FS_prob, MS_esti, MS_prob = getBaseline(fields, d)
-    NS_esti, NS_prob, pseudo_esti, pseudo_p = getBaseline_pooled(fields, d, h)
+    FS_esti, FS_prob, MS_esti, MS_prob = getBaseline(fields)
+    NS_esti, NS_prob, pseudo_esti, pseudo_p = getBaseline_pooled(fields)
     beta_1_1_pval,beta_10_10_pval,beta_20_20_pval,beta_50_50_pval,beta_100_100_pval=getBatabinomial_pooled(fields)
     return (
         geneID,
