@@ -9,10 +9,14 @@ BEASTIE/NOTSYNTOGIT_file
 BEASTIE_example/HG00096_chr20
 BEASTIE_example/**/output
 BEASTIE_example/**/*inuse*
+BEASTIE_example/ATACseq/beastie_old/
+BEASTIE_example/ATACseq/beastie
+BEASTIE_example/1000Genome/
 other_example/
 .ipynb_checkpoints/
 BEASTIE/run_config*
 BEASTIE/parameters*
+BEASTIE_example/ATACseq/.no_chr.content.SNPs.hets.vcf
 *.icloud
 *.pptx
 ~/.beastie/ldlink_cache.db
