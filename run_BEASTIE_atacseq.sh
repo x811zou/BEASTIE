@@ -34,11 +34,11 @@ atacseq_hetSNP_file=$atacseq_dir/${sample}_hetSNP.tsv
 #exit
 
 ############ (1) extractHets-ATACSEQ
-PYTHONPATH='.' python3 bin/beastie \
-    extractHetsATACseq \
-    --vcfgz-file $input_vcfgz \
-    --output $atacseq_hetSNP_file \
-    --annotationFile $atacseq_annotationFile
+# PYTHONPATH='.' python3 bin/beastie \
+#     extractHetsATACseq \
+#     --vcfgz-file $input_vcfgz \
+#     --output $atacseq_hetSNP_file \
+#     --annotationFile $atacseq_annotationFile
 
 ############ (2) filterGenotypingError & mpileup
 hetSNP_file=$atacseq_hetSNP_file
@@ -52,20 +52,20 @@ chr_end=1
 read_length=50
 filterGenotypingError_foldername="filterGenotypingError"
 
-PYTHONPATH='.' python3 bin/beastie \
-    filterGenotypingError \
-    --atacseq True \
-    --vcfgz-file $input_vcfgz \
-    --pileup-file $input_pileup \
-    --input-het-snp-file $hetSNP_file \
-    --filtered-het-snp-file $filtered_hetSNP_file \
-    --sample $sample \
-    --read-length $read_length \
-    --chr-start $chr_start \
-    --chr-end $chr_end \
-    --out-dir $beastie_dir/$filterGenotypingError_foldername \
-    --warmup $WARMUP \
-    --keeper $KEEPER 
+# PYTHONPATH='.' python3 bin/beastie \
+#     filterGenotypingError \
+#     --atacseq True \
+#     --vcfgz-file $input_vcfgz \
+#     --pileup-file $input_pileup \
+#     --input-het-snp-file $hetSNP_file \
+#     --filtered-het-snp-file $filtered_hetSNP_file \
+#     --sample $sample \
+#     --read-length $read_length \
+#     --chr-start $chr_start \
+#     --chr-end $chr_end \
+#     --out-dir $beastie_dir/$filterGenotypingError_foldername \
+#     --warmup $WARMUP \
+#     --keeper $KEEPER 
 
 ############ (2) runModel version3: no VCF phasing, no shapeit2 --> use beastie-fix-uniform model
 filtered_vcfgz=$atacseq_input_vcfgz

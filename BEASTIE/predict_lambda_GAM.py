@@ -12,7 +12,6 @@ import sys
 def logit(p):
     return np.log(p) - np.log(1 - p)
 
-
 def get_lambda_from_gam_pre_partition(
     model, hets, totalcount, expected_type1error, candidate_lambdas
 ):
@@ -49,10 +48,10 @@ def get_lambda_from_gam_pre_partition(
 
 
 def get_lambda_from_gam(
-    model, hets, totalcount, expected_type1error, candidate_lambdas
+    model, log_hets, log_totalcount, expected_type1error, candidate_lambdas
 ):
     # prepare input
-    data = [[hets, totalcount, np.log(lam-1+0.001)] for lam in candidate_lambdas]
+    data = [[float(log_hets), float(log_totalcount), np.log(lam-1+0.001)] for lam in candidate_lambdas]
 
     # prediction
     prediction = model.predict(data)

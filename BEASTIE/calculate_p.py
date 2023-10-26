@@ -72,17 +72,63 @@ def get_thetas(out,fields,model,sigma,WARMUP=1000,KEEPER=1000):
     )
     return geneID, thetas
 
-def calculate_right_tail_probability(values, X):
+def get_distribution_p(fields,x,distribution,params,null_list):
+    # empirical
+    em_p = calculate_left_tail_probability(null_list, x)
+    # fitted distribution
+    t_p = distribution.sf(x, *params)
+    # MS
+    _,_,_,MS_p = getBaseline(fields)
+    # NS
+    _,NS_p,_,_=getBaseline_pooled(fields)
+    return NS_p,MS_p,t_p,em_p
+
+
+def calculate_left_tail_probability(values, X):
     # Sort the list in ascending order
     sorted_values = sorted(values)
     
     # Find the rank of X in the sorted list
-    rank_x = sum(1 for value in sorted_values if value <= X)
+    rank_x = sum(1 for value in sorted_values if value >= X)
     
     # Calculate the right tail probability
     tail_probability = (len(values) - rank_x + 1) / (len(values) + 1)
     
     return tail_probability
+
+def plot_thetas_M_D_t(data1, data2, model, sigma):
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))  # create two subplots side by side
+
+    # For plotting purposes, group fields into a list
+    all_fields = [data1, data2]
+    ref_value = [0,-1]
+
+    for i, fields in enumerate(all_fields):
+        thetas = get_thetas(fields, model, sigma, WARMUP=1000, KEEPER=1000)
+        log2_thetas = np.log2(thetas)
+        mad, log2_mean, log2_median, abslog2_mean, abslog2_median, log2_variance, abslog2_variance, sum_prob_lambda_gam = get_stats(thetas, lambdas_choice_gam=1.2)
+        mean_over_var = log2_mean / log2_variance
+        absmean_over_var = abslog2_mean / abslog2_variance
+        print("")
+        print(fields)
+        print(f">>>>> data: theta {float(fields[2])/float(fields[3]):.2f} gene -- number hets: {fields[1]} read depth per het: {int(fields[2])+int(fields[3])}")
+        print(f"mean of log2(thetas): {log2_mean:.2f}, median of log2(thetas): {log2_median:.2f}")
+        print(f"median of absolute deviation: {mad:.2f}")
+        print(f"mean of log2(thetas)/var of log2(thetas): {mean_over_var:.2f}")
+        print(f"mean of abslog2(thetas)/var of abslog2(thetas): {absmean_over_var:.2f}")
+        # Plot on the current axis
+        ax[i].hist(log2_thetas, bins=10, density=True, alpha=0.7, label='Data')
+        ax[i].axvline(log2_mean, color='green', linestyle='dashed', linewidth=2, label=f'mean of log2(thetas): {log2_mean:.3f}')
+        ax[i].axvline(log2_median, color='blue', linestyle='dashed', linewidth=2, label=f'median of log2(thetas): {log2_median:.3f}')
+        ax[i].axvline(ref_value[i], color='r', linestyle='dashed', linewidth=2, label=f'reference: {ref_value[i]:.3f}')
+        ax[i].set_xlim(-3,3)
+        ax[i].set_xlabel('1000 log2(thetas)')
+        ax[i].set_ylabel('Probability Density')
+        ax[i].set_title(f"theta {float(fields[2])/float(fields[3]):.2f} gene -- number hets: {fields[1]} read depth per het: {int(fields[2])+int(fields[3])}")
+        ax[i].legend(fontsize=12)
+
+    plt.tight_layout()
+    plt.show()
 
 def get_stats(thetas,lambdas_choice_gam):
     mean,median,variance,CI_left,CI_right,mad,log2_mean,log2_median,log2_variance,abslog2_mean,abslog2_median,abslog2_variance = summarize(thetas,alpha=0.05)
@@ -212,7 +258,7 @@ def sim_alts(out_path,numsamples,model,numhets,readperhet,theta,sigma,value_name
         NS_p_list.append(NS_p)
         MS_p_list.append(MS_p)
         if NULL_list is not None:
-            em_p = calculate_right_tail_probability(NULL_list, mean_over_std)
+            em_p = calculate_left_tail_probability(NULL_list, mean_over_std)
             #print(f"find the tail prob of {abs_mean_over_std} among {NULL_list}")
             em_p_list.append(em_p)
         # list_posterior_mass_support_alt.append(sum_prob_lambda_gam)
@@ -308,7 +354,7 @@ if __name__ == "__main__":
     # read in parameters
     if len(sys.argv) < 9:
         print("Error: Not enough arguments provided.")
-        print("Usage: python calculate_p.py <output directory> <model path> <number of hets> <reads per het> <number of samples> <number of nulls>")
+        print("Usage: python calculate_p.py <output directory> <model path> <number of hets> <reads per het> <number of samples> <number of nulls> <save_bool> <value_name>")
         sys.exit(1)
     else:
         out_dir = sys.argv[1]
@@ -321,7 +367,7 @@ if __name__ == "__main__":
         value = sys.argv[8]
         print(f"Log: simulating {numNulls} null genes with {numhets} hets and {readperhet} read depth per het")
         print(f"Log: calculating p-values for {num_samples} simulated genes with {numhets} hets and {readperhet} read depth per het @ thetas 1, 0.75, 0.5")
-    value_names = ["mean_over_std",'abs_mean_over_std']
+    value_names = ["mean_over_std"]
     if value not in value_names:
         print(f"Error: {value} not in {value_names}")
         sys.exit(1)

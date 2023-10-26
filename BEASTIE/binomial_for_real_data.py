@@ -68,11 +68,7 @@ def getBaseline(fields, depth=None):
         return (None, None, None, None)
 
 
-<<<<<<< HEAD
 def getBaseline_pooled(fields, depth=None, hets=None):
-=======
-def getBaseline_pooled(fields):
->>>>>>> 11af5538a2fa916c44176414eb447db69f2b110e
     if len(fields) >= 4:
         base_thetas = []
         Mreps = int(fields[1])
