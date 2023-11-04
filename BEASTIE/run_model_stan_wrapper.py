@@ -45,6 +45,8 @@ def writeReadCounts(fields, start, numReps, varName, OUT):
 
 
 def writePi(fields, numReps, varName, OUT):
+    if int(fields[1]) == 1:
+        print(varName, "<- double(0)", file=OUT, end="")
     print(varName, "<- c(", file=OUT, end="")
     start = numReps * 2 + 3
     for rep in range(start, len(fields)):
