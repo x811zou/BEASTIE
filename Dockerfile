@@ -13,6 +13,9 @@ RUN make build
 COPY BEASTIE/iBEASTIE3.stan .
 RUN make iBEASTIE3
 
+COPY BEASTIE/iBEASTIE4.stan .
+RUN make iBEASTIE4
+
 COPY BEASTIE/BEASTIE3-fix-uniform.stan .
 RUN make BEASTIE3-fix-uniform
 
@@ -24,8 +27,6 @@ RUN tar -xf sqlite-autoconf-3380100.tar.gz
 RUN mv sqlite-autoconf-3380100 sqlite
 WORKDIR /sqlite 
 RUN export CFLAGS='-DSQLITE_ENABLE_UPDATE_DELETE_LIMIT=1'; ./configure && make
-
-
 
 FROM ubuntu:20.04 AS tabix
 
