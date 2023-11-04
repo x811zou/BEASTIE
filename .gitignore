@@ -2,6 +2,7 @@
 __pycache__
 dist
 *.egg-info
+BEASTIE_example/HG00096_chr21/beastie
 BEASTIE_example/ATACseq/beastie
 BEASTIE/LinearReg_iBEASTIE_fitted_model_lambda_loglambda.rds
 BEASTIE/LinearReg_iBEASTIE_fitted_model_lambda.rds
