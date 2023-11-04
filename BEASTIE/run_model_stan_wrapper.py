@@ -442,6 +442,7 @@ def run(
     ancestry,
     atacseq,
 ):
+    print(phasing_method)
     if phasing_method != "nophasing":
         out_BEASTIE = "iBEASTIE"
     else:

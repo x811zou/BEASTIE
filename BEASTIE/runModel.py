@@ -347,13 +347,16 @@ def run(
     logging.info(
         "....... start phasing with shapeit2 or VCF, convert data into model input format"
     )
+    if simulation_pileup is None:
+        alignBiasfiltered_filename = filtered_hetSNP_intersect_pileup
+        data23 = pd.read_csv(
+            alignBiasfiltered_filename, sep="\t", header=0, index_col=False
+        )
     if atacseq is True or "BEASTIE3-fix-uniform" in model or nophasing is True:
         print(
             "....... Phasing not provided: skip using phasing information"
         )
         phasing_method = "nophasing"
-        if simulation_pileup is None:
-            alignBiasfiltered_filename = filtered_hetSNP_intersect_pileup
         phased_filename = os.path.join(tmp_path, f"{os.path.splitext(os.path.basename(alignBiasfiltered_filename))[0]}.nophasing.tsv")
         phase_difference_filename = None
     else:
