@@ -269,7 +269,7 @@ def parse_stan_output_worker(line):
     if not gene_thetas:
         return None
     lambdas_choice_gam = g_lambdas.loc[
-        g_lambdas["peakID"] == gene_id, "gam_lambda"
+        g_lambdas["geneID"] == gene_id, "gam_lambda"
     ].iloc[0]
     (
         mean,
@@ -310,7 +310,6 @@ def parse_stan_output_new(input_file, thetas_file, lambdas_file,atacseq=False):
     thetas = pickle.load(open(thetas_file, "rb"))
     # names = ['geneID','median_altratio','num_hets','totalRef','totalAlt','total_reads','predicted_lambda']
     lambdas = pd.read_csv(lambdas_file, delimiter="\t", header=0)
-
     with open(input_file, "rt") as IN, multiprocessing.Pool(
         initializer=parse_stan_output_initializer,
         initargs=(
@@ -322,6 +321,7 @@ def parse_stan_output_new(input_file, thetas_file, lambdas_file,atacseq=False):
             rows = pool.map(parse_stan_output_worker, IN, chunksize=1)
         else:
             rows = pool.map(parse_stan_output_worker_atacseq, IN, chunksize=1)
+
     if atacseq is True:
         df = pd.DataFrame(
             rows,
@@ -362,9 +362,7 @@ def parse_stan_output_new(input_file, thetas_file, lambdas_file,atacseq=False):
                 "abslog2_posterior_variance",
             ],
         )
-
     return df
-
 
 def run_model_worker_initializer(
     tmp_dir,
@@ -482,10 +480,9 @@ def run(
         )
     )
     logging.info("...... Start parse_stan_output")
-    # df = parse_stan_output(
-    #     out0, prefix, inFile, thetas_file, lambdas_file, os.path.basename(modelpath)
-    # )
-    df = parse_stan_output_new(inFile, thetas_file, lambdas_file,atacseq)
+
+    df = parse_stan_output_new(inFile, thetas_file, lambdas_file, atacseq)
+
     if atacseq is not True:
         df["ancestry"] = ancestry
     logging.info("...... Finish parse_stan_output")
