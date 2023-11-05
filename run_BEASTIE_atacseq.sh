@@ -34,23 +34,30 @@ atacseq_hetSNP_file=$atacseq_dir/${sample}_hetSNP.tsv
 #exit
 
 ############ (1) extractHets-ATACSEQ
+# local python script
 # PYTHONPATH='.' python3 bin/beastie \
 #     extractHetsATACseq \
 #     --vcfgz-file $input_vcfgz \
 #     --output $atacseq_hetSNP_file \
 #     --annotationFile $atacseq_annotationFile
+# #: use docker running
+# docker run -v `pwd`:`pwd` -v /home/scarlett/github/BEASTIE/BEASTIE_example:/mnt xuezou/beastie \
+#     extractHetsATACseq \
+#     --vcfgz-file $atacseq_input_vcfgz \
+#     --output $atacseq_hetSNP_file \
+#     --annotationFile $atacseq_annotationFile
 
 ############ (2) filterGenotypingError & mpileup
-# hetSNP_file=$atacseq_hetSNP_file
-# filtered_hetSNP_file=$atacseq_dir/${sample}_hetSNP_filtered.tsv
-# genotypeEr_file=$beastie_dir/${sample}_genotypeEr.tsv
-# input_pileup=$atacseq_dir/${sample}.pileup.gz
-# WARMUP=5000
-# KEEPER=7300
-# chr_start=1
-# chr_end=1
-# read_length=50
-# filterGenotypingError_foldername="filterGenotypingError"
+hetSNP_file=$atacseq_hetSNP_file
+filtered_hetSNP_file=$atacseq_dir/${sample}_hetSNP_filtered.tsv
+genotypeEr_file=$beastie_dir/${sample}_genotypeEr.tsv
+input_pileup=$atacseq_dir/${sample}.pileup.gz
+WARMUP=5000
+KEEPER=7300
+chr_start=1
+chr_end=1
+read_length=50
+filterGenotypingError_foldername="filterGenotypingError"
 
 # PYTHONPATH='.' python3 bin/beastie \
 #     filterGenotypingError \
@@ -67,13 +74,29 @@ atacseq_hetSNP_file=$atacseq_dir/${sample}_hetSNP.tsv
 #     --warmup $WARMUP \
 #     --keeper $KEEPER 
 
+#: use docker running
+# docker run -v `pwd`:`pwd` -v /home/scarlett/github/BEASTIE/BEASTIE_example:/mnt xuezou/beastie \
+#     filterGenotypingError \
+#     --atacseq True \
+#     --vcfgz-file $input_vcfgz \
+#     --pileup-file $input_pileup \
+#     --input-het-snp-file $hetSNP_file \
+#     --filtered-het-snp-file $filtered_hetSNP_file \
+#     --sample $sample \
+#     --read-length $read_length \
+#     --chr-start $chr_start \
+#     --chr-end $chr_end \
+#     --out-dir $beastie_dir/$filterGenotypingError_foldername \
+#     --warmup $WARMUP \
+#     --keeper $KEEPER 
+
 ############ (2) runModel version3: no VCF phasing, no shapeit2 --> use beastie-fix-uniform model
-# filtered_hetSNP_file=$atacseq_dir/${sample}_hetSNP_filtered.tsv
-# filtered_vcfgz=$atacseq_input_vcfgz
-# output_dir=runModel_phased_even${read_length}_atacseq
-# chr_start=1
-# chr_end=1
-# read_length=50
+filtered_hetSNP_file=$atacseq_dir/${sample}_hetSNP_filtered.tsv
+filtered_vcfgz=$atacseq_input_vcfgz
+output_dir=runModel_phased_even${read_length}_atacseq
+chr_start=1
+chr_end=1
+read_length=50
 
 # PYTHONPATH='.' python3 bin/beastie \
 #     runModel \
@@ -94,10 +117,22 @@ atacseq_hetSNP_file=$atacseq_dir/${sample}_hetSNP.tsv
 #     --ld-token $LD_token \
 #     --sigma $sigma
 
-########################## option2: use docker running
-# docker run -v `pwd`:`pwd` -v /data2:/mnt ee1449909f33ce7c74cbc0b8f25c604b27b415e87bfe6e63af4487e6aad2ce75 \
-#     extractHetsATACseq \
-#     --vcfgz-file $atacseq_input_vcfgz \
-#     --output $atacseq_hetSNP_file \
-#     --annotationFile $atacseq_annotationFile
 
+docker run -v `pwd`:`pwd` -v /home/scarlett/github/BEASTIE/BEASTIE_example:/mnt xuezou/beastie \
+    runModel \
+    --atacseq True \
+    --vcfgz-file $filtered_vcfgz \
+    --vcf-sample-name $sample \
+    --filtered-het-snp-file $filtered_hetSNP_file \
+    --chr-start $chr_start \
+    --chr-end $chr_end \
+    --min-single-cov $min_single_count \
+    --min-total-cov $min_total_count \
+    --read-length $read_length \
+    --output-dir $beastie_dir/$output_dir \
+    --ldlink-cache-dir $base_dir \
+    --save-intermediate \
+    --alignBiasP-cutoff $binomialp_cutoff \
+    --ase-cutoff $ASE_cutoff \
+    --ld-token $LD_token \
+    --sigma $sigma
