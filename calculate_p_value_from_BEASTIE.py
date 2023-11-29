@@ -26,14 +26,15 @@ from scipy.optimize import minimize
 logging.basicConfig(level=logging.INFO)
 
 """
-python calculate_p_value_from_BEASTIE.py /home/scarlett/github/RNAseq-analysis/run_quickBeast/test_data/test /home/scarlett/github/RNAseq-analysis/run_quickBeast/test_data/test_BEASTIE.out /home/scarlett/github/BEASTIE/BEASTIE/iBEASTIE4 0.7
+python calculate_p_value_from_BEASTIE.py /home/scarlett/github/RNAseq-analysis/run_quickBeast/test_data/test /home/scarlett/github/RNAseq-analysis/run_quickBeast/test_data/test_BEASTIE3.out /home/scarlett/github/RNAseq-analysis/stan_models/BEASTIE3-pi0.05 0.7
+python calculate_p_value_from_BEASTIE.py /home/scarlett/github/RNAseq-analysis/run_quickBeast/test_data/test /data2/stan/BEASTIE3-pi0.05/sigma0.7/parametrized/ASE_0.05_error/tmp_output.out /home/scarlett/github/RNAseq-analysis/stan_models/BEASTIE3-pi0.05 0.7
 """ 
 
 def simulate_null_genes_helper(args):
     geneID, num_hets, average_count, model_path,sigma, WARMUP, KEEPER, phasing_method = args
     #print(f">>>>> geneID: {geneID}, num_hets: {num_hets}, total_count: {total_count}")
-    mean, std, df, loc, scale = simulate_null_genes(num_hets, average_count, model_path,sigma, WARMUP, KEEPER, phasing_method)
-    return geneID, mean, std, df, loc, scale
+    mean, std, n_loc, n_scale, t_df, t_loc, t_scale, st_df, st_loc, st_scale = simulate_null_genes(num_hets, average_count, model_path,sigma, WARMUP, KEEPER, phasing_method)
+    return geneID, mean, std, n_loc, n_scale, t_df, t_loc, t_scale, st_df, st_loc, st_scale
 
 def calculate_time(start_t, end_t):
     elapsed_time_seconds = end_t - start_t
@@ -71,10 +72,9 @@ def generate_fields(geneID,M, D, theta,switching_error = 0.05):
 
 def simulate_null_genes(number_of_hets, average_read_depth_per_het, model_path, sigma, WARMUP=1000, KEEPER=1000, phasing_method="VCF", pi=0.05):
     #(f"het-count: {number_of_hets}, read-depth: {average_read_depth_per_het}")
-    NUM_GENES = 1000
     # SIMULATE GENE INPUTS
     simulated_genes = []
-    for i in range(NUM_GENES):
+    for i in range(1000):
         gene_id = f"gene_{i}"
         field = generate_fields(gene_id, M=number_of_hets, D=average_read_depth_per_het, theta=1, switching_error = pi)
         #print(field)
@@ -99,52 +99,11 @@ def simulate_null_genes(number_of_hets, average_read_depth_per_het, model_path, 
     # df: degrees of freedom
     # loc: location
     # scale: scale of std
-    df, loc, scale = fit_t_distribution(z_scores)
-    
-    #s_df, s_loc, s_scale = fit_skewed_t_distribution(z_scores)
+    n_loc, n_scale = stats.norm.fit(z_scores)
+    t_df, t_loc, t_scale = stats.t.fit(z_scores)
+    st_df, st_loc, st_scale = stats.skewnorm.fit(z_scores)
 
-    return mean, std, df, loc, scale
-
-def fit_t_distribution(data):
-    """
-    Fit a t-distribution to the given data.
-    Returns the estimated degrees of freedom (df), location (loc), and scale (scale).
-    """
-    params = t.fit(data)
-    return params
-
-def fit_skewed_t_distribution(data):
-    """
-    Fit a skewed t-distribution to the given data.
-    This is a simplified version that uses the skewnorm function to approximate a skewness.
-    Returns the estimated skewness (alpha), location (loc), and scale (scale).
-    """
-    # First, estimate the skewness using the sample skew
-    estimated_skewness = skew(data)
-
-    # Define the negative log likelihood for the skewed t-distribution
-    def neg_log_likelihood(params):
-        alpha, loc, scale = params
-        # Note: skewnorm takes alpha as a shape parameter
-        # which can be thought of as representing skewness.
-        rv = skewnorm(alpha, loc=loc, scale=scale)
-        return -rv.logpdf(data).sum()
-    
-    # Initial guesses for alpha, loc, and scale
-    alpha_guess = estimated_skewness
-    loc_guess = np.mean(data)
-    scale_guess = np.std(data, ddof=1)
-    
-    # Minimize the negative log likelihood
-    result = minimize(neg_log_likelihood, x0=[alpha_guess, loc_guess, scale_guess], 
-                      bounds=[(None, None), (None, None), (1e-6, None)])
-
-    if result.success:
-        alpha, loc, scale = result.x
-    else:
-        raise RuntimeError("Optimization failed to converge.")
-
-    return alpha, loc, scale
+    return mean, std, n_loc, n_scale, t_df, t_loc, t_scale, st_df, st_loc, st_scale
 
 
 def parse_stan_output_pval_initializer(thetas):
@@ -238,12 +197,32 @@ def parse_stan_output_pval(genes, thetas):
     gene_df = df[["geneID", "log2_posterior_mean", "log2_posterior_variance","BEASTIE_zscore"]]
     return gene_df
 
-def calculate_t_2sided_pvalue(df, loc, scale, sample_X):
+def calculate_norm_2sided_pvalue(loc, scale, sample_X):
     # Get the cumulative probability of X (left tail)
-    left_tail_p = t.cdf(sample_X, df, loc, scale)
+    left_tail_p = stats.norm.cdf(sample_X, loc, scale)
     
     # Get the survival function value for X (right tail)
-    right_tail_p = t.sf(sample_X, df, loc, scale)
+    right_tail_p = stats.norm.sf(sample_X, loc, scale)
+    
+    # Return the double-sided p-value
+    return 2 * min(left_tail_p, right_tail_p)
+
+def calculate_t_2sided_pvalue(df, loc, scale, sample_X):
+    # Get the cumulative probability of X (left tail)
+    left_tail_p = stats.t.cdf(sample_X, df, loc, scale)
+    
+    # Get the survival function value for X (right tail)
+    right_tail_p = stats.t.sf(sample_X, df, loc, scale)
+    
+    # Return the double-sided p-value
+    return 2 * min(left_tail_p, right_tail_p)
+
+def calculate_st_2sided_pvalue(a, loc, scale, sample_X):
+    # Get the cumulative probability of X (left tail)
+    left_tail_p = stats.skewnorm.cdf(sample_X, a, loc, scale)
+    
+    # Get the survival function value for X (right tail)
+    right_tail_p = stats.skewnorm.sf(sample_X, a, loc, scale)
     
     # Return the double-sided p-value
     return 2 * min(left_tail_p, right_tail_p)
@@ -322,16 +301,16 @@ def main():
     sigma = sys.argv[4]
     WARMUP = 1000
     KEEPER = 1000
-    phasing_method = "VCF"
+    phasing_method = "nophasing"
 
     # define output file name
-    outname = "stan.pickle"
     out_path = os.path.dirname(output_file_path)
     out_path = os.path.join(out_path, "output_pkl")
     if not os.path.exists(out_path):
         os.makedirs(out_path)
         # outname is the base file name of input_file_path without postix ".txt" + outname
-    outname = os.path.basename(inFile).replace(".txt", "") + "." + outname
+    outname = f"_s-{sigma}.pickle"
+    outname = os.path.basename(inFile).replace(".txt", "")  + outname
     thetas_file = os.path.join(out_path, outname)
     start_t = time.time()
 
@@ -340,8 +319,13 @@ def main():
         for line in file.readlines():
             fields = line.strip().split("\t")
             input_genes.append(fields)
+
     # step1: run BEASTIE on input genes, and then parsing input
-    if not os.path.isfile(thetas_file):
+    if os.path.isfile(thetas_file):
+        logging.info("...... Already finshed running {0} and saved raw theta at : {1}".format(
+            os.path.basename(model_path), thetas_file
+        ))
+    else:
         model_thetas = save_raw_theta_parallel_list(
             input_genes,
             model_path,
@@ -351,23 +335,23 @@ def main():
             phasing_method,
         )
         pickle.dump(model_thetas, open(thetas_file, "wb"))
-    beastie_end_t = time.time()
-    logging.info(
-        "...... Finshed running {0} and saved raw theta at : {1}".format(
-            os.path.basename(model_path), os.path.dirname(thetas_file)
+        beastie_end_t = time.time()
+        logging.info(
+            "...... Just finshed running {0} and save raw theta at : {1}".format(
+                os.path.basename(model_path), thetas_file
+            )
         )
-    )
-    logging.info(f"...... Finished running BEASTIE on input in ${calculate_time(start_t, beastie_end_t)}")
-    
+        logging.info(f"...... Running BEASTIE on input used ${calculate_time(start_t, beastie_end_t)}")
+
+    # step2: parsing
     logging.info("...... Start parse_stan_output")
     thetas = pickle.load(open(thetas_file, "rb"))
     gene_df = parse_stan_output_pval(input_genes, thetas)
 
     parse_end_t = time.time()
-    logging.info(f"...... Finished parsing input in ${calculate_time(beastie_end_t,parse_end_t)}")
-    #print(gene_df)
+    logging.info(f"...... Just finished parsing input in ${calculate_time(beastie_end_t,parse_end_t)}")
 
-    # step2: NULL simulation
+    # step3: NULL simulation
     null_simulation_cache = {}
     null_simulation_data = []
     runs_completed = 0
@@ -393,7 +377,7 @@ def main():
         #print(output[0])
         #print(f"{output[0]} : {output[1]} {output[2]} {output[3]} {output[4]} {output[5]}")
 
-        null_simulation_cache[output[0]] = output[1], output[2], output[3], output[4], output[5]
+        null_simulation_cache[output[0]] = output[1], output[2] , output[3] , output[4], output[5], output[6], output[7] , output[8] , output[9], output[10]
 
         runs_completed += 1
 
@@ -405,26 +389,28 @@ def main():
     for r in all_runs:
         #print(r)
         key = f"h-{r[1]}_d-{int(r[2]/r[1])}"
-        mean, std, df, loc, scale = null_simulation_cache[key]
-        null_simulation_data.append((r[0], mean, std, df, loc, scale))
+        mean, std, n_loc, n_scale, t_df, t_loc, t_scale, st_df, st_loc, st_scale = null_simulation_cache[key]
+        null_simulation_data.append((r[0], mean, std, n_loc, n_scale, t_df, t_loc, t_scale, st_df, st_loc, st_scale))
 
-    null_simulation_df = pd.DataFrame(null_simulation_data, columns=['geneID', 'null_mean', 'null_std' ,'t_null_df' ,'t_null_loc' ,'t_null_scale'])
+    null_simulation_df = pd.DataFrame(null_simulation_data, columns=['geneID', 'null_zscore_mean', 'null_zscore_std' ,'n_loc' ,'n_scale','t_df' ,'t_loc' ,'t_scale','st_df' ,'st_loc' ,'st_scale'])
+    
     #print(null_simulation_df)
     gene_df = pd.merge(gene_df, null_simulation_df, on="geneID")
 
     simulation_end_t = time.time()
     logging.info(f"...... Finished simulations in ${calculate_time(parse_end_t, simulation_end_t)}")
 
-    #gene_df['skewedt_p_value'] = gene_df.apply(lambda row: calculate_t_2sided_pvalue(row['skewedt_null_df'], row['skewedt_null_loc'], row['skewedt_null_scale'], row['BEASTIE_zscore']), axis=1)
-    gene_df['t_p_value'] = gene_df.apply(lambda row: calculate_t_2sided_pvalue(row['t_null_df'], row['t_null_loc'], row['t_null_scale'], row['BEASTIE_zscore']), axis=1)
-
+    gene_df['normal_p_value'] = gene_df.apply(lambda row: calculate_norm_2sided_pvalue(row['n_loc'], row['n_scale'], row['BEASTIE_zscore']), axis=1)
+    gene_df['t_p_value'] = gene_df.apply(lambda row: calculate_t_2sided_pvalue(row['t_df'], row['t_loc'], row['t_scale'], row['BEASTIE_zscore']), axis=1)
+    gene_df['st_p_value'] = gene_df.apply(lambda row: calculate_st_2sided_pvalue(row['st_df'], row['st_loc'], row['st_scale'], row['BEASTIE_zscore']), axis=1)
+    columns_to_drop = ['null_zscore_mean', 'null_zscore_std','n_loc', 'n_scale','t_df','t_loc','t_scale','st_df','st_loc','st_scale']
+    gene_df = gene_df.drop(columns=columns_to_drop)
     #(gene_df)
     # Save the DataFrame as a TSV file
     gene_df.to_csv(output_file_path, sep='\t', index=False)
 
     complete_time_t = time.time()
-    logging.info(f"...... Completed BEASTIE on input in ${calculate_time(start_t, complete_time_t)}")
-    print(gene_df)
+    logging.info(f"...... Completed BEASTIE on input {inFile} in ${calculate_time(start_t, complete_time_t)}")
 
 # usage
 if __name__ == "__main__":
