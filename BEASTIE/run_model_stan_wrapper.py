@@ -67,6 +67,7 @@ def writeInputsFile(fields, filename, sigma):
 
 
 def writeInputsFile_i(fields, filename, sigma):
+    #print('f', fields, fields[1])
     Mreps = int(fields[1])
     OUT = open(filename, "wt")
     print("M <-", Mreps, file=OUT)
@@ -74,7 +75,9 @@ def writeInputsFile_i(fields, filename, sigma):
     writeReadCounts(fields, 3, Mreps, "R", OUT)  # ref
     print("sigma <-", sigma, file=OUT)
     writePi(fields, Mreps, "pi", OUT)  # ref
-    print("N_MISSING_PI <-", fields[Mreps * 2 + 2], file=OUT)
+    end_index = -Mreps
+    subfields = fields[-Mreps+1:] if end_index != 1 else []
+    print("N_MISSING_PI <-", subfields.count('-1'), file=OUT)
     OUT.close()
 
 
@@ -133,7 +136,9 @@ def runModel(
         geneID = str(fields[0])
         writeOutputsFile(stan_output_file)
         # logging.debug(geneID)
-        if phasing_method == "nophasing":
+        if "iBEASTIE" in model:
+            writeInputsFile_i(fields, tmp_output_file, sigma)
+        elif "BEASTIE" in model or phasing_method == "nophasing":
             writeInputsFile(fields, tmp_output_file, sigma)
         else:
             writeInputsFile_i(fields, tmp_output_file, sigma)
@@ -193,7 +198,7 @@ def summarize(thetas, alpha):
     CI_left, CI_right = getCredibleInterval(thetas, alpha, n)
     # mad = stats.median_abs_deviation(thetas, scale="normal")
     # mad = stats.median_abs_deviation(thetas, scale=1/1.4826)
-    mad = stats.median_absolute_deviation(thetas)
+    mad = stats.median_abs_deviation(thetas)
     return (
         mean,
         median,
