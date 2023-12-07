@@ -305,7 +305,7 @@ def main():
 
     # define output file name
     out_path = os.path.dirname(output_file_path)
-    out_path = os.path.join(out_path, "output_pkl")
+    # out_path = os.path.join(out_path, "output_pkl")
     if not os.path.exists(out_path):
         os.makedirs(out_path)
         # outname is the base file name of input_file_path without postix ".txt" + outname
@@ -325,6 +325,7 @@ def main():
         logging.info("...... Already finshed running {0} and saved raw theta at : {1}".format(
             os.path.basename(model_path), thetas_file
         ))
+        beastie_end_t = time.time()
     else:
         model_thetas = save_raw_theta_parallel_list(
             input_genes,
@@ -351,6 +352,12 @@ def main():
     parse_end_t = time.time()
     logging.info(f"...... Just finished parsing input in ${calculate_time(beastie_end_t,parse_end_t)}")
 
+    DISABLE_CACHE = False
+    def cache_key(run):
+        if DISABLE_CACHE:
+            return run[0]
+        return f"h-{run[1]}_d-{int(run[2]/run[1])}"
+
     # step3: NULL simulation
     null_simulation_cache = {}
     null_simulation_data = []
@@ -367,7 +374,7 @@ def main():
             # Handle the error or report it
             print(f"Skipping gene {gene[0]} due to invalid number format.")
 
-    unique_runs = set([(f"h-{r[1]}_d-{int(r[2]/r[1])}", r[1], int(r[2]/r[1]), model_path, sigma, WARMUP, KEEPER, phasing_method) for r in all_runs])
+    unique_runs = set([(cache_key(r), r[1], int(r[2]/r[1]), model_path, sigma, WARMUP, KEEPER, phasing_method) for r in all_runs])
     logging.info(f"...... {datetime.now()} Starting {len(unique_runs)} unique gene simulation runs {len(all_runs)} total runs")
 
     for params in unique_runs:
@@ -388,7 +395,7 @@ def main():
 
     for r in all_runs:
         #print(r)
-        key = f"h-{r[1]}_d-{int(r[2]/r[1])}"
+        key = cache_key(r)
         mean, std, n_loc, n_scale, t_df, t_loc, t_scale, st_df, st_loc, st_scale = null_simulation_cache[key]
         null_simulation_data.append((r[0], mean, std, n_loc, n_scale, t_df, t_loc, t_scale, st_df, st_loc, st_scale))
 
