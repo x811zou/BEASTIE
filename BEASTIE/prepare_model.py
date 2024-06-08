@@ -417,45 +417,8 @@ def generate_modelCount(phased_filename,atacseq):
                 "genotype",
             ]
         ]
-        file_for_lambda = "{0}.forlambda.tsv".format(base_out)
-        lambdaPredicted_file = "{0}.lambdaPredicted.tsv".format(base_out)
         out_modelinput = "{0}.modelinput.tsv".format(base_out)
         out_modelinput_error = "{0}.modelinput.w_error.tsv".format(base_out)
-        df_med = (
-            data.groupby(["peakID"])
-            .agg({"altRatio": "median"})
-            .reset_index()
-            .rename(columns={"altRatio": "median.altRatio"})
-        )
-
-        df_nhets = (
-            data.groupby(by="peakID")
-            .agg({"pos": pd.Series.nunique})
-            .rename(columns={"pos": "number.of.hets"})
-        )
-
-        df_totalref = (
-            data.groupby(by="peakID")
-            .agg({"patCount": "sum"})
-            .reset_index()
-            .rename(columns={"patCount": "total.patCount"})
-        )
-
-        df_totalalt = (
-            data.groupby(by="peakID")
-            .agg({"matCount": "sum"})
-            .reset_index()
-            .rename(columns={"matCount": "total.matCount"})
-        )
-        df_summary_1 = pd.merge(df_med, df_nhets, on=["peakID"], how="inner")
-        df_summary_2 = pd.merge(df_summary_1, df_totalref, on=["peakID"], how="inner")
-        df_summary_3 = pd.merge(df_summary_2, df_totalalt, on=["peakID"], how="inner")
-        df_summary_3["totalCount"] = (
-            df_summary_3["total.patCount"] + df_summary_3["total.matCount"]
-        )
-
-        # df_summary_3 = df_summary_3.drop(["total.patCount", "total.matCount"], axis=1)
-        df_summary_3.to_csv(file_for_lambda, index=False, sep="\t", header=True)
 
         counter = 0
         if not os.path.isfile(out_modelinput):
@@ -499,46 +462,8 @@ def generate_modelCount(phased_filename,atacseq):
                 "genotype",
             ]
         ]
-        file_for_lambda = "{0}.forlambda.tsv".format(base_out)
-        lambdaPredicted_file = "{0}.lambdaPredicted.tsv".format(base_out)
         out_modelinput = "{0}.modelinput.tsv".format(base_out)
         out_modelinput_error = "{0}.modelinput.w_error.tsv".format(base_out)
-
-        df_med = (
-            data.groupby(["geneID"])
-            .agg({"altRatio": "median"})
-            .reset_index()
-            .rename(columns={"altRatio": "median.altRatio"})
-        )
-
-        df_nhets = (
-            data.groupby(by="geneID")
-            .agg({"pos": pd.Series.nunique})
-            .rename(columns={"pos": "number.of.hets"})
-        )
-
-        df_totalref = (
-            data.groupby(by="geneID")
-            .agg({"patCount": "sum"})
-            .reset_index()
-            .rename(columns={"patCount": "total.patCount"})
-        )
-
-        df_totalalt = (
-            data.groupby(by="geneID")
-            .agg({"matCount": "sum"})
-            .reset_index()
-            .rename(columns={"matCount": "total.matCount"})
-        )
-        df_summary_1 = pd.merge(df_med, df_nhets, on=["geneID"], how="inner")
-        df_summary_2 = pd.merge(df_summary_1, df_totalref, on=["geneID"], how="inner")
-        df_summary_3 = pd.merge(df_summary_2, df_totalalt, on=["geneID"], how="inner")
-        df_summary_3["totalCount"] = (
-            df_summary_3["total.patCount"] + df_summary_3["total.matCount"]
-        )
-
-        # df_summary_3 = df_summary_3.drop(["total.patCount", "total.matCount"], axis=1)
-        df_summary_3.to_csv(file_for_lambda, index=False, sep="\t", header=True)
 
         counter = 0
         if not os.path.isfile(out_modelinput):
@@ -567,8 +492,6 @@ def generate_modelCount(phased_filename,atacseq):
                 )
             )
     return (
-        file_for_lambda,
-        lambdaPredicted_file,
         out_modelinput,
         out_modelinput_error,
     )
@@ -592,13 +515,13 @@ def count_reads(fields):
 
 
 def update_model_input_lambda_phasing(
-    pred_prob_column, base_modelin, base_modelin_error, meta_error
+    pred_prob_column, base_modelin, base_modelin_error, meta_error, default_phasing_error
 ):
     pred_prob_column = "pred_error_GIAB"
     outfile = base_modelin_error
     model_input = base_modelin
     phasing_error = pd.read_csv(meta_error, header=0, sep="\t")
-    updated_line = ""
+    output = ""
     counter = 0
 
     with open(model_input, "r") as stream_in:
@@ -622,28 +545,15 @@ def update_model_input_lambda_phasing(
             if len(pred_prob) != 0:
                 del pred_prob[0]
             # logging.debug("original predicted prob :{0}".format(pred_prob))
-            # count number of NAs in the predicted switching error for each gene
-            nNAs = np.count_nonzero(np.isnan(pred_prob))
-            # logging.debug("num of NAs :{0}".format(nNAs))
             # replace NA with -1 for predicted switching error
-            pred_prob = [-1 if x != x else x for x in pred_prob]
+            pred_prob = [default_phasing_error if x != x else x for x in pred_prob]
             # logging.debug("corrected predicted prob :{0}".format(pred_prob))
-            PI_pred = []
-            # for gene with 1 het, number of NA is 1, put 0 there
-            if nhet == 1:
-                updated_line += "%s\t%d\n" % (line, 0)
-            # for gene with more than 1 hets, append predicted switching error after nNAs
-            else:
-                for m in range(int(nhet) - 1):  # 0,1,2
-                    if m == 0:  # the first het site
-                        PI_pred = "%d\t%s" % (nNAs, pred_prob[m])
-                    else:
-                        PI_pred = "%s\t%s" % (PI_pred, pred_prob[m])
-                updated_line += "%s\t%s\n" % (line, PI_pred)
+            pred_prob = map(str, pred_prob)
+            output += line + "\t" + "\t".join(pred_prob) + "\n"
             # if counter == 20:
             #     sys.exit()
     file1 = open(outfile, "w")
-    file1.write(updated_line)
+    file1.write(output)
     file1.close()
 
 

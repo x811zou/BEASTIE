@@ -346,12 +346,6 @@ def configure_runModel():
         required=True,
     )
     parser.add_argument(
-        "--sigma",
-        help="Dispersion parameter for BEASTIE STAN model.",
-        default=0.5,
-        type=float,
-    )
-    parser.add_argument(
         "--alignBiasP-cutoff",
         help="alignment bias Binomial test p-value cutoff.",
         default=0.05,
@@ -364,21 +358,10 @@ def configure_runModel():
         type=float,
     )
     parser.add_argument(
-        "--alpha",
-        help="Type-1 error rate for lambda prediction model.",
-        default=0.05,
-        type=float,
-    )
-    parser.add_argument(
         "--chr-start", help="Starting chromosome number", default=1, type=int
     )
     parser.add_argument(
         "--chr-end", help="Ending chromosome number", default=22, type=int
-    )
-    parser.add_argument(
-        "--model",
-        help="stan model name (iBEASTIE4,BEASTIE3-fix-uniform)",
-        default="iBEASTIE4",
     )
     parser.add_argument(
         "--nophasing",
@@ -392,22 +375,9 @@ def configure_runModel():
         default=False,
         type=bool,
     )
-    parser.add_argument("--STAN", help="Path to STAN model.", default="/usr/local/bin/")
 
     parser.add_argument(
         "--save-intermediate", help="Keep intermediate files.", action="store_true"
-    )
-    parser.add_argument(
-        "--warmup",
-        help="Number of warmup estimates to burn in STAN model.",
-        default=1000,
-        type=int,
-    ),
-    parser.add_argument(
-        "--keeper",
-        help="Number of estimates to keep from STAN model.",
-        default=1000,
-        type=int,
     )
     parser.add_argument(
         "--output-dir",
@@ -426,11 +396,6 @@ def configure_runModel():
     parser.add_argument(
         "--ldlink-token-db",
         help="Path to database containing ldlink tokens for running parallel jobs.",
-    )
-    parser.add_argument(
-        "--gam-model-name",
-        help="gam model name",
-        default="iBEASTIE3_s0.7_GAM/gam4_lambdamodel.pkl",
     )
     extractHets_parser = subparsers.add_parser(
         "extractHets",

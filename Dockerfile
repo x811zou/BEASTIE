@@ -1,21 +1,3 @@
-FROM ubuntu:20.04 AS CMDSTAN
-
-WORKDIR /
-RUN apt-get update && apt-get install --no-install-recommends -qq wget ca-certificates make gcc g++
-
-RUN wget https://github.com/stan-dev/cmdstan/releases/download/v2.27.0/cmdstan-2.27.0.tar.gz
-RUN tar -zxpf cmdstan-2.27.0.tar.gz
-
-RUN mv cmdstan-2.27.0 cmdstan
-WORKDIR /cmdstan
-RUN make build
-
-COPY BEASTIE/iBEASTIE3.stan .
-RUN make iBEASTIE3
-
-COPY BEASTIE/BEASTIE3-fix-uniform.stan .
-RUN make BEASTIE3-fix-uniform
-
 FROM ubuntu:20.04 AS sqlite
 RUN apt-get update && apt-get install --no-install-recommends -qq wget ca-certificates make gcc g++ libbz2-1.0 libbz2-dev lbzip2 zlib1g-dev liblzma-dev
 WORKDIR /
@@ -39,7 +21,13 @@ WORKDIR /htslib
 RUN ./configure && make
 
 
-
+FROM ubuntu:20.04 AS QuickBEAST
+RUN apt-get update && apt-get install --no-install-recommends -qq wget ca-certificates make gcc g++ libbz2-1.0 libbz2-dev lbzip2 zlib1g-dev liblzma-dev git
+RUN apt-get install -qq libgsl-dev
+WORKDIR /
+RUN git clone https://github.com/x811zou/QuickBEAST.git
+WORKDIR /QuickBEAST
+RUN make
 
 
 
@@ -81,16 +69,15 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   r-base-core r-base-dev libicu66 libstdc++6 openssl libxml2 libcurl4 zlib1g \
   libbz2-1.0 lzma libhts3 vcftools samtools pipenv python3.8-venv libtbb2 \
-  r-cran-dplyr r-cran-readr krb5-user sssd-krb5 jags
+  r-cran-dplyr r-cran-readr krb5-user sssd-krb5 jags libgsl23
 
 RUN ln -s /usr/bin/python3.8 /usr/bin/python
 
-COPY --from=CMDSTAN /cmdstan/iBEASTIE3 /usr/local/bin
-COPY --from=CMDSTAN /cmdstan/BEASTIE3-fix-uniform /usr/local/bin
+COPY --from=QuickBEAST /QuickBEAST/QuickBEAST /usr/local/bin
 COPY --from=tabix /htslib/tabix /usr/local/bin
 
 COPY --from=rpackages /usr/local/lib/R/site-library /usr/local/lib/R/site-library
-COPY --from=sqlite /sqlite/.libs/libsqlite* /usr/local/lib
+COPY --from=sqlite /sqlite/.libs/libsqlite* /usr/local/lib/
 
 COPY --from=beastie-py /usr/local/lib/python3.8/dist-packages /usr/local/lib/python3.8/dist-packages
 COPY --from=beastie-py /usr/local/bin/beastie /usr/local/bin/

@@ -3,17 +3,13 @@
 # Copyright (C) Xue Zou (xue.zou@duke.edu)
 # =========================================================================
 import logging
-from lzma import MODE_NORMAL
 import os
 import sys
 import shutil
 import multiprocessing
 from pathlib import Path
 import pandas as pd
-import pickle
-from . import ADM_for_real_data
 from . import binomial_for_real_data
-from . import run_model_stan_wrapper
 from pkg_resources import resource_filename
 from .helpers import runhelper
 from .parse_mpileup import Parse_mpileup_allChr
@@ -26,7 +22,13 @@ from .prepare_model import (
     significant_genes,
     update_model_input_lambda_phasing,
 )
-from .predict_lambda_GAM import predict_lambda_onrealdata
+
+current_script_path = os.path.abspath(__file__)
+current_script_dir = os.path.dirname(current_script_path)
+quickBEAST_path = os.path.join(current_script_dir, '../QuickBEAST')
+sys.path.append(quickBEAST_path)
+
+import calculate_p_value_from_qb_mode
 
 
 def parse_mpileup(
@@ -216,24 +218,18 @@ def run(
     shapeit2_file,
     binomialp_cutoff,
     ase_cutoff,
-    model,
     ancestry,
     chr_start,
     chr_end,
     min_total_cov,
     min_single_cov,
     read_length,
-    alpha,
-    sigma,
     SAVE_INT,
     nophasing,
     atacseq,
-    WARMUP,
-    KEEPER,
     LD_token,
     ldlink_cache_dir,
     ldlink_token_db,
-    gam_model_name,
 ):
     #####
     ##### 2.1 Check input file existence
@@ -347,7 +343,7 @@ def run(
     logging.info(
         "....... start phasing with shapeit2 or VCF, convert data into model input format"
     )
-    if atacseq is True or "BEASTIE3-fix-uniform" in model or nophasing is True:
+    if atacseq is True or nophasing is True:
         print(
             "....... Phasing not provided: skip using phasing information"
         )
@@ -414,33 +410,9 @@ def run(
         )
     )
     (
-        file_for_lambda,
-        lambdaPredicted_file,
         base_modelin,
         base_modelin_error,
     ) = generate_modelCount(phased_clean_filename,atacseq)
-
-    data24_2 = pd.read_csv(file_for_lambda, sep="\t", header=0, index_col=False)
-    logging.debug(
-        "output {0} has {1} genes for lambda prediction".format(
-            os.path.basename(file_for_lambda), data24_2.shape[0]
-        )
-    )
-    if data24_2.shape[0] < 2:
-        os.remove(file_for_lambda)
-        logging.error(
-            "....... existed {0} with filtered sites prepared for lambda model file is empty, please try again!".format(
-                os.path.basename(file_for_lambda)
-            )
-        )
-        sys.exit(1)
-    else:
-        logging.info(
-            "....... {0} save to {1}".format(
-                os.path.basename(file_for_lambda),
-                os.path.dirname(file_for_lambda),
-            )
-        )
 
     #####
     ##### 2.5 Annotation LD
@@ -497,47 +469,6 @@ def run(
     #####
     logging.info("=================")
     logging.info("================= Starting step specific 2.6 regression model")
-    logging.info(
-        "....... start predicting lambda for {0}".format(
-            os.path.basename(file_for_lambda)
-        )
-    )
-
-    adjusted_alpha = alpha / data24_2.shape[0]
-    if not os.path.isfile(lambdaPredicted_file):
-        logging.info("....... lambda is not predicted: start predicting lambda")
-        gam_modelname = resource_filename("BEASTIE", gam_model_name)
-        logging.info(f"....... using gam model {gam_modelname}")
-        gam_model = pickle.load(open(gam_modelname, "rb"))
-        predict_lambda_onrealdata(
-            adjusted_alpha,
-            file_for_lambda,
-            lambdaPredicted_file,
-            {
-                "gam_lambda": gam_model,
-            },
-        )
-        logging.info(f"....... finish predicting lambda")
-    data26_1 = pd.read_csv(
-        lambdaPredicted_file,
-        sep="\t",
-        header=None,
-        index_col=False,
-    )
-    logging.info(
-        "lambda prediction model: input {0}".format(os.path.basename(file_for_lambda))
-    )
-    logging.info(
-        "lambda prediction model: input alpha (family wise error rate) is {0}, adjusted after size of input {1} is {2}".format(
-            alpha, data24_2.shape[0], adjusted_alpha
-        )
-    )
-    logging.debug(
-        "output {0} has {1} genes with lambda prediction".format(
-            os.path.basename(lambdaPredicted_file),
-            data26_1.shape[0],
-        )
-    )
 
     if not os.path.isfile(meta_error):
         if phasing_method != "nophasing":
@@ -548,7 +479,7 @@ def run(
             )
         predict_lambda_phasing_error = resource_filename("BEASTIE", "predict_lambda_phasingError.R")
         beastie_wd = resource_filename("BEASTIE", ".")
-        cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {adjusted_alpha} {tmp_path} {prefix} {model} {phased_clean_filename} {lambdaPredicted_file} {lambdaPredicted_file} {meta} {meta_error} {beastie_wd} {phasing_method}"
+        cmd = f"Rscript --vanilla {predict_lambda_phasing_error} {tmp_path} {prefix} {phased_clean_filename} {meta} {meta_error} {beastie_wd} {phasing_method}"
         runhelper(cmd)
         if os.path.isfile(meta_error):
             logging.info(f"....... finish predicting error")
@@ -591,103 +522,53 @@ def run(
                     os.path.basename(base_modelin_error)
                 )
             )
+        default_phasing_error = 0.05
         update_model_input_lambda_phasing(
-            "pred_error_GIAB", base_modelin, base_modelin_error, meta_error
+            "pred_error_GIAB", base_modelin, base_modelin_error, meta_error, default_phasing_error
         )
         model_input = base_modelin_error
     else:
         model_input = base_modelin
 
     #####
-    ##### 2.8 running stan model
+    ##### 2.8 run quickbeast
     #####
     logging.info("=================")
-    logging.info("================= Starting specific step 2.8 running STAN model")
-    logging.info("....... start running {0} model".format(model))
-    df_beastie, picklename = run_model_stan_wrapper.run(
-        prefix,
-        model_input,
-        sigma,
-        model,
-        result_path,
-        lambdaPredicted_file,
-        WARMUP,
-        KEEPER,
-        phasing_method,
-        ancestry,
-        atacseq,
-    )
-    if df_beastie.shape[0] > 1:
-        logging.info("....... done with running model {0}!".format(model))
-    else:
-        logging.error("....... model output is empty, please try again!")
-        sys.exit(1)
+    logging.info("================= Starting specific step 2.8 running quickBEAST")
+    # logging.info("....... start running {0} model".format(model))
 
-    logging.info("....... start processing ADM")
-    adm_out_path = os.path.join(result_path, f"{prefix}_ASE_ADM.tsv")
-    df_adm = ADM_for_real_data.run(base_modelin, adm_out_path,atacseq)
-    logging.info("....... saved ADM output to {0}".format(adm_out_path))
-    logging.info("....... done with running ADM method")
+    qb_executable = '/usr/local/bin/QuickBEAST'
 
+    logging.info("....... running quickBEAST")
+    input_genes = calculate_p_value_from_qb_mode.parse_gene_input_file(model_input)
+    gene_df = calculate_p_value_from_qb_mode.run_qb_parallel(qb_executable, input_genes)
+
+    logging.info("....... running null simulations for p-value calculation")
+    null_simulation_df = calculate_p_value_from_qb_mode.run_null_simulations(qb_executable, input_genes, False)
+    gene_df = pd.merge(gene_df, null_simulation_df, on="geneID")
+
+    logging.info("....... calculating p-values")
+    gene_df['mode_st_p_value'] = gene_df.apply(lambda row: calculate_p_value_from_qb_mode.calculate_st_2sided_pvalue(row['st_df'], row['st_loc'], row['st_scale'], row['qb_mode']), axis=1)
+    gene_df.rename(columns={'mode_st_p_value': 'qb_p_value'}, inplace=True)
+    gene_df = gene_df[['geneID', 'n_hets', 'total_count', 'qb_mode', 'qb_p_value']]
+
+    outfilename = os.path.join(result_path, f"{prefix}_quickBEAST.tsv")
+    gene_df.to_csv(outfilename, sep="\t", header=True, index=False)
+
+    logging.info("....... saved quickBeast to {0}".format(outfilename))
+
+
+    logging.info("....... running binomial")
     df_binomial = binomial_for_real_data.run(base_modelin,atacseq)
     logging.info("....... done with running binomial")
     binomial_out_path = os.path.join(result_path, f"{prefix}_ASE_binomial.tsv")
     df_binomial.to_csv(binomial_out_path, sep="\t", header=True, index=False)
     logging.info("....... saved binomial to {0}".format(binomial_out_path))
 
-    #####
-    ##### 2.9 generating output
-    #####
-    logging.info("=================")
-    logging.info("================= Starting specific step 2.9 generating output files")
-    logging.info("....... start generating gene list")
-    outfilename = os.path.join(result_path, f"{prefix}_ASE_all.tsv")
-    outfilename_sub = os.path.join(result_path, f"{prefix}_ASE_sub.tsv")
-    outfilename_ase = os.path.join(
-        result_path, f"{prefix}_ASE_cutoff_{ase_cutoff}_filtered.tsv"
-    )
-    if (os.path.isfile(outfilename)) and (os.path.isfile(outfilename_ase)):
-        logging.info(
-            "....... {0} exists, but we will overwrites".format(
-                os.path.basename(outfilename)
-            )
-        )
-        logging.info(
-            "....... {0} exists, but we will overwrites".format(
-                os.path.basename(outfilename_ase)
-            )
-        )
-    significant_genes(
-        df_beastie,
-        df_binomial,
-        df_adm,
-        outfilename,
-        outfilename_sub,
-        outfilename_ase,
-        ase_cutoff,
-        lambdaPredicted_file,
-        adjusted_alpha,
-        atacseq,
-    )
-    logging.info("....... done with significant_gene")
+    
     if not SAVE_INT:
+        logging.info("....... removing TEMP folder {0}".format(tmp_path))
         shutil.rmtree(tmp_path)
-        logging.info("....... remove TEMP folder {0}".format(tmp_path))
 
-    data29_1 = pd.read_csv(outfilename, sep="\t", header=0, index_col=False)
-    # data29_2 = pd.read_csv(outfilename_ase, sep="\t", header=0, index_col=False)
-    logging.info(
-        "output {0} has all {1} genes".format(
-            os.path.basename(outfilename),
-            data29_1.shape[0],
-        )
-    )
-    # logging.info(
-    #     "output {0} has filtered {1} genes passing ASE cutoff {2}".format(
-    #         os.path.basename(outfilename_ase),
-    #         data29_2.shape[0],
-    #         ase_cutoff,
-    #     )
-    # )
     logging.info("=================")
     logging.info(">>  Yep! You are done running BEASTIE!")

@@ -25,56 +25,14 @@ suppressMessages(library("dplyr"))
 suppressMessages(library(glmnetUtils))
 #suppressMessages(library(glmnet))
 
-adjusted_alpha <- args[1]
-tmp <- paste0(args[2], "/", sep = "")
-sample <- args[3]
-model <- args[4]
-hetSNP_intersect_unique <- args[5]
-hetSNP_intersect_unique_forlambda_file <- args[6]
-hetSNP_intersect_unique_lambdaPredicted_file <- args[7]
-meta <- args[8]
-meta_error <- args[9]
-beastie_wd <- args[10]
-phasing_method <- args[11]
+tmp <- paste0(args[1], "/", sep = "")
+sample <- args[2]
+hetSNP_intersect_unique <- args[3]
+meta <- args[4]
+meta_error <- args[5]
+beastie_wd <- args[6]
+phasing_method <- args[7]
 source(file.path(beastie_wd, "Get_phasing_error_rate.R"))
-
-predict_lambda_realdata <- function(alpha, in_data, out_data, model) {
-  ######### model with log(lambda-1)
-  # colnames(in_data)<-c("gene_ID","total_reads","num_hets")
-  data <- in_data %>%
-    dplyr::mutate(log_lambda_minus1 = (log(alpha / (1 - alpha)) - (as.numeric(model$coefficients[1]) + as.numeric(model$coefficients[3]) * as.integer(totalCount))) / as.numeric(model$coefficients[2])) %>%
-    dplyr::mutate(predicted_lambda = exp(log_lambda_minus1) + 1) %>%
-    select(-log_lambda_minus1)
-  ######### model with log(lambda)
-  # data<-in_data%>%
-  #   dplyr::mutate(log_lambda=(log(alpha/(1-alpha)) -(as.numeric(model$coefficients[1])+as.numeric(model$coefficients[3])*as.integer(totalCount)))/as.numeric(model$coefficients[2]))%>%
-  #   mutate(predicted_lambda = exp(log_lambda))%>%
-  #   mutate(predicted_lambda=ifelse(predicted_lambda<1,1,predicted_lambda))
-
-  write.table(data, file = out_data, row.names = FALSE, col.names = TRUE, sep = "\t")
-  print(paste0("model input with predicted lambda saved to ", out_data, sep = ""))
-  return(data)
-}
-
-############################################## 1. predict lambda #####################################################
-# if (grepl("phasedByVCF", hetSNP_intersect_unique_forlambda_file, fixed = T)) {
-#   print("using BEASTIE fitted model to predict lambda!")
-#   lambda.fit.simulation <- readRDS(file.path(beastie_wd, "LinearReg_BEASTIE_fitted_model_lambda_loglambdaminus1.rds"))
-# } else {
-#   print("using iBEASTIE fitted model to predict lambda!")
-#   lambda.fit.simulation <- readRDS(file.path(beastie_wd, "LinearReg_iBEASTIE_fitted_model_lambda_loglambdaminus1.rds"))
-# }
-
-# in_data <- read.delim(file.path(hetSNP_intersect_unique_forlambda_file), header = TRUE, sep = "\t")
-
-# size <- dim(in_data)[1]
-# out_data <- hetSNP_intersect_unique_lambdaPredicted_file
-# # adjusted_alpha=as.numeric(alpha)/as.numeric(size)
-# if (!file.exists(out_data)) {
-#   predicted_df <- predict_lambda_realdata(as.numeric(adjusted_alpha), in_data, out_data, lambda.fit.simulation)
-# } else {
-#   print("lambda prediction file exists!")
-# }
 
 ################################################ 2 predict phasing error ###################################
 if (!file.exists(meta_error) && (phasing_method != "nophasing")) {
@@ -112,8 +70,7 @@ if (!file.exists(meta_error) && (phasing_method != "nophasing")) {
     ungroup()
 
   sample_info <- data_final_reginput %>% select(geneID, chr, pos, pair_pos, lag_pos, rsid, log10_distance, d, r2, MAF, lag_MAF, min_MAF, diff_MAF)
-  print(hetSNP_intersect_unique_forlambda_file)
-  if (grepl("phasedByVCF", hetSNP_intersect_unique_forlambda_file, fixed = T)) {
+  if (phasing_method == "VCF") {
     print("VCF phasing is used! we are not predicting phasing error !")
     sample_info$pred_error_GIAB <- NA
   } else {

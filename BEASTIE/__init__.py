@@ -3,13 +3,9 @@
 """
 usage: python run_config.py config_file.cfg
 """
-import argparse
-from cgitb import handler
-import configparser
 import logging
 import os.path
 import sys
-from pkg_resources import resource_filename
 from collections import namedtuple
 from pathlib import Path
 from datetime import date
@@ -30,24 +26,17 @@ ConfigurationData = namedtuple(
         "min_total_cov",
         "min_single_cov",
         "read_length",
-        "sigma",
         "alignBiasP_cutoff",
         "ase_cutoff",
-        "alpha",
         "chr_start",
         "chr_end",
         "LD_token",
-        "modelName",
         "nophasing",
         "atacseq",
-        "STAN",
         "SAVE_INT",
-        "WARMUP",
-        "KEEPER",
         "output_dir",
         "ldlink_cache_dir",
         "ldlink_token_db",
-        "gam_model_name",
     ],
 )
 
@@ -69,24 +58,17 @@ def load_config_from_args(args):
         min_total_cov=args.min_total_cov,
         min_single_cov=args.min_single_cov,
         read_length=args.read_length,
-        sigma=args.sigma,
         alignBiasP_cutoff=args.alignBiasP_cutoff,
         ase_cutoff=args.ase_cutoff,
-        alpha=args.alpha,
         chr_start=args.chr_start,
         chr_end=args.chr_end,
         LD_token=args.ld_token,
-        modelName=args.model,
         nophasing=args.nophasing,
         atacseq=args.atacseq,
-        STAN=args.STAN,
         SAVE_INT=args.save_intermediate,
-        WARMUP=args.warmup,
-        KEEPER=args.keeper,
         output_dir=args.output_dir,
         ldlink_cache_dir=os.path.expanduser(args.ldlink_cache_dir),
         ldlink_token_db=os.path.expanduser(args.ldlink_token_db) if args.ldlink_token_db else None,
-        gam_model_name=args.gam_model_name,
     )
 
 
@@ -98,7 +80,7 @@ def load_config_from_args(args):
 def run(config):
     output_path = config.output_dir
     today = date.today()
-    specification = f"chr{config.chr_start}-{config.chr_end}_alignBiasp{config.alignBiasP_cutoff}_s{config.sigma}_a{config.alpha}_sinCov{config.min_single_cov}_totCov{config.min_total_cov}_W{config.WARMUP}K{config.KEEPER}"
+    specification = f"chr{config.chr_start}-{config.chr_end}_alignBiasp{config.alignBiasP_cutoff}_sinCov{config.min_single_cov}_totCov{config.min_total_cov}"
     specification_path = os.path.join(output_path, specification)
     log_path = os.path.join(specification_path, "log")
     tmp_path = os.path.join(specification_path, "tmp")
@@ -111,13 +93,10 @@ def run(config):
     if config.atacseq is True:
         atacseq = True
         nophasing = True
-        modelName = "BEASTIE3-fix-uniform"
-        ancestry = None
     else:
         atacseq = False
-        modelName = config.modelName
         nophasing = config.nophasing
-        ancestry = config.ancestry
+    modelName = 'quickBEAST'
     result_path = os.path.join(specification_path, modelName)
     Path(result_path).mkdir(parents=True, exist_ok=True)
     log_filename = f"{config.prefix}-{today.strftime('%b-%d-%Y')}-{modelName}"
@@ -159,22 +138,16 @@ def run(config):
         config.shapeit2,
         config.alignBiasP_cutoff,
         config.ase_cutoff,
-        os.path.join(config.STAN, modelName),
         config.ancestry,
         config.chr_start,
         config.chr_end,
         config.min_total_cov,
         config.min_single_cov,
         config.read_length,
-        config.alpha,
-        config.sigma,
         config.SAVE_INT,
         nophasing,
         atacseq,
-        config.WARMUP,
-        config.KEEPER,
         config.LD_token,
         config.ldlink_cache_dir,
         config.ldlink_token_db,
-        config.gam_model_name,
     )
