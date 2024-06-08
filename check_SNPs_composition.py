@@ -13,70 +13,24 @@ from pathlib import Path
 from scipy.stats import hypergeom
 import numpy as np
 from scipy.stats import fisher_exact
-
-
-def SNP_composition(data_dir, save_dir, geneID):
-    subfolders = [f.path for f in os.scandir(data_dir) if f.is_dir()]
-    counter = 0
-    df0 = pd.DataFrame()
-    for sub_dir in subfolders:
-        sample = os.path.basename(sub_dir)
-        filename1 = (
-            sub_dir
-            + "/beastie/runModel_phased_even100/chr1-22_alignBiasp0.05_s0.7_a0.05_sinCov0_totCov1_W1000K1000/tmp/"
-            + sample
-            + "_real_alignBiasafterFilter.phasedByshapeit2.cleaned.tsv"
-        )
-        filename2 = (
-            sub_dir
-            + "/qb/"
-            + sample
-            + "_qb_highestsite.tsv"
-        )
-        if os.path.isfile(filename1) and os.path.isfile(filename2):
-            df1 = pd.read_csv(filename1, sep="\t", header=0)
-            df2 = pd.read_csv(filename2, sep="\t", header=0)
-            df1_filtered = df1[df1["geneID"] == geneID]
-            df2_filtered = df2[df2["geneID"] == geneID]
-            if not df1_filtered.empty and not df2_filtered.empty:
-                SNP_list = df1_filtered["pos"].tolist()
-                combined_SNPs = "_".join(map(str, SNP_list))
-            else:
-                continue
-            df2_filtered["combined_SNPs"] = combined_SNPs
-            beastie_score = df2_filtered["posterior_mass_support_ALT"].iloc[0]
-            df2_filtered["sample"] = sample
-            if beastie_score > 0.5:
-                ASE_gene = "ASE"
-            else:
-                ASE_gene = "no ASE"
-            df2_filtered["ASE gene"] = ASE_gene
-            if counter == 0:
-                df0 = df2_filtered
-            else:
-                df2_filtered.reset_index(drop=True, inplace=True)
-                df0.reset_index(drop=True, inplace=True)
-                df0 = pd.concat([df0, df2_filtered])
-            counter += 1
-    Path(save_dir + "/" + geneID).mkdir(parents=True, exist_ok=True)
-    df0.to_csv(save_dir + "/" + geneID + "/SNP_composition.tsv", sep="\t")
-    return df0
-
+from statsmodels.stats.multitest import multipletests
+from novelgene_SNPcomposition import SNP_composition
 
 # The probability that we would observe this or an even more imbalanced ratio by chance is about 3.5%. A commonly used significance level is 5%–if we adopt that, we can therefore conclude that our observed imbalance is statistically significant; whales prefer the Atlantic while sharks prefer the Indian ocean."
 
 
 # main
-data_dir = "/home/scarlett/data/1000Genome"
-save_dir = "/home/scarlett/data/genes"
+data_dir = "/data2/1000Genome"
+save_dir = "/data2/genes"
 
 # genelist = pd.read_csv("/home/scarlett/data/genes/geneID_list.tsv", sep="\t", header=0)
 # gene_list = genelist["geneID"].tolist()  # ["ENSG00000164308.12"]
 gene_counter = 0
 sig_counter = 0
 snp_counter = 0
-# output = pd.DataFrame()
-# outputFilename = save_dir + "/significant_fisherexact.tsv"
+
+output = pd.DataFrame()
+outputFilename = save_dir + "/significant_fisherexact.tsv"
 # finished_genes = save_dir + "/finished_genelist.txt"
 # if os.path.isfile(finished_genes):
 #    finished_genelist = pd.read_csv(finished_genes, sep="\t", header=0)
@@ -89,7 +43,7 @@ snp_counter = 0
 #    finished_genelist = []
 #    out_stream = open(outputFilename, "w")
 
-# python check_SNPs_composition.py ENSG00000177879.10
+# python check_SNPs_composition.py ENSG00000177879
 gene_candidate = sys.argv[1]
 
 data = SNP_composition(data_dir, save_dir, gene_candidate)
