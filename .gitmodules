@@ -1,3 +1,6 @@
 [submodule "BEASTIE/misc_tools"]
 	path = BEASTIE/misc_tools
 	url = git@github.com:x811zou/misc_tools.git
+[submodule "QuickBEAST"]
+	path = QuickBEAST
+	url = git@github.com:x811zou/QuickBEAST.git
