@@ -154,22 +154,24 @@ def worker(line):
     d = int(fields[2]) + int(fields[3])
     FS_esti, FS_prob, MS_esti, MS_prob = getBaseline(fields)
     NS_esti, NS_prob, pseudo_esti, pseudo_p = getBaseline_pooled(fields)
-    beta_1_1_pval,beta_10_10_pval,beta_20_20_pval,beta_50_50_pval,beta_100_100_pval=getBatabinomial_pooled(fields)
+    #beta_1_1_pval,beta_10_10_pval,beta_20_20_pval,beta_50_50_pval,beta_100_100_pval=getBatabinomial_pooled(fields)
+    # return (
+    #     geneID,
+    #     FS_esti,
+    #     FS_prob,
+    #     NS_esti,
+    #     NS_prob,
+    #     pseudo_esti,
+    #     pseudo_p,
+    #     MS_esti,
+    #     MS_prob
+    # )
     return (
         geneID,
-        FS_esti,
-        FS_prob,
         NS_esti,
         NS_prob,
-        pseudo_esti,
-        pseudo_p,
         MS_esti,
-        MS_prob,
-        beta_1_1_pval,
-        beta_10_10_pval,
-        beta_20_20_pval,
-        beta_50_50_pval,
-        beta_100_100_pval,
+        MS_prob
     )
 
 
@@ -182,19 +184,10 @@ def run(inFile,atacseq=False):
             rows,
             columns=[
                 "peakID",
-                "FirstSite_esti",
-                "FirstSite_pval",
                 "NaiveSum_esti",
                 "NaiveSum_pval",
-                "Pseudo_esti",
-                "Pseudo_pval",
                 "MajorSite_esti",
-                "MajorSite_pval",
-                "beta_1_1_pval",
-                "beta_10_10_pval",
-                "beta_20_20_pval",
-                "beta_50_50_pval",
-                "beta_100_100_pval",
+                "MajorSite_pval"
             ],
         )
     else:
@@ -202,19 +195,10 @@ def run(inFile,atacseq=False):
             rows,
             columns=[
                 "geneID",
-                "FirstSite_esti",
-                "FirstSite_pval",
                 "NaiveSum_esti",
                 "NaiveSum_pval",
-                "Pseudo_esti",
-                "Pseudo_pval",
                 "MajorSite_esti",
-                "MajorSite_pval",
-                "beta_1_1_pval",
-                "beta_10_10_pval",
-                "beta_20_20_pval",
-                "beta_50_50_pval",
-                "beta_100_100_pval",
+                "MajorSite_pval"
             ],
         )
     return binomial_df
