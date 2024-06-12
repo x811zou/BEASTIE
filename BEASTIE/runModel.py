@@ -22,7 +22,7 @@ from .prepare_model import (
     significant_genes,
     update_model_input_lambda_phasing,
 )
-
+from statsmodels.stats.multitest import multipletests
 current_script_path = os.path.abspath(__file__)
 current_script_dir = os.path.dirname(current_script_path)
 quickBEAST_path = os.path.join(current_script_dir, '../QuickBEAST')
@@ -535,7 +535,6 @@ def run(
     #####
     logging.info("=================")
     logging.info("================= Starting specific step 2.8 running quickBEAST")
-    # logging.info("....... start running {0} model".format(model))
 
     qb_executable = '/usr/local/bin/QuickBEAST'
 
@@ -561,11 +560,37 @@ def run(
     logging.info("....... running binomial")
     df_binomial = binomial_for_real_data.run(base_modelin,atacseq)
     logging.info("....... done with running binomial")
-    binomial_out_path = os.path.join(result_path, f"{prefix}_ASE_binomial.tsv")
+    binomial_out_path = os.path.join(result_path, f"{prefix}_binomial.tsv")
     df_binomial.to_csv(binomial_out_path, sep="\t", header=True, index=False)
     logging.info("....... saved binomial to {0}".format(binomial_out_path))
 
-    
+    # join gene_df and df_binomial files
+    merged_df = pd.merge(gene_df, df_binomial, on="geneID")
+    # FDR adjustment using multipletests function on the "qb" column from merged_df to produce "qb_fdr" column
+    qb_p = merged_df["qb_p_value"].values
+    _, qb_fdr, _, _ = multipletests(qb_p, method='fdr_bh')
+    merged_df["qb_fdr"] = qb_fdr
+    ns_p = merged_df["NaiveSum_pval"].values
+    _, ns_fdr, _, _ = multipletests(ns_p, method='fdr_bh')
+    merged_df["NS_fdr"] = ns_fdr
+    ms_p = merged_df["MajorSite_pval"].values
+    _, ms_fdr, _, _ = multipletests(ms_p, method='fdr_bh')
+    merged_df["MS_fdr"] = ms_fdr
+
+    columns_to_drop = ['NaiveSum_esti','MajorSite_esti']
+    merged_df = merged_df.drop(columns=columns_to_drop)
+    merged_out_path = os.path.join(result_path, f"{prefix}_ASE.tsv")
+    merged_df.to_csv(merged_out_path, sep="\t", header=True, index=False)
+
+    # report number and percentage significant ASE genes found in each method
+    significant_qb = merged_df[merged_df["qb_fdr"] <= ase_cutoff]
+    significant_ns = merged_df[merged_df["NS_fdr"] <= ase_cutoff]
+    significant_ms = merged_df[merged_df["MS_fdr"] <= ase_cutoff]
+    logging.info(f"Alpha (ASE cutoff): {ase_cutoff}")
+    logging.info(f"Number/Percentage of significant genes found by QuickBEAST: {significant_qb.shape[0]} / {significant_qb.shape[0] / merged_df.shape[0]*100}%")
+    logging.info(f"Number of significant genes found by NaiveSum: {significant_ns.shape[0]} / {significant_ns.shape[0] / merged_df.shape[0]*100}%")
+    logging.info(f"Number of significant genes found by MajorSite: {significant_ms.shape[0]} / {significant_ms.shape[0] / merged_df.shape[0]*100}%")
+
     if not SAVE_INT:
         logging.info("....... removing TEMP folder {0}".format(tmp_path))
         shutil.rmtree(tmp_path)

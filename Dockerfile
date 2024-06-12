@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install --no-install-recommends -qq make pipenv py
 WORKDIR /BEASTIE
 COPY . .
 RUN make clean dist
-RUN pip install Cython==0.29.24 && pip install numpy==1.21.0 && pip install dist/*.whl
+RUN pip install statsmodels && pip install Cython==0.29.24 && pip install numpy==1.21.0 && pip install dist/*.whl
 
 FROM ubuntu:20.04 AS rpackages
 ENV DEBIAN_FRONTEND noninteractive
