@@ -6,3 +6,4 @@ scipy == 1.10.0
 requests == 2.27.1
 pyjags == 1.3.8
 pygam == 0.8.0
+statsmodels == 0.13.5

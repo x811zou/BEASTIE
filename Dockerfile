@@ -7,43 +7,45 @@ RUN mv sqlite-autoconf-3380100 sqlite
 WORKDIR /sqlite 
 RUN export CFLAGS='-DSQLITE_ENABLE_UPDATE_DELETE_LIMIT=1'; ./configure && make
 
-
-
 FROM ubuntu:20.04 AS tabix
-
 WORKDIR /
 RUN apt-get update && apt-get install --no-install-recommends -qq wget ca-certificates make gcc g++ libbz2-1.0 libbz2-dev lbzip2 zlib1g-dev liblzma-dev
 RUN wget https://github.com/samtools/htslib/releases/download/1.14/htslib-1.14.tar.bz2
 RUN tar -xf htslib-1.14.tar.bz2
-
 RUN mv htslib-1.14 htslib
 WORKDIR /htslib
 RUN ./configure && make
 
 
 FROM ubuntu:20.04 AS QuickBEAST
-RUN apt-get update && apt-get install --no-install-recommends -qq wget ca-certificates make gcc g++ libbz2-1.0 libbz2-dev lbzip2 zlib1g-dev liblzma-dev git
+RUN apt-get update && apt-get install --no-install-recommends -qq wget ca-certificates make gcc g++ libbz2-1.0 libbz2-dev lbzip2 zlib1g-dev liblzma-dev git libncurses5-dev
 RUN apt-get install -qq libgsl-dev
 WORKDIR /
 RUN git clone https://github.com/x811zou/QuickBEAST.git
 WORKDIR /QuickBEAST
 RUN make
 
-
+# Add Samtools installation
+RUN wget https://github.com/samtools/samtools/releases/download/1.15/samtools-1.15.tar.bz2 && \
+    tar -xjf samtools-1.15.tar.bz2 && \
+    cd samtools-1.15 && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf samtools-1.15 samtools-1.15.tar.bz2
 
 FROM ubuntu:20.04 AS beastie-py
 RUN apt-get update && apt-get install --no-install-recommends -qq make pipenv python3.8-venv python3.8-dev pkg-config jags gcc g++
-
 WORKDIR /BEASTIE
 COPY . .
 RUN make clean dist
-RUN pip install statsmodels && pip install Cython==0.29.24 && pip install numpy==1.21.0 && pip install dist/*.whl
+RUN pip install statsmodels==0.13.5 && pip install Cython==0.29.24 && pip install numpy==1.21.0 && pip install dist/*.whl
 
 FROM ubuntu:20.04 AS rpackages
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update \
   && apt-get install -y --no-install-recommends make gcc g++ r-base-core r-base-dev libstdc++6 libicu-dev libxml2-dev libbz2-dev libssl-dev libcurl4-openssl-dev
-
 RUN apt-get update && apt-get install -y \
   libssl-dev \
   libcurl4-gnutls-dev \
@@ -74,11 +76,11 @@ RUN apt-get update \
 RUN ln -s /usr/bin/python3.8 /usr/bin/python
 
 COPY --from=QuickBEAST /QuickBEAST/QuickBEAST /usr/local/bin
-COPY --from=tabix /htslib/tabix /usr/local/bin
+COPY --from=QuickBEAST /usr/local/bin/samtools /usr/local/bin
 
+COPY --from=tabix /htslib/tabix /usr/local/bin
 COPY --from=rpackages /usr/local/lib/R/site-library /usr/local/lib/R/site-library
 COPY --from=sqlite /sqlite/.libs/libsqlite* /usr/local/lib/
-
 COPY --from=beastie-py /usr/local/lib/python3.8/dist-packages /usr/local/lib/python3.8/dist-packages
 COPY --from=beastie-py /usr/local/bin/beastie /usr/local/bin/
 

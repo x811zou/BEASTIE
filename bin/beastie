@@ -1,10 +1,102 @@
 #!/usr/bin/env python3
 
 import BEASTIE
-from BEASTIE import extractHets, filterGenotypingError
+from BEASTIE import cleanVCF, extractHets, filterGenotypingError
 import logging
 import sys
 
+def beastie_cleanVCF(args):
+    vcf_sample = args.sample_name
+    vcfgz_path_filename = args.vcfgz_file
+    out_path = args.out_dir
+    require_pass = args.pass_in_VCF
+    logging.basicConfig(
+        format="%(asctime)-15s [%(levelname)s] %(message)s",
+        level=logging.DEBUG,
+    )
+    cleanVCF.main(
+        vcf_sample,
+        vcfgz_path_filename,
+        out_path,
+        str(require_pass).lower(),
+    )
+
+def configure_cleanVCF(parser):
+    parser.set_defaults(func=beastie_extractHets)
+    parser.add_argument(
+        "--vcfgz-file",
+        help="Path to VCFGZ file",
+        required=True,
+    )
+    parser.add_argument(
+        "--vcf-sample-name",
+        help="Name of sample in VCF file (ex HG00096).",
+        required=True,
+    )
+    parser.add_argument(
+        "--out-dir",
+        help="full path of output dir",
+        required=True,
+    )
+    parser.add_argument(
+        "--pass-in-VCF",
+        help="PASS filtering on quality score in VCF fields[7]",
+        default=False,
+        action="store_true",
+    )
+
+
+def beastie_extractHets(args):
+    filename = args.output
+    vcfgz_path_filename = args.vcfgz_file
+    chr_start = args.chr_start
+    chr_end = args.chr_end
+    annotation = args.gencode_dir
+    skip_require_pass = args.skip_require_pass
+    debug_gene = args.debug_gene
+    logging.basicConfig(
+        format="%(asctime)-15s [%(levelname)s] %(message)s",
+        level=logging.DEBUG,
+    )
+    extractHets.count_all_het_sites(
+        vcfgz_path_filename,
+        filename,
+        chr_start,
+        chr_end,
+        annotation,
+        not skip_require_pass,
+        debug_gene,
+    )
+
+
+def configure_extractHetsATACseq_parser(parser):
+    parser.set_defaults(func=beastie_extractHetsATACseq)
+    parser.add_argument(
+        "--vcfgz-file",
+        help="Path to VCFGZ file",
+        required=True,
+    )
+    parser.add_argument(
+        "--output",
+        help="full path of hetSNP file",
+        required=True,
+    )
+    parser.add_argument(
+        "--annotationFile",
+        help="Full path of annotation file",
+        required=True,
+    )
+
+
+def beastie_extractHetsATACseq(args):
+    filename = args.output
+    vcfgz_path_filename = args.vcfgz_file
+    annotation = args.annotationFile
+    logging.basicConfig(
+        format="%(asctime)-15s [%(levelname)s] %(message)s",
+        level=logging.DEBUG,
+    )
+    extractHets.count_all_het_sites_forpeaks(vcfgz_path_filename, filename, annotation)
 
 def beastie_filterGenotypingError(args):
     sample = args.sample
@@ -274,7 +366,6 @@ def beastie_extractHetsATACseq(args):
         level=logging.DEBUG,
     )
     extractHets.count_all_het_sites_forpeaks(vcfgz_path_filename, filename, annotation)
-
 
 def beastie_runModel(args):
     config = BEASTIE.load_config_from_args(args)
