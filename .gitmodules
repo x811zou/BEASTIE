@@ -4,3 +4,6 @@
 [submodule "QuickBEAST"]
 	path = QuickBEAST
 	url = git@github.com:x811zou/QuickBEAST.git
+[submodule "spliced_simulator"]
+	path = spliced_simulator
+	url = git@github.com:x811zou/spliced_simulator.git
