@@ -13,6 +13,8 @@ BEASTIE_example/**/*inuse*
 BEASTIE_example/ATACseq/beastie_old/
 BEASTIE_example/ATACseq/beastie
 BEASTIE_example/1000Genome/
+/home/scarlett/github/BEASTIE/BEASTIE_example/NA12878_chr21/*bam*
+/home/scarlett/github/BEASTIE/BEASTIE_example/NA12878_chr21/*fa*
 other_example/
 .ipynb_checkpoints/
 BEASTIE/run_config*
