@@ -6,7 +6,7 @@ import logging
 import subprocess
 import sys
 import tempfile
-
+import os
 from BEASTIE.misc_tools.Pipe import Pipe
 
 
@@ -31,7 +31,7 @@ def tabix_regions(regions, line_processor, target_file_path, comment_char="#"):
     region_to_results = {}
 
     logging.info(
-        f"Start tabix extraction of {len(regions)} regions from file {target_file_path}"
+        f"..... Start tabix extraction of {len(regions)} regions from file {os.path.basename(target_file_path)}"
     )
 
     if len(regions) > 1000:
@@ -68,6 +68,6 @@ def tabix_regions(regions, line_processor, target_file_path, comment_char="#"):
         if result is not None:
             records.append(result)
 
-    logging.info(f"Got {len(region_to_results)} / {len(regions)} regions with data")
+    logging.info(f"..... Got {len(region_to_results)} / {len(regions)} regions with data")
 
     return region_to_results

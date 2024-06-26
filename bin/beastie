@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import BEASTIE
-from BEASTIE import cleanVCF, extractHets, filterGenotypingError
+from BEASTIE import cleanVCF, extractHets, pileupREADS, simulateREADS, filterGenotypingError
 import logging
 import sys
 
@@ -10,21 +10,19 @@ def beastie_cleanVCF(args):
     bi_vcfgz = args.filtered_bi_vcfgz
     bihets_vcfgz = args.filtered_bihets_vcfgz
     tmp_path = args.tmp_dir
-    cutoff = args.quality_score_min
-    require_pass = args.require_pass
+    quality_score_cutoff = args.quality_score_min
+    skip_require_pass = args.skip_require_pass
     logging.basicConfig(
         format="%(asctime)-15s [%(levelname)s] %(message)s",
         level=logging.DEBUG,
     )
-    if args.quality_score_min != 0:
-        require_pass = False
-    cleanVCF.main(
+    cleanVCF.cleaning(
         tmp_path,
         vcfgz,
         bi_vcfgz,
         bihets_vcfgz,
-        cutoff,
-        str(require_pass).lower(),
+        quality_score_cutoff,
+        not skip_require_pass,
     )
 
 def configure_cleanVCF_parser(parser):
@@ -50,10 +48,10 @@ def configure_cleanVCF_parser(parser):
         required=True,
     )
     parser.add_argument(
-        "--require-pass",
-        help="PASS filtering on quality score in VCF fields[7]",
-        default=True,
-        type=bool,
+        "--skip-require-pass",
+        help="not require PASS filtering on quality score in VCF fields[7]",
+        default=False,
+        action="store_true",
     )
     parser.add_argument(
         "--quality-score-min",
@@ -62,8 +60,9 @@ def configure_cleanVCF_parser(parser):
         type=int,
     )
 
+
 def beastie_extractHets(args):
-    filename = args.output
+    filename = args.out_hetSNP
     vcfgz_path_filename = args.vcfgz_file
     chr_start = args.chr_start
     chr_end = args.chr_end
@@ -84,6 +83,41 @@ def beastie_extractHets(args):
         debug_gene,
     )
 
+def configure_extractHets_parser(parser):
+    parser.set_defaults(func=beastie_extractHets)
+    parser.add_argument(
+        "--vcfgz-file",
+        help="Path to VCFGZ file",
+        required=True,
+    )
+    parser.add_argument(
+        "--out-hetSNP",
+        help="full path of hetSNP file",
+        required=True,
+    )
+    parser.add_argument(
+        "--gencode-dir",
+        help="Path to gencode reference directory.  Should contain files gencode.chr{1..22}.gtf.gz",
+        required=True,
+    )
+    parser.add_argument(
+        "--chr-start", help="Starting chromosome number", type=int, required=True,
+    )
+    parser.add_argument(
+        "--chr-end", help="Ending chromosome number", type=int, required=True,
+    )
+    parser.add_argument(
+        "--skip-require-pass",
+        help="not require PASS filtering on quality score in VCF fields[6]",
+        default=False,
+        action="store_true",
+    )
+    parser.add_argument(
+        "--debug-gene",
+        help="one specific geneID, for debugging purpose only",
+        default=None,
+    )
+
 
 def configure_extractHetsATACseq_parser(parser):
     parser.set_defaults(func=beastie_extractHetsATACseq)
@@ -93,7 +127,7 @@ def configure_extractHetsATACseq_parser(parser):
         required=True,
     )
     parser.add_argument(
-        "--output",
+        "--out-hetSNP",
         help="full path of hetSNP file",
         required=True,
     )
@@ -105,7 +139,7 @@ def configure_extractHetsATACseq_parser(parser):
 
 
 def beastie_extractHetsATACseq(args):
-    filename = args.output
+    filename = args.out_hetSNP
     vcfgz_path_filename = args.vcfgz_file
     annotation = args.annotationFile
     logging.basicConfig(
@@ -114,22 +148,156 @@ def beastie_extractHetsATACseq(args):
     )
     extractHets.count_all_het_sites_forpeaks(vcfgz_path_filename, filename, annotation)
 
+
+def beastie_pileupReads(args):
+    tmp_path = args.tmp_dir
+    hetSNP = args.in_hetSNP
+    bamgz = args.in_BAMGZ
+    reference = args.ref_file
+    chr_start = args.chr_start
+    chr_end = args.chr_end
+    pileupGZ = args.out_pileupGZ
+    logging.basicConfig(
+        format="%(asctime)-15s [%(levelname)s] %(message)s",
+        level=logging.DEBUG,
+    )
+    pileupREADS.mpileup(
+        tmp_path,
+        hetSNP,
+        bamgz,
+        pileupGZ,
+        reference,
+        chr_start,
+        chr_end,
+    )
+
+def configure_pileupReads_parser(parser):
+    parser.set_defaults(func=beastie_pileupReads)
+    parser.add_argument(
+        "--in-hetSNP",
+        help="Full path to input hetSNP file",
+        required=True,
+    )
+    parser.add_argument(
+        "--in-BAMGZ",
+        help="Full path to input BAMGZ file",
+        required=True,
+    )
+    parser.add_argument(
+        "--out-pileupGZ",
+        help="Full path to output pileup GZ file",
+        required=True,
+    )
+    parser.add_argument(
+        "--ref-file",
+        help="Full path to hg19.fa file",
+        required=True,
+    )
+    parser.add_argument(
+        "--chr-start", help="Starting chromosome number", default=1, type=int
+    )
+    parser.add_argument(
+        "--chr-end", help="Ending chromosome number", default=22, type=int
+    )
+    parser.add_argument(
+        "--tmp-dir",
+        help="full path of tmp dir",
+        required=True,
+    )
+
+
+def beastie_simulateReads(args):
+    vcfgz = args.vcfgz_file
+    bamgz = args.in_BAMGZ
+    out_fwd_fastqReads = args.out_fwd_fastq
+    out_rev_fastqReads = args.out_rev_fastq
+    tmp_path = args.tmp_dir
+    genome2bit = args.ref_genome_2bit
+    gff = args.ref_gff
+    twobit = args.ref_twobit_dir
+    chr_start = args.chr_start
+    chr_end = args.chr_end
+    logging.basicConfig(
+        format="%(asctime)-15s [%(levelname)s] %(message)s",
+        level=logging.DEBUG,
+    )
+    simulateREADS.run_simulation(
+        chr_start,
+        chr_end,
+        out_fwd_fastqReads,
+        out_rev_fastqReads,
+        tmp_path,
+        twobit,
+        genome2bit,
+        gff,
+        bamgz,
+        vcfgz,
+    )
+
+def configure_simulateReads_parser(parser):
+    parser.set_defaults(func=beastie_simulateReads)
+    parser.add_argument(
+        "--vcfgz-file",
+        help="Full path to filtered bi-allelic SNPs VCFGZ file",
+        required=True,
+    )
+    parser.add_argument(
+        "--in-BAMGZ",
+        help="Full path to input BAMGZ file",
+        required=True,
+    )
+    parser.add_argument(
+        "--out-fwd-fastq",
+        help="Full path to output forward fastq file",
+        required=True,
+    )
+    parser.add_argument(
+        "--out-rev-fastq",
+        help="Full path to output reverse fastq file",
+        required=True,
+    )
+    parser.add_argument(
+        "--ref-genome-2bit",
+        help="Full path to 2bit reference genome file",
+        required=True,
+    )
+    parser.add_argument(
+        "--ref-twobit-dir",
+        help="Full path to 2bit reference directory (link: http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/). Should contain faToTwoBit and twoBitToFa",
+        required=True,
+    )
+    parser.add_argument(
+        "--ref-gff",
+        help="Full path to gff file",
+        required=True,
+    )
+    parser.add_argument(
+        "--chr-start", help="Starting chromosome number", default=1, type=int
+    )
+    parser.add_argument(
+        "--chr-end", help="Ending chromosome number", default=22, type=int
+    )
+    parser.add_argument(
+        "--tmp-dir",
+        help="full path of tmp dir",
+        required=True,
+    )
+
 def beastie_filterGenotypingError(args):
-    sample = args.sample
     vcfgz = args.vcfgz_file
     output_path = args.out_dir
     chr_start = args.chr_start
     chr_end = args.chr_end
     af_path = args.af_dir
-    pileup = args.pileup_file
+    pileup = args.pileupGZ_file
     ancestry = args.ancestry
     read_length = args.read_length
-    het_snp_file = args.input_het_snp_file
+    het_snp_file = args.input_hetSNP_file
     min_single_count = args.min_single_cov
     min_total_count = args.min_total_cov
     genotypeEr_file = args.genotype_error_file
     genotypeEr_cutoff = args.genotypeEr_cutoff
-    filtered_het_snp_file = args.filtered_het_snp_file
+    filtered_het_snp_file = args.filtered_hetSNP_file
     n_warmup = args.warmup
     n_keeper = args.keeper
     RE_ITERATE = args.iterate
@@ -148,7 +316,6 @@ def beastie_filterGenotypingError(args):
         level=logging.DEBUG,
     )
     filterGenotypingError.run(
-        sample,
         output_path,
         af_path,
         vcfgz,
@@ -181,22 +348,17 @@ def configure_filterGenotypingError_parser(parser):
         required=True,
     )
     parser.add_argument(
-        "--sample",
-        help="Name of sample in VCF file (ex HG00096).",
+        "--pileupGZ-file",
+        help="Path to pileup GZ file.",
         required=True,
     )
     parser.add_argument(
-        "--pileup-file",
-        help="Path to pileup file.",
-        required=True,
-    )
-    parser.add_argument(
-        "--input-het-snp-file",
+        "--input-hetSNP-file",
         help="Path to pre-generated het snps file.",
         required=True,
     )
     parser.add_argument(
-        "--filtered-het-snp-file",
+        "--filtered-hetSNP-file",
         help="Path to filtered het snps file.",
         required=True,
     )
@@ -290,98 +452,6 @@ def configure_filterGenotypingError_parser(parser):
         type=bool,
     )
 
-def configure_extractHets_parser(parser):
-    parser.set_defaults(func=beastie_extractHets)
-    parser.add_argument(
-        "--vcfgz-file",
-        help="Path to VCFGZ file",
-        required=True,
-    )
-    parser.add_argument(
-        "--vcf-sample-name",
-        help="Name of sample in VCF file (ex HG00096).",
-        required=True,
-    )
-    parser.add_argument(
-        "--output",
-        help="full path of hetSNP file",
-        required=True,
-    )
-    parser.add_argument(
-        "--gencode-dir",
-        help="Path to gencode reference directory.  Should contain files gencode.chr{1..22}.gtf.gz",
-        required=True,
-    )
-    parser.add_argument(
-        "--chr-start", help="Starting chromosome number", default=1, type=int
-    )
-    parser.add_argument(
-        "--chr-end", help="Ending chromosome number", default=22, type=int
-    )
-    parser.add_argument(
-        "--skip-require-pass",
-        help="not require PASS filtering on quality score in VCF fields[6]",
-        default=False,
-        action="store_true",
-    )
-    parser.add_argument(
-        "--debug-gene",
-        help="one specific geneID, for debugging purpose only",
-        default=None,
-    )
-
-
-def beastie_extractHets(args):
-    filename = args.output
-    vcfgz_path_filename = args.vcfgz_file
-    chr_start = args.chr_start
-    chr_end = args.chr_end
-    annotation = args.gencode_dir
-    skip_require_pass = args.skip_require_pass
-    debug_gene = args.debug_gene
-    logging.basicConfig(
-        format="%(asctime)-15s [%(levelname)s] %(message)s",
-        level=logging.DEBUG,
-    )
-    extractHets.count_all_het_sites(
-        vcfgz_path_filename,
-        filename,
-        chr_start,
-        chr_end,
-        annotation,
-        not skip_require_pass,
-        debug_gene,
-    )
-
-
-def configure_extractHetsATACseq_parser(parser):
-    parser.set_defaults(func=beastie_extractHetsATACseq)
-    parser.add_argument(
-        "--vcfgz-file",
-        help="Path to VCFGZ file",
-        required=True,
-    )
-    parser.add_argument(
-        "--output",
-        help="full path of hetSNP file",
-        required=True,
-    )
-    parser.add_argument(
-        "--annotationFile",
-        help="Full path of annotation file",
-        required=True,
-    )
-
-
-def beastie_extractHetsATACseq(args):
-    filename = args.output
-    vcfgz_path_filename = args.vcfgz_file
-    annotation = args.annotationFile
-    logging.basicConfig(
-        format="%(asctime)-15s [%(levelname)s] %(message)s",
-        level=logging.DEBUG,
-    )
-    extractHets.count_all_het_sites_forpeaks(vcfgz_path_filename, filename, annotation)
 
 def beastie_runModel(args):
     config = BEASTIE.load_config_from_args(args)
@@ -400,17 +470,13 @@ def configure_runModel():
     parser.set_defaults(func=beastie_runModel)
 
     parser.add_argument(
-        "--prefix",
-        help="Prefix for output files, default is --vcf-sample-name value.",
-    )
-    parser.add_argument(
         "--vcfgz-file",
         help="Full path of the filtered VCFGZ file",
         required=True,
     )
     parser.add_argument(
         "--vcf-sample-name",
-        help="Name of sample in VCF file (ex HG00096).",
+        help="Name of the sample in the VCF file",
         required=True,
     )
     parser.add_argument(
@@ -422,7 +488,7 @@ def configure_runModel():
         help="Full path of the simulation pileup file.",
     )
     parser.add_argument(
-        "--filtered-het-snp-file",
+        "--filtered-hetSNP-file",
         help="Full path of the filtered het snps file.",
     )
     parser.add_argument(
@@ -520,6 +586,18 @@ def configure_runModel():
         help="extract heterozygous bi-allelic SNPs from personal peak annotation File for ATACseq",
     )
     configure_extractHetsATACseq_parser(extractHetsATACseq_parser)
+
+    pileupReads_parser = subparsers.add_parser(
+        "pileupReads",
+        help="pile up reads from aligned BAMGZ for bi-allelic SNPs and heterozygous SNPs",
+    )
+    configure_pileupReads_parser(pileupReads_parser)
+
+    simulateReads_parser = subparsers.add_parser(
+        "simulateReads",
+        help="simulate reads from aligned BAMGZ for bi-allelic SNPs and heterozygous SNPs",
+    )
+    configure_simulateReads_parser(simulateReads_parser)
 
     filterGenotypingError_parser = subparsers.add_parser(
         "filterGenotypingError",

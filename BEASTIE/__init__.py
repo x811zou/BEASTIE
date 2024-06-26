@@ -15,13 +15,12 @@ from . import runModel
 ConfigurationData = namedtuple(
     "ConfigurationData",
     [
-        "prefix",
         "vcfgz_file",
         "vcf_sample_name",
         "shapeit2",
         "collected_alignmentBias_file",
         "simulation_pileup_file",
-        "filtered_het_snp_file",
+        "filtered_hetSNP_file",
         "ancestry",
         "min_total_cov",
         "min_single_cov",
@@ -47,13 +46,12 @@ def load_config_from_args(args):
         sys.exit(1)
 
     return ConfigurationData(
-        prefix=args.prefix if args.prefix is not None else args.vcf_sample_name,
         vcfgz_file=args.vcfgz_file,
         vcf_sample_name=args.vcf_sample_name,
         shapeit2=args.shapeit2_phasing_file,
         simulation_pileup_file=args.simulation_pileup_file,
         collected_alignmentBias_file=args.collected_alignmentBias_file,
-        filtered_het_snp_file=args.filtered_het_snp_file,
+        filtered_hetSNP_file=args.filtered_hetSNP_file,
         ancestry=args.ancestry,
         min_total_cov=args.min_total_cov,
         min_single_cov=args.min_single_cov,
@@ -99,7 +97,7 @@ def run(config):
     modelName = 'quickBEAST'
     result_path = os.path.join(specification_path, modelName)
     Path(result_path).mkdir(parents=True, exist_ok=True)
-    log_filename = f"{config.prefix}-{today.strftime('%b-%d-%Y')}-{modelName}"
+    log_filename = f"{modelName}-{today.strftime('%b-%d-%Y')}"
     # stdout_stderr_filepath = os.path.join(log_path, f"{log_filename}.output")
     # stdout_stderr_file = open(stdout_stderr_filepath, "w")
     # sys.stdout = stdout_stderr_file
@@ -126,12 +124,11 @@ def run(config):
     )
     logging.info("======================================== ")
     runModel.run(
-        config.prefix,
         config.vcfgz_file,
         config.vcf_sample_name,
         config.collected_alignmentBias_file,
         config.simulation_pileup_file,
-        config.filtered_het_snp_file,
+        config.filtered_hetSNP_file,
         output_path,
         tmp_path,
         result_path,

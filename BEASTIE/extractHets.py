@@ -13,7 +13,7 @@ import csv
 from .helpers import chrRange, tabix_regions
 from .misc_tools.GffTranscriptReader import GffTranscriptReader
 from .misc_tools.Pipe import Pipe
-
+import subprocess
 
 def chunk_iter(iter, n):
     """Yield successive n-sized chunks from iter."""
@@ -56,7 +56,7 @@ def make_vcfline_processor(require_pass):
         nonlocal require_pass
         fields = line.split("\t")
         if len(fields) < 10:
-            print(f"bad field line: '{line}'")
+            logging.info(f"bad field line: '{line}'")
         assert len(fields) >= 10
         if require_pass and fields[6] != "PASS":
             return None
@@ -73,6 +73,15 @@ def make_vcfline_processor(require_pass):
     return vcfline_processor
 
 
+def check(hetSNP, VCF):
+    if ((os.path.exists(hetSNP) and os.path.getsize(hetSNP) > 0) and
+        (os.path.getmtime(hetSNP) > os.path.getmtime(VCF))):
+        logging.info(f"..... Check: {os.path.basename(hetSNP)} exists and non-empty, and is newer than {os.path.basename(VCF)} -- skipping hetSNP file generation")
+        return True
+    else:
+        logging.info(f"..... Check: {os.path.basename(hetSNP)} does not exist or is not newer than {os.path.basename(VCF)} -- generating hetSNP file")
+    return False
+
 def count_all_het_sites(
     vcfFilename,
     outputFilename,
@@ -83,6 +92,18 @@ def count_all_het_sites(
     DEBUG_GENES=None,
     **kwargs,
 ):
+    logging.basicConfig(
+        format="%(asctime)-15s [%(levelname)s] %(message)s",
+        level=logging.INFO,
+    )
+    base_name = os.path.basename(outputFilename)
+    suffix = ".hetSNP.tsv"
+    sample = base_name[:-len(suffix)] 
+
+    logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> extractHets: Start sample {sample}")
+    if check(outputFilename, vcfFilename):
+        return
+
     include_x_chromosome = kwargs.pop("include_x_chromosome", False)
 
     out_stream = open(outputFilename, "w")
@@ -99,10 +120,7 @@ def count_all_het_sites(
         chr = f"chr{chrId}"
         geneList = list(filter(lambda gene: gene.getSubstrate() == chr, geneList))
         logging.info(
-            "..... start loading gencode annotation chr {0} with {1} genes".format(
-                chrId, len(geneList)
-            )
-        )
+            f"..... Start loading gencode annotation chr {chrId} with {len(geneList)} genes")
 
         """
         construct a dict with unique exon region with transcript {exon_region:transcript list} 
@@ -119,12 +137,11 @@ def count_all_het_sites(
             # gene.getSubstrate() chr21
             # gene.getSubstrate().strip("chr")) 21
             if DEBUG_GENES is not None:
-                print(f">>>>>>>> DEBUGGING GENE {gene.getID()}")
-                print(f">>>>>>>>")
-                print(
+                logging.info(f">>>>>>>> DEBUGGING GENE {gene.getID()}")
+                logging.info(f">>>>>>>>")
+                logging.info(
                     f">>>>>>>> DEBUG1: Check every exon start-end region on each transcript"
                 )
-                print(f">>>>>>>>")
             if str(gene.getSubstrate().strip("chr")) == chrId:
                 Num_transcript = gene.getNumTranscripts()
                 chrom = gene.getSubstrate()  # column 1 --> chr21
@@ -159,18 +176,18 @@ def count_all_het_sites(
         construct a dict with unique exon region with VCF records {exon_region:VCF records}
         """
         if DEBUG_GENES is not None:
-            print(f">>>>>>>>")
-            print(f">>>>>>>> DEBUG2: list all unique exon regions")
-            print(f">>>>>>>>")
+            logging.info(f">>>>>>>>")
+            logging.info(f">>>>>>>> DEBUG2: list all unique exon regions")
+            logging.info(f">>>>>>>>")
             print(exon_region_to_transcripts.keys())
         # print(vcfFilename)
         exon_region_to_snp_infos = tabix_regions(
             exon_region_to_transcripts.keys(), vcfline_processor, vcfFilename
         )
         if DEBUG_GENES is not None:
-            print(f">>>>>>>>")
-            print(f">>>>>>>> DEBUG3: list all snp info corresponding to exon region")
-            print(f">>>>>>>>")
+            logging.info(f">>>>>>>>")
+            logging.info(f">>>>>>>> DEBUG3: list all snp info corresponding to exon region")
+            logging.info(f">>>>>>>>")
             print(exon_region_to_snp_infos)
         data = []
         variant_to_transcript_info = {}
@@ -227,7 +244,8 @@ def count_all_het_sites(
             out_stream.write("\t".join(map(str, r)))
             out_stream.write("\n")
     out_stream.close()
-
+    logging.info(f"..... Finish writing to {outputFilename}")
+    logging.info(f"..... Done sample {sample}")
 
 def count_all_het_sites_forpeaks(vcfFilename, outputFilename, annotation_file):
     out_stream = open(outputFilename, "w")
@@ -295,19 +313,19 @@ def count_all_het_sites_forpeaks(vcfFilename, outputFilename, annotation_file):
 def main():
     if len(sys.argv) != 8:
         print(
-            "Usage: extractHets.py <in_vcfgz> <out_name> <chr_start> <chr_end> <annotation> <skip_require_pass> <debug_gene>"
+            "Usage: extractHets.py <in_vcfgz> <out_hetSNP> <chr_start> <chr_end> <annotation> <skip_require_pass> <debug_gene>"
         )
         sys.exit(1)
     
-    filename = sys.argv[1]
-    vcfgz_path_filename = sys.argv[2]
+    vcfgz_path_filename = sys.argv[1]
+    hetSNP_filename = sys.argv[2]
     chr_start = int(sys.argv[3])
     chr_end = int(sys.argv[4])
     annotation = sys.argv[5]
     skip_require_pass = False
     debug_gene = None
 
-    count_all_het_sites(vcfgz_path_filename, filename, chr_start, chr_end, annotation, not skip_require_pass, debug_gene)
+    count_all_het_sites(vcfgz_path_filename, hetSNP_filename, chr_start, chr_end, annotation, not skip_require_pass, debug_gene)
 
 if __name__ == "__main__":
     main()

@@ -206,7 +206,6 @@ def create_file_name(prefix, tmp_path, shapeit2_input):
 
 
 def run(
-    prefix,
     vcfgz,
     vcf_sample_name,
     collected_alignmentBias_file,
@@ -231,13 +230,20 @@ def run(
     ldlink_cache_dir,
     ldlink_token_db,
 ):
+    base_name = os.path.basename(vcfgz)
+    file_name_without_extension = os.path.splitext(base_name)[0]
+    prefix = os.path.splitext(file_name_without_extension)[0]
+    prefix = os.path.splitext(prefix)[0]
+
     #####
     ##### 2.1 Check input file existence
     #####
     logging.info("=================")
     logging.info("================= Starting specific step 2.1")
-    logging.info("....... start checking file existence")
+    logging.info("...... Start checking file existence")
     Path(output_path).mkdir(parents=True, exist_ok=True)
+    Path(tmp_path).mkdir(parents=True, exist_ok=True)
+
     check_file_existence2(
         vcfgz,
         simulation_pileup,
@@ -551,7 +557,7 @@ def run(
     gene_df.rename(columns={'mode_st_p_value': 'qb_p_value'}, inplace=True)
     gene_df = gene_df[['geneID', 'n_hets', 'total_count', 'qb_mode', 'qb_p_value']]
 
-    outfilename = os.path.join(result_path, f"{prefix}_quickBEAST.tsv")
+    outfilename = os.path.join(tmp_path, f"{prefix}_quickBEAST.tsv")
     gene_df.to_csv(outfilename, sep="\t", header=True, index=False)
 
     logging.info("....... saved quickBeast to {0}".format(outfilename))
@@ -560,7 +566,7 @@ def run(
     logging.info("....... running binomial")
     df_binomial = binomial_for_real_data.run(base_modelin,atacseq)
     logging.info("....... done with running binomial")
-    binomial_out_path = os.path.join(result_path, f"{prefix}_binomial.tsv")
+    binomial_out_path = os.path.join(tmp_path, f"{prefix}_binomial.tsv")
     df_binomial.to_csv(binomial_out_path, sep="\t", header=True, index=False)
     logging.info("....... saved binomial to {0}".format(binomial_out_path))
 
@@ -586,10 +592,10 @@ def run(
     significant_qb = merged_df[merged_df["qb_fdr"] <= ase_cutoff]
     significant_ns = merged_df[merged_df["NS_fdr"] <= ase_cutoff]
     significant_ms = merged_df[merged_df["MS_fdr"] <= ase_cutoff]
-    logging.info(f"Alpha (ASE cutoff): {ase_cutoff}")
-    logging.info(f"Number/Percentage of significant genes found by QuickBEAST: {significant_qb.shape[0]} / {significant_qb.shape[0] / merged_df.shape[0]*100}%")
-    logging.info(f"Number of significant genes found by NaiveSum: {significant_ns.shape[0]} / {significant_ns.shape[0] / merged_df.shape[0]*100}%")
-    logging.info(f"Number of significant genes found by MajorSite: {significant_ms.shape[0]} / {significant_ms.shape[0] / merged_df.shape[0]*100}%")
+    logging.info(f"....... Alpha (ASE cutoff): {ase_cutoff}")
+    logging.info(f"....... Number/Percentage of significant genes found by QuickBEAST: {significant_qb.shape[0]} - {round(significant_qb.shape[0] / merged_df.shape[0]*100,2)}% out of {merged_df.shape[0]} genes")
+    logging.info(f"....... Number of significant genes found by NaiveSum: {significant_ns.shape[0]} - {round(significant_ns.shape[0] / merged_df.shape[0]*100,2)}% out of {merged_df.shape[0]} genes")
+    logging.info(f"....... Number of significant genes found by MajorSite: {significant_ms.shape[0]} - {round(significant_ms.shape[0] / merged_df.shape[0]*100,2)}% out of {merged_df.shape[0]} genes")
 
     if not SAVE_INT:
         logging.info("....... removing TEMP folder {0}".format(tmp_path))

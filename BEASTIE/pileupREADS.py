@@ -11,20 +11,22 @@ import logging
 import shutil
 
 def mpileup(tmp_dir, hetSNP, bam_gz, output_file, ref, chrom_start, chrom_end):
-    base_name = os.path.basename(output_file)
-    file_name_without_extension = os.path.splitext(base_name)[0]
-    sample = os.path.splitext(file_name_without_extension)[0]
+    # Extract the filename from the path
+    filename = os.path.basename(hetSNP)
+    # Extract the part before the first dot
+    sample = filename.split('.')[0]
+
+    logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> pileupReads: Start sample {sample}")
 
     # Check if output files exist and are newer than the SAM file
     if ((os.path.exists(output_file) and os.path.getsize(output_file) > 0) and 
         (os.path.getmtime(output_file) > os.path.getmtime(hetSNP))):
-        print(f"{output_file} exists and non-empty, and is newer than {hetSNP}")
+        logging.info(f"..... Check: {os.path.basename(output_file)} exists and non-empty, and is newer than {os.path.basename(hetSNP)} -- skipping pileup file generation")
         if os.path.exists(tmp_dir):
             shutil.rmtree(tmp_dir)
         return
-    
-    now = datetime.now().strftime("%T")
-    logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start sample {sample} : {now}")
+    else:
+        logging.info(f"..... Check: {os.path.basename(output_file)} does not exists or is older than {os.path.basename(hetSNP)} -- generating pileup file")
 
     # Check and create tmp/out dir
     os.makedirs(tmp_dir, exist_ok=True)
@@ -39,7 +41,7 @@ def mpileup(tmp_dir, hetSNP, bam_gz, output_file, ref, chrom_start, chrom_end):
 
     # mpileup for each chromosome
     for chr in range(chrom_start, chrom_end + 1):
-        logging.info(f"... start with chr{chr}")
+        logging.info(f"..... Start with chr{chr}")
         tmp_output = f"{tmp_dir}/{sample}_chr{chr}.pileup"
         run_mpileup_chrom(hetSNP, temp_bam.name, tmp_output, chr, ref)
         
@@ -49,9 +51,8 @@ def mpileup(tmp_dir, hetSNP, bam_gz, output_file, ref, chrom_start, chrom_end):
     run_command(f"cat {chrom_range} | bgzip -@ {os.cpu_count()} -l3 -c > {combined_tmp}")
     os.rename(combined_tmp, output_file)
     
-    now = datetime.now().strftime("%T")
-    logging.info(f"... output {output_file}")
-    logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> done sample {sample} : {now}")
+    logging.info(f"..... Output {output_file}")
+    logging.info(f"..... Done sample {sample}")
 
     # Clean up the temporary BAM file and its index
     os.remove(temp_bam.name)

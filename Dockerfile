@@ -41,6 +41,8 @@ WORKDIR /BEASTIE
 COPY . .
 RUN make clean dist
 RUN pip install statsmodels==0.13.5 && pip install Cython==0.29.24 && pip install numpy==1.21.0 && pip install dist/*.whl
+RUN pip install psutil==5.9.0  # Add this line to install psutil
+RUN pip install biopython==1.79  # Add this line to install Biopython
 
 FROM ubuntu:20.04 AS rpackages
 ENV DEBIAN_FRONTEND noninteractive

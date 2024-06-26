@@ -2,6 +2,8 @@
 __pycache__
 dist
 *.egg-info
+run_extractHets_atacseq.py
+/home/scarlett/github/BEASTIE/BEASTIE_example/ATACseq_simulated
 BEASTIE_example/NA12878_chr21/noneed
 BEASTIE_example/ATACseq/beastie/*
 BEASTIE/LinearReg_iBEASTIE_fitted_model_lambda_loglambda.rds

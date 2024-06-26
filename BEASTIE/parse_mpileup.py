@@ -183,10 +183,10 @@ def Parse_mpileup_allChr(
     vcfFile_sample, inputGZ, pileup_file, min_cov, either_cov, output
 ):
     pipeup_dict = {}  # DEBUGGING
-    logging.info("..... Finish loading pileup file: {0}".format(pileup_file))
-    logging.info("..... Finish loading vcf file: {0}".format(inputGZ))
+    logging.info("...... Finish loading pileup file: {0}".format(pileup_file))
+    logging.info("...... Finish loading vcf file: {0}".format(inputGZ))
     out_stream = open(output, "w")
-    logging.info("..... Start parsing mpile up")
+    logging.info("...... Start parsing mpile up")
     out_stream.write(
         "contig\tposition\tvariantID\trefAllele\trefCount\taltAllele\taltCount\ttotalCount\taltRatio\tif_Indel\tif_SV\tif_SNP\tif_biallelic\tlowMAPQDepth\tlowBaseQDepth\trawDepth\totherCount\n"
     )

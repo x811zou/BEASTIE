@@ -23,7 +23,7 @@ from .parse_mpileup import Parse_mpileup_allChr
 from scipy.stats import fisher_exact
 from .run_jags import genotype_bugs_model
 from datetime import date
-
+import shutil
 
 def parse_mpileup(
     input_file, output_file, vcf_sample_name, vcfgz, min_total_cov, min_single_cov
@@ -58,32 +58,32 @@ def check_file_existence(vcfgz, pileup, het_snp_file):
     vcfgztbi = "{0}.tbi".format(vcfgz)
     if not os.path.isfile(vcfgz):
         logging.error(
-            "Oops! vcfgz file {0} doesn't exist. Please try again ...".format(vcfgz)
+            "..... Oops! vcfgz file {0} doesn't exist. Please try again ...".format(vcfgz)
         )
         exit(1)
     if os.path.isfile(vcfgz) and (
         not os.path.isfile(vcfgztbi)
         or os.path.getmtime(vcfgztbi) < os.path.getmtime(vcfgz)
     ):
-        logging.warning("We will generate the latest vcfgz index for you ...")
+        logging.warning("..... We will generate the latest vcfgz index for you ...")
         cmd = "tabix -fp vcf %s" % (vcfgz)
         runhelper(cmd)
     if os.path.isfile(vcfgz) and os.path.isfile(vcfgztbi):
         logging.info(
-            "Great! VCFGZ file {0} and index {1} exists.".format(vcfgz, vcfgztbi)
+            "..... Great! VCFGZ file {0} and index {1} exists.".format(os.path.basename(vcfgz), os.path.basename(vcfgztbi))
         )
     ##### pileup_file
     if not os.path.isfile(pileup):
         logging.error(
-            "Oops!  pileup file {0} doesn't exist. Please try again ...".format(pileup)
+            "..... Oops!  pileup file {0} doesn't exist. Please try again ...".format(os.path.basename(pileup))
         )
     else:
-        logging.info("Great! pileup file {0} exists.".format(pileup))
+        logging.info("..... Great! pileup file {0} exists.".format(os.path.basename(pileup)))
 
     ##### hetSNP file
     if not os.path.exists(het_snp_file):
         logging.error(
-            "Oops! hetSNP file {0} doesn't exist. Please try again ...".format(
+            "..... Oops! hetSNP file {0} doesn't exist. Please try again ...".format(
                 het_snp_file
             )
         )
@@ -91,13 +91,13 @@ def check_file_existence(vcfgz, pileup, het_snp_file):
     else:
         hetsnp = pd.read_csv(het_snp_file, sep="\t", header=0, index_col=False)
         logging.debug(
-            "output {0} has {1} het SNPs from VCF file".format(
+            "..... Output {0} has {1} het SNPs from VCF file".format(
                 os.path.basename(het_snp_file), hetsnp.shape[0]
             )
         )
         if hetsnp.shape[0] < 2:
             os.remove(het_snp_file)
-            logging.error("..... existed hetSNP file is empty, please try again!")
+            logging.error("..... Existed hetSNP file is empty, please try again!")
             sys.exit(1)
 
 
@@ -107,7 +107,7 @@ def is_valid_parsed_pileup(filepath):
     parsed_pileup_data = pd.read_csv(filepath, sep="\t", header=0, index_col=False)
     if parsed_pileup_data.shape[0] < 2:
         os.remove(filepath)
-        logging.info("....... existed parsed pileup file is empty, removing")
+        logging.info("....... Existed parsed pileup file is empty, removing")
         return False
     return True
 
@@ -223,7 +223,7 @@ def filter_genotypeEr(
     mean_totalcount = hetSNP_intersect_unique["totalCount"].mean()
     var_totalcount = hetSNP_intersect_unique["totalCount"].var()
     logging.debug(
-        f"input for JAGS model : total count stats for all SNP mean {mean_totalcount}, variance {var_totalcount}"
+        f"..... input for JAGS model : total count stats for all SNP mean {mean_totalcount}, variance {var_totalcount}"
     )
     grouped_df = (
         hetSNP_intersect_unique.groupby("geneID")
@@ -284,7 +284,7 @@ def filter_genotypeEr(
         f"total hetSNPs: {df_before_filter.shape[0]}, tested hetSNPs (with 0 read count on 1 allele and at least one SNPs with both non-zero allele read count in the same gene): {df_testedsites.shape[0]} "
     )
     logging.debug(
-        f"      {df_testedsites_fail.shape[0]} out of {df_testedsites.shape[0]} ({round((df_testedsites_fail.shape[0]) / df_testedsites.shape[0] * 100,2,)}%) , {df_testedsites_fail.shape[0]} out of {df_before_filter.shape[0]} ({round(df_testedsites_fail.shape[0]/ df_before_filter.shape[0] * 100,2,)}%), tested het SNPs fail genotyping error JAGS test p-val <= {genotypeEr_cutoff}"
+        f"..... {df_testedsites_fail.shape[0]} out of {df_testedsites.shape[0]} ({round((df_testedsites_fail.shape[0]) / df_testedsites.shape[0] * 100,2,)}%) , {df_testedsites_fail.shape[0]} out of {df_before_filter.shape[0]} ({round(df_testedsites_fail.shape[0]/ df_before_filter.shape[0] * 100,2,)}%), tested het SNPs fail genotyping error JAGS test p-val <= {genotypeEr_cutoff}"
     )
     # if iterate:
     #     debiased_df = new_df[
@@ -369,15 +369,14 @@ def filter_genotypeEr(
     df_testedsites_fail = df_testedsites_fail[["chrN", "pos"]]
     df_testedsites_fail.to_csv(genotypeEr_filename, index=False, sep="\t", header=True)
     logging.debug(
-        f"{df_testedsites_fail.shape[0]} het SNPs out of {df_before_filter.shape[0]} ({round(df_testedsites_fail.shape[0] / df_before_filter.shape[0] * 100,2,)}%) het SNPs with 0 allele count were identified with genotyping error, and will be filtered out in shapeit2 phasing and simulation steps"
+        f"..... {df_testedsites_fail.shape[0]} het SNPs out of {df_before_filter.shape[0]} ({round(df_testedsites_fail.shape[0] / df_before_filter.shape[0] * 100,2,)}%) het SNPs with 0 allele count were identified with genotyping error, and will be filtered out in shapeit2 phasing and simulation steps"
     )
     logging.debug(
-        f"{df_after_filter.shape[0]} het SNPs out of {df_before_filter.shape[0]} ({round(df_after_filter.shape[0] / df_before_filter.shape[0] * 100,2,)}%) het SNPs saved in filtered het SNP pile up file"
+        f"..... {df_after_filter.shape[0]} het SNPs out of {df_before_filter.shape[0]} ({round(df_after_filter.shape[0] / df_before_filter.shape[0] * 100,2,)}%) het SNPs saved in filtered het SNP pile up file"
     )
 
 
 def run(
-    sample,
     output_path,
     af_path,
     vcfgz,
@@ -402,7 +401,21 @@ def run(
     #####
     ##### 1.1 Check input file existence
     #####
+    base_name = os.path.basename(genotypeErfiltered_file)
+    file_name_without_extension = os.path.splitext(base_name)[0]
+    sample = os.path.splitext(file_name_without_extension)[0]
+    logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> filterGenotypingError: Start sample {sample}")
     tmp_path = os.path.join(output_path, "tmp")
+    # Check if output files exist and are newer than the SAM file
+    if ((os.path.exists(genotypeErfiltered_file) and os.path.getsize(genotypeErfiltered_file) > 0) and 
+        (os.path.getmtime(genotypeErfiltered_file) >= os.path.getmtime(filtered_hetSNP_filename))):
+        logging.info(f"..... Check: {os.path.basename(genotypeErfiltered_file)} exists and non-empty, and is newer than {os.path.basename(filtered_hetSNP_filename)} -- skipping genotypoing error file generation")
+        if os.path.exists(tmp_path):
+            shutil.rmtree(tmp_path)
+        return
+    else:
+        logging.info(f"..... Check: {os.path.basename(genotypeErfiltered_file)} does not exists or is older than {os.path.basename(filtered_hetSNP_filename)} -- generating genotyping error file")
+
     today = date.today()
     log_path = os.path.join(output_path, "log")
     Path(output_path).mkdir(parents=True, exist_ok=True)
@@ -462,7 +475,7 @@ def run(
             sys.exit(1)
         else:
             logging.info(
-                "....... {0} save to {1}".format(
+                "...... {0} save to {1}".format(
                     os.path.basename(hetSNP_AF), os.path.dirname(hetSNP_AF)
                 )
             )
@@ -505,11 +518,11 @@ def run(
         tmp_path, f"TEMP.{sample}_hetSNP_intersected_filtered.tsv"
     )
     logging.info("=================")
-    logging.info("================= Starting specific step 1.4")
 
     if not os.path.exists(hetSNP_intersect_pileup):
+        logging.info("================= Starting specific step 1.4")
         logging.info(
-            "....... start filtering variants with min total counts {0}, and min single allele counts {1}, each read of read length {2} only count for each variant".format(
+            "...... Start filtering variants with min total counts {0}, and min single allele counts {1}, each read of read length {2} only count for each variant".format(
                 min_total_cov, min_single_cov, read_length
             )
         )
@@ -564,10 +577,10 @@ def run(
         logging.info("=================")
         logging.info("================= Starting specific step 1.5")
         logging.info("....... start filtering variants with genotyping error")
-        logging.info(f">> JAGS model warm up {n_warmup}, keeper {n_keeper}")
+        logging.info(f"..... JAGS model warm up {n_warmup}, keeper {n_keeper}")
         if RE_ITERATE:
             logging.info(
-                f">> JAGS model iterate for SNPs with {pcutoff_low} <= p <= {pcutoff_high}"
+                f"..... JAGS model iterate for SNPs with {pcutoff_low} <= p <= {pcutoff_high}"
             )
         filter_genotypeEr(
             genotypeEr_cutoff,
@@ -595,3 +608,9 @@ def run(
                     output_path,
                 )
             )
+
+    # Check if output files exist and are newer than the SAM file
+    if ((os.path.exists(genotypeErfiltered_file) and os.path.getsize(genotypeErfiltered_file) > 0) and 
+        (os.path.getmtime(genotypeErfiltered_file) >= os.path.getmtime(filtered_hetSNP_filename))):
+        if os.path.exists(tmp_path):
+            shutil.rmtree(tmp_path)

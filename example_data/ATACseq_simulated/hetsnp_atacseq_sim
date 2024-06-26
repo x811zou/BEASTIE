@@ -1,0 +1,7 @@
+chr	chrN	pos	geneID	peak_id	genotype
+chr1	1	150	gene1	peak1	0/1
+chr1	1	1500	gene1	peak2	0/1
+chr1	1	2000	gene2	peak3	0/1
+chr1	1	4000	gene2	peak4	0/1
+chr1	1	5050	gene3	peak5	0/1
+chr1	1	8000	gene3	peak6	0/1
