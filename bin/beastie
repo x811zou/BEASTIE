@@ -6,45 +6,61 @@ import logging
 import sys
 
 def beastie_cleanVCF(args):
-    vcf_sample = args.sample_name
-    vcfgz_path_filename = args.vcfgz_file
-    out_path = args.out_dir
-    require_pass = args.pass_in_VCF
+    vcfgz = args.vcfgz_file
+    bi_vcfgz = args.filtered_bi_vcfgz
+    bihets_vcfgz = args.filtered_bihets_vcfgz
+    tmp_path = args.tmp_dir
+    cutoff = args.quality_score_min
+    require_pass = args.require_pass
     logging.basicConfig(
         format="%(asctime)-15s [%(levelname)s] %(message)s",
         level=logging.DEBUG,
     )
+    if args.quality_score_min != 0:
+        require_pass = False
     cleanVCF.main(
-        vcf_sample,
-        vcfgz_path_filename,
-        out_path,
+        tmp_path,
+        vcfgz,
+        bi_vcfgz,
+        bihets_vcfgz,
+        cutoff,
         str(require_pass).lower(),
     )
 
-def configure_cleanVCF(parser):
-    parser.set_defaults(func=beastie_extractHets)
+def configure_cleanVCF_parser(parser):
+    parser.set_defaults(func=beastie_cleanVCF)
     parser.add_argument(
         "--vcfgz-file",
-        help="Path to VCFGZ file",
+        help="Full path to VCFGZ file",
         required=True,
     )
     parser.add_argument(
-        "--vcf-sample-name",
-        help="Name of sample in VCF file (ex HG00096).",
+        "--filtered-bi-vcfgz",
+        help="Full path to filtered bi VCFGZ file",
         required=True,
     )
     parser.add_argument(
-        "--out-dir",
-        help="full path of output dir",
+        "--filtered-bihets-vcfgz",
+        help="Full path to filtered bihets VCFGZ file",
         required=True,
     )
     parser.add_argument(
-        "--pass-in-VCF",
+        "--tmp-dir",
+        help="full path of tmp dir",
+        required=True,
+    )
+    parser.add_argument(
+        "--require-pass",
         help="PASS filtering on quality score in VCF fields[7]",
-        default=False,
-        action="store_true",
+        default=True,
+        type=bool,
     )
-
+    parser.add_argument(
+        "--quality-score-min",
+        help="quality score cutoff in VCF fields[6]. Default 0 means we are using PASS filtering",
+        default=0,
+        type=int,
+    )
 
 def beastie_extractHets(args):
     filename = args.output
@@ -488,6 +504,11 @@ def configure_runModel():
         "--ldlink-token-db",
         help="Path to database containing ldlink tokens for running parallel jobs.",
     )
+    cleanVCF_parser = subparsers.add_parser(
+        "cleanVCF",
+        help="clean VCF file for bi-allelic SNPs and heterozygous SNPs",
+    )
+    configure_cleanVCF_parser(cleanVCF_parser)
     extractHets_parser = subparsers.add_parser(
         "extractHets",
         help="extract heterozygous bi-allelic SNPs for specific chromosomes from gencode annotation for RNAseq",
