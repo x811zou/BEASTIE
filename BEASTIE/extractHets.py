@@ -290,12 +290,12 @@ def count_all_het_sites_forpeaks(vcfFilename, outputFilename, annotation_file):
 
 
 
-#python extractHets.py /data2/BEASTIE_example_output/NA12878_chr21/HG001_GRCh37_GIAB.chr21.bihets.vcf.gz /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_hetSNP.tsv 21 21 NA12878_chr21 /data2/reference/reference/gencode_chr
+#python extractHets.py /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_hetSNP.tsv /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21.bihets.vcf.gz 21 21 /data2/reference/reference/gencode_chr
 
 def main():
     if len(sys.argv) != 8:
         print(
-            "Usage: extractHets.py <vcfFilename> <outputFilename> <chr_start> <chr_end> <annotation> <skip_require_pass> <debug_gene>"
+            "Usage: extractHets.py <in_vcfgz> <out_name> <chr_start> <chr_end> <annotation> <skip_require_pass> <debug_gene>"
         )
         sys.exit(1)
     
