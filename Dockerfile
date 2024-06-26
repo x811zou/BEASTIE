@@ -15,7 +15,7 @@ RUN tar -xf htslib-1.14.tar.bz2
 RUN mv htslib-1.14 htslib
 WORKDIR /htslib
 RUN ./configure && make
-
+RUN cp bgzip /usr/local/bin/
 
 FROM ubuntu:20.04 AS QuickBEAST
 RUN apt-get update && apt-get install --no-install-recommends -qq wget ca-certificates make gcc g++ libbz2-1.0 libbz2-dev lbzip2 zlib1g-dev liblzma-dev git libncurses5-dev
@@ -79,6 +79,7 @@ COPY --from=QuickBEAST /QuickBEAST/QuickBEAST /usr/local/bin
 COPY --from=QuickBEAST /usr/local/bin/samtools /usr/local/bin
 
 COPY --from=tabix /htslib/tabix /usr/local/bin
+COPY --from=tabix /usr/local/bin/bgzip /usr/local/bin
 COPY --from=rpackages /usr/local/lib/R/site-library /usr/local/lib/R/site-library
 COPY --from=sqlite /sqlite/.libs/libsqlite* /usr/local/lib/
 COPY --from=beastie-py /usr/local/lib/python3.8/dist-packages /usr/local/lib/python3.8/dist-packages
