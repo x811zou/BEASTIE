@@ -90,7 +90,7 @@ Compiling BEASTIE stan model
 % cp /iBEASTIE2/iBEASTIE2 /usr/local/bin # or some other directory in your PATH
 ```
 
-Download example testing data "NA12878_chr21"
+Download example testing data "NA12878_chr21"<br>
 Download the zipped reference data, unzip and set the environment variable $refdir to the directory where reference folder has been unzipped.
 ```
 https://drive.google.com/drive/folders/1z63jSyNWBKFJu4CZ4z54OFXHK8LsXu9O?usp=drive_link
