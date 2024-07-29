@@ -3,9 +3,9 @@ __pycache__
 dist
 *.egg-info
 # folders
-example_data/ATACseq_simulated
-gitignore_folder
-BEASTIE/__pycache__
+/example_data/ATACseq_simulated/
+/gitignore_folder/
+/BEASTIE/__pycache__
 # files
 run_extractHets_atacseq.py
 run_BEASTIE.sh
