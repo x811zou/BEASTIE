@@ -94,6 +94,10 @@ Download reference data and unzip it, and set the environment variable $refdir t
 ```
 https://drive.google.com/file/d/106HEFKV_0TAzoekXNEWYf-XqdqAYZoh4/view?usp=sharing
 ```
+Download testing data
+```
+https://drive.google.com/drive/folders/1z63jSyNWBKFJu4CZ4z54OFXHK8LsXu9O?usp=drive_link
+```
 
 Then either install BEASTIE:
 ```bash
