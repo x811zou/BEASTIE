@@ -1,4 +1,4 @@
-# BEASTIE: A bioinformatics method for gene level ASE estimation
+# BEASTIE: A bioinformatics pipeline for gene level ASE estimation
 BEASTIE (Bayesian Estimation of Allele Specific Transcription Integrating across Exons) is a software suite for identifying allele-specific-expression (ASE) from regulatory variants from RNA-seq and WGS data.
 BEASTIE uses a Bayesian hierarchical model to integrate prior information with read count data and genetic data. Using MCMC (Markov Chain Monte Carlo), BEASTIE efficiently performs posterior inference to estimate effect sizes of ASE. <br>
 
@@ -301,3 +301,13 @@ docker run  -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
     --simulation-pileup-file $input_simulation_pileup_gz \
     --shapeit2-phasing-file $input_shapeit2
 ```
+
+### Citing:
+Please cite this paper when using BEASTIE for your publications.
+```
+Zou, X., Gomez, Z. W., Reddy, T. E., Allen, A. S., Majoros, W. H. (2024). Bayesian Estimation of Allele-Specific
+Expression in the Presence of Phasing Uncertainty. bioRxiv, doi: 10.1101/2024.08.09.607371.
+```
+
+### Acknowledgements:
+The bioinformatics pipeline was developed by Scarlett (Xue Zou). We thank Bill for his guidance in this project, Zack and Tomas for their help in maintaining this software. For further information, inquiries, or contributions, please feel free to contact [Xue Zou](mailto:xz195@duke.edu).
