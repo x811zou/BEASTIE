@@ -8,6 +8,11 @@ BEASTIE has been found to be substantially more accurate than other tests based 
 
 BEASTIE is free for academic and non-profit use.
 
+### Summary of workflow
+
+![alt text](image/newBEASTIE_workflow.jpg "workflow")
+
+This workflow is summarized step-by-step below 'example code usage' section.
 
 ## Installation options
 ### Using Docker Image locally:
@@ -81,24 +86,7 @@ Installing [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the 
 
 Register [LD token](https://ldlink.nci.nih.gov/?tab=apiaccess)
 
-Compiling BEASTIE stan model
-```bash
-% cd $STAN
-% mkdir iBEASTIE2
-% mv $workdir/BEASTIE/BEASTIE/iBEASTIE2.stan $STAN/iBEASTIE2/.
-% make /iBEASTIE2/iBEASTIE2
-% cp /iBEASTIE2/iBEASTIE2 /usr/local/bin # or some other directory in your PATH
-```
-
-Download testing data and/or reference files from shared google drive folder:
-* Example testing data: "NA12878_chr21"<br>
-* Zipped reference data: unzip and set the environment variable $refdir to the directory where reference folder has been unzipped.
-```
-https://drive.google.com/drive/folders/1z63jSyNWBKFJu4CZ4z54OFXHK8LsXu9O?usp=drive_link
-```
-
-
-Then either install BEASTIE:
+install BEASTIE docker:
 ```bash
 % cd $workdir/BEASTIE
 % make install
@@ -112,39 +100,8 @@ or install BEASTIE into a python virtual environment:
 % make install
 ```
 
-## Workflow
-### Summary of steps
-Multiple steps are needed to identify gene level ASE. Broadly, these steps are:
-
-Preparation-step:
-
-Gene-level pileup read counts generation. We recommend using STAR 2Pass EndtoEnd alignment mode with WASP filtering for RNAseq fastq data alignment to generate BAM files. Extract allele frequency information for each heterozygous variant from 1000 Genome VCF file for corresponding ancestry (We provide AF_1_22.tsv in reference folder for all ancestry data).
-
-Pipeline-step:
-
-step1: Model input data preparation.
-* Extract heterozygous sites from gencode reference for samtools mpileup (We provide pre-split gencode v19 for all 22 chromosome in reference folder, users are free to use their own version of gencode reference and use vcftools tools to split it).
-* Parse pileup read counts by our faster version python script originally adopting from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star).
-* Thinning reads by read length. One read only count once.
-* Annotate AF and LD for bi-allelic het SNPs pairs
-
-step2: Identification of genes with ASE. Parsing BEASTIE model output with customized significance cutoff.
-* Convert data in format for model input
-* Predict phasing error
-* Update model input with phasing error
-* Run BEASTIE model
-* Generate gene list with user-defined cutoff
-
-
-### Summary of workflow
-
-Functionally, these above steps are accomplished by individual Python3 scripts, alongside the prior listed dependencies. This workflow is summarized in the below figure:
-
-![alt text](image/newBEASTIE_workflow.jpg "workflow")
-
-This workflow is summarized step-by-step below.
-
-Preparation-step: process raw data (optional with provided commands)
+----------------------------------------
+Optional preparation step: process raw fastq data
 ----------------------------------------
 
 a. trim raw RNAseq fastq reads using [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
@@ -189,31 +146,158 @@ The parameters are:
 * $output_prefix: output path with output prefix for aligned BAM
 
 
-c. pile up reads for each variant.
+----------------------------------------
+Input Preparation & Testing data
+----------------------------------------
+* sample.vcf.gz
+* sample.bam.gz
+* shapeit2 phasing file
+* reference directory (gencode reference, Allele frequency reference extracted from 1000 Genome Project across different ancestries)
+* optional testing data
+  <br>
+Download testing data and/or reference files from shared google drive folder:
+Example testing data: "NA12878_chr21"<br>
+Zipped reference data: unzip and set the environment variable $refdir to the directory where reference folder has been unzipped.
+```
+https://drive.google.com/drive/folders/1z63jSyNWBKFJu4CZ4z54OFXHK8LsXu9O?usp=drive_link
+```
+
+----------------------------------------
+Example code usage (details in the run_BEASTIE.sh file):
+----------------------------------------
+This running script has parameters definition and all options.
+```
+sh run_BEASTIE.sh
+```
+#### step0: Clean VCF file.
+* Only keep bi-allelic het sites
+```
+docker run  -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie
+    cleanVCF \
+    --tmp-dir $tmp_vcf_dir \
+    --vcfgz-file $input_vcfgz \
+    --filtered-bi-vcfgz $output_bi_vcfgz \
+    --filtered-bihets-vcfgz $output_bihets_vcfgz
+```
+NOTES:<br>
+     1. when VCF hdoes not as PASS on quality score filtering result on VCF fields[7], use --skip-require-pass and --quality-score-min <10> to specify the cutoff<br>
+     2. when VCF has PASS on quality score filtering result on VCF fields[7], in default --quality-score-min 0, --skip-require-pass is not needed
+
+#### step1: Extract Heterozygous sites from gencode reference on VCF file.
+* Extract heterozygous sites from gencode reference for samtools mpileup (We provide pre-split gencode v19 for all 22 chromosome in reference folder, users are free to use their version of gencode reference and use vcftools tools to split it).
+* Parse pileup read counts by our faster version python script originally adopted from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star).
+* Thinning reads by read length. One read only count once.
+* Annotate AF and LD for bi-allelic het SNPs pairs
+```
+docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
+    extractHets \
+    --vcfgz-file $output_bihets_vcfgz \
+    --out-hetSNP $output_hetSNP \
+    --chr-start $chr_start \
+    --chr-end $chr_end \
+    --gencode-dir $ref_dir/reference/gencode_chr 
+```
+
+#### step2: Parsing gene coverage from aligned BAM file using SAMTOOLS PILEUP.
+```
+docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
+    pileupReads \
+    --tmp-dir $tmp_mpileup_dir \
+    --in-hetSNP $output_hetSNP \
+    --in-BAMGZ $input_bamgz \
+    --out-pileupGZ $output_pileup_gz \
+    --chr-start $chr_start \
+    --chr-end $chr_end \
+    --ref $ref_dir/reference/hg19/hg19.fa
+```
+* pile up reads for each variant. The command used in this step: 
 ```bash
 % samtools mpileup -d 0 -B -s -f $ref -l $het_sites_for_mpileup $bam > ${prefix}.pileup
 ```
-The parameters are:
-* $ref: annotation reference file
-* $het_sites_for_mpileup: heterozygous sites extracted from VCF. Format as "chr | position"
-```
-chr1 | 11111
-```
-* $bam: Star_aligned_sortedByCoord_picard_markdup_filter.bam
-* $prefix: prefix for output
-----------------------------------------
 
-Pipeline-step: prepare input and run model (required with example config scripts)
-----------------------------------------
-
-a. input files required
-* sample.vcf
-* sample.pileup
-
-b. run BEASTIE pipeline
-Parameters can be specificed in parameters.cfg files.
-The model (BEASTIE.stan) must be run in the $STAN directory.
-```bash
-% beastie -c <config_file>
+#### step3: Simulate unbiased fastq reads on each allele for each gene.
 ```
-----------------------------------------
+docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
+    simulateReads \
+    --tmp-dir $tmp_simulation_dir \
+    --vcfgz-file $output_bi_vcfgz \
+    --in-BAMGZ $input_bamgz \
+    --out-fwd-fastq $output_fwd_fastqreads \
+    --out-rev-fastq $output_rev_fastqreads \
+    --chr-start $chr_start \
+    --chr-end $chr_end \
+    --ref-genome-2bit $ref_dir/reference/hg19/hg19.2bit \
+    --ref-gff $ref_dir/reference/gencode.v19.annotation.level12.gtf \
+    --ref-twobit $ref_dir/reference/two_bit_linux
+```
+#### Required action: align simulated fastq reads with the same alignment tool/parameters you used for your data. Then use step2 to do pileup for the aligned BAM for simulated reads. 
+
+#### step4: Filter out het sites with genotyping errors.
+```
+docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
+    filterGenotypingError \
+    --filtered-hetSNP-file $output_hetSNP_filtered \
+    --genotype-error-file $output_genotypeEr \
+    --vcfgz-file $output_bihets_vcfgz \
+    --pileupGZ-file $output_pileup_gz \
+    --input-hetSNP-file $output_hetSNP \
+    --ancestry $ancestry \
+    --read-length $read_length \
+    --chr-start $chr_start \
+    --chr-end $chr_end \
+    --af-dir $ref_dir/reference/AF \
+    --genotypeEr-cutoff $genotypeEr_cutoff \
+    --out-dir $tmp_genotypeEr_dir \
+    --warmup $WARMUP \
+    --keeper $KEEPER 
+```
+#### step5: run BEASTIE
+* Convert data in format for model input
+* Predict phasing error using trained logistic regression
+* Update model input with predicted phasing error
+* Run BEASTIE model
+* Generate gene list with user-defined p-value cutoff
+
+(1): run BEASTIE with phasing from VCF file.
+```
+docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
+    runModel \
+    --vcfgz-file $bihets_vcfgz \
+    --vcf-sample-name $sample_name_in_vcf \
+    --filtered-hetSNP-file $output_hetSNP_filtered \
+    --ancestry $ancestry \
+    --chr-start $chr_start \
+    --chr-end $chr_end \
+    --min-single-cov $min_single_count \
+    --min-total-cov $min_total_count \
+    --read-length $read_length \
+    --output-dir $output_dir/beastie/phased_even${read_length}_VCF \
+    --ldlink-cache-dir $base_dir \
+    --save-intermediate \
+    --alignBiasP-cutoff $binomialp_cutoff \
+    --ase-cutoff $FDR_cutoff \
+    --ld-token $LD_token \
+    --simulation-pileup-file $input_simulation_pileup_gz
+```
+(2): run BEASTIE with phasing from provided shapeit2 files or other phasing software.
+```
+docker run  -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
+    runModel \
+    --vcfgz-file $bihets_vcfgz \
+    --vcf-sample-name $sample_name_in_vcf \
+    --filtered-hetSNP-file $out_hetSNP_filtered \
+    --ancestry $ancestry \
+    --chr-start $chr_start \
+    --chr-end $chr_end \
+    --min-single-cov $min_single_count \
+    --min-total-cov $min_total_count \
+    --read-length $read_length \
+    --output-dir $out_dir/beastie/phased_even${read_length}_shapeit2 \
+    --ldlink-cache-dir $base_dir \
+    --save-intermediate \
+    --alignBiasP-cutoff $binomialp_cutoff \
+    --ase-cutoff $FDR_cutoff \
+    --ld-token $LD_token \
+    --simulation-pileup-file $input_simulation_pileup_gz \
+    --shapeit2-phasing-file $input_shapeit2
+```
