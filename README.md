@@ -1,6 +1,6 @@
 # BEASTIE: A bioinformatics pipeline for gene level ASE estimation
 BEASTIE (Bayesian Estimation of Allele Specific Transcription Integrating across Exons) is a software suite for identifying allele-specific-expression (ASE) from regulatory variants from RNA-seq and WGS data.
-BEASTIE uses a Bayesian hierarchical model to integrate prior information with read count data and genetic data. Using MCMC (Markov Chain Monte Carlo), BEASTIE efficiently performs posterior inference to estimate effect sizes of ASE. <br>
+BEASTIE uses a Bayesian hierarchical model (QuickBEAST) in https://github.com/x811zou/QuickBEAST to integrate prior information with read count data and genetic data. Using MCMC (Markov Chain Monte Carlo), BEASTIE efficiently performs posterior inference to estimate effect sizes of ASE. <br>
 
 The BEASTIE workflow is currently set up for gene-level ASE estimation. This method has been tested in Europeran individual NA12878, and African individual NA19247 from 1000 Genome Project.
 
@@ -13,6 +13,11 @@ BEASTIE is free for academic and non-profit use.
 ![alt text](image/newBEASTIE_workflow.jpg "workflow")
 
 This workflow is summarized step-by-step below 'example code usage' section.
+
+### Easy test if you just want to run the QuickBEAST model instead of the full pipeline, please go here: 
+```
+https://github.com/x811zou/QuickBEAST
+```
 
 ## Installation options
 ### Using Docker Image locally:
