@@ -1,115 +1,77 @@
-# BEASTIE: A bioinformatics pipeline for gene level ASE estimation
-BEASTIE (Bayesian Estimation of Allele Specific Transcription Integrating across Exons) is a software suite for identifying allele-specific-expression (ASE) from regulatory variants from RNA-seq and WGS data.
-BEASTIE uses a Bayesian hierarchical model (QuickBEAST) in https://github.com/x811zou/QuickBEAST to integrate prior information with read count data and genetic data. Using MCMC (Markov Chain Monte Carlo), BEASTIE efficiently performs posterior inference to estimate effect sizes of ASE. <br>
+# BEASTIE: A bioinformatics Pipeline for Gene-level ASE Estimation
+BEASTIE (Bayesian Estimation of Allele-Specific Transcription Integrating across Exons) is a software suite for identifying allele-specific expression (ASE) from regulatory variants in RNA-seq and WGS data. BEASTIE uses a Bayesian hierarchical model [QuickBEAST](https://github.com/x811zou/QuickBEAST) to integrate prior information with read count and genetic data. <br>
 
-The BEASTIE workflow is currently set up for gene-level ASE estimation.
-
-BEASTIE has been found to be substantially more accurate than other tests based on the binomial distribution.
+The BEASTIE workflow is designed for gene-level ASE estimation and has been shown to be more accurate than other binomial distribution-based tests.
 
 BEASTIE is free for academic and non-profit use.
 
-### Summary of workflow
+##  Summary of workflow
 
 ![alt text](image/newBEASTIE_workflow.jpg "workflow")
 
-This workflow is summarized step-by-step below 'example code usage' section.
+The workflow is detailed in the 'Example Code Usage' section below.
 
-### Easy test if you just want to run the QuickBEAST model instead of the full pipeline, please go here: 
-```
-https://github.com/x811zou/QuickBEAST
-```
+### QuickBEAST Model
+If you prefer to run the QuickBEAST model only, visit the [QuickBEAST Github page](https://github.com/x811zou/QuickBEAST).
 
+----------------------------------------
 ## Installation options
-### Using Docker Image locally:
-Docker does not allow the container any access to the host system by default. To allow the BEASTIE container to access necessary
-files on the host system you need use the `-v` flag to "mount" a host directory at a particular mount point inside the container.
+----------------------------------------
+### Using Docker Image locally
+Docker is the recommended way to run BEASTIE, as it avoids dependency conflicts and simplifies setup. Since Docker containers do not have access to the host system by default, you need to use the -v flag to mount your host directory within the container.
 
-If all your data and outputs exist under the current directory, the following template should work for running BEASTIE. Just replace "<BEASTIE_IMAGE>" with the docker image and "<config_file>" with the path to your BEASTIE configuration file.
+*Preparation step (get your unique LD token #, and replace it in the <config_file>:
+Register [LD token](https://ldlink.nci.nih.gov/?tab=apiaccess)
 
+1. Pull the Docker Image:
+```bash
+docker pull xuezou/beastie
+```
+2. Run BEASTIE:
+Replace <config_file> with the path to your BEASTIE configuration file. This command assumes all your data and outputs are in the current directory.
 ```bash
 % docker run -v "`pwd`":"`pwd`" xuezou/beastie -c <config_file>
 ```
 
-### Using Singularity in cluster:
-We don't build a singularity image directly, but you can build one using the docker image. 
+### Using Singularity on a cluster:
+If you're using a cluster with Singularity, follow these steps:
 
-1. pull docker image from Dockerhub, and create beastie.tar file
+1. Pull the Docker Image and Create a TAR File:
 ```bash
 % docker save --output beastie.tar xuezou/beastie
 ```
+2. Copy the TAR File to Your Cluster:
+Use 'scp' or another transfer method to copy the 'beastie.tar' file to your cluster.
 
-2. copy the beastie.tar file to your cluster using scp
-
-3. Create a singularity image, `beastie.sif` that can potentially be run like
+3. Create a Singularity Image:
 ```bash
-% singularity build -s beastie.sif docker-archive://beastie.tar
+singularity build -s beastie.sif docker-archive://beastie.tar
 ```
-
-4. Run
+4. Run BEASTIE with Singularity:
 ```bash
 % singularity run --bind <directory> beastie.sif -c <config_file>
 ```
 
-Register [LD token](https://ldlink.nci.nih.gov/?tab=apiaccess)
-
-install BEASTIE docker:
+### Installation on Local System (Without Docker)
+If you prefer not to use Docker, you can install BEASTIE in a Python virtual environment.
+1. Clone the Repository:
 ```bash
-% cd $workdir/BEASTIE
-% make install
+git clone https://github.com/x811zou/BEASTIE.git
+cd BEASTIE
 ```
-
-or install BEASTIE into a python virtual environment:
+2. Create a Python Virtual Environment:
 ```bash
-% cd $workdir/BEASTIE
-% virtualenv -p python3 venv # create a new virtual environment with at least python 3.8
-% ./venv/bin/activate
-% make install
+python3 -m venv venv
+source venv/bin/activate
 ```
-
-----------------------------------------
-Recommended preparation step: process raw fastq data
-----------------------------------------
-
-a. trim raw RNAseq fastq reads using [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
+3. Install Dependencies:
+```
+pip install -r requirements.txt
+```
+4. Install BEASTIE
 ```bash
-# install at $trimmomatic_path
-wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.39.zip
-
-% java -jar $trimmomatic_path/trimmomatic-0.33.jar PE -threads 16 -phred33 $fastq_R1 $fastq_R2 \
-     $trimmed_fastq/${sample}_FWD_paired.fq.gz $trimmed_fastq/${sample}_FWD_unpaired.fq.gz \
-     $trimmed_fastq/${sample}_REV_paired.fq.gz $trimmed_fastq/${sample}_REV_unpaired.fq.gz \
-     ILLUMINACLIP:$trimmomatic_reference/trimmomatic_MHPS.fa:2:30:10:8:TRUE LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
+make install
 ```
-The parameters are:
-* $trimmed_fastq: saving trimmed fastq output path
-* $sample: sample name or prefix for output
-
-
-b. align reads with STAR<br>
-We have done extensive comparison on RNAseq alignes reference allele mapping bias, and found that the best one with high efficiency and minimal bias is splice-aware aligner STAR with 2pass EndtoEnd alignment mode and WASP filtering : https://github.com/alexdobin/STAR. If you prefer to use aligned BAM files, you can directly use that as input.
-```bash
-% STAR --twopassMode Basic --runThreadN 24 --genomeDir $star_ind \
-      --readFilesIn $fastqDir/${sample}_FWD_paired.fq.gz $fastqDir/${sample}_REV_paired.fq.gz \
-      --alignEndsType EndToEnd \
-      --waspOutputMode SAMtag \
-      --varVCFfile $VCF \
-      --outFilterMismatchNmax 10 \
-      --outSAMtype BAM SortedByCoordinate \
-      --outReadsUnmapped Fastx \
-      --outSAMattributes NH HI NM MD AS nM jM jI XS vA vG vW \
-      --readFilesCommand "gunzip -c" \
-      --outFileNamePrefix $output_prefix
-
-% java -jar $picardDir/picard.jar MarkDuplicates \
-     I=$output_prefix/Aligned.sortedByCoord.out.bam \
-     O=$output_prefix/Aligned.sortedByCoord.out.picard_markdup.bam
-```
-The parameters are:
-* $fastqDir: input path for trimmed fastq
-* $star_ind: index for STAR aligner
-* $VCF: VCF file for sample. VCF file has 'chr' in the chromosome column.
-* $sample: sample name or prefix for output
-* $output_prefix: output path with output prefix for aligned BAM
 
 
 ----------------------------------------
@@ -267,6 +229,52 @@ docker run  -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
     --simulation-pileup-file $input_simulation_pileup_gz \
     --shapeit2-phasing-file $input_shapeit2
 ```
+
+----------------------------------------
+Recommended preparation step: process raw fastq data
+----------------------------------------
+
+a. trim raw RNAseq fastq reads using [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
+```bash
+# install at $trimmomatic_path
+wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.39.zip
+
+% java -jar $trimmomatic_path/trimmomatic-0.33.jar PE -threads 16 -phred33 $fastq_R1 $fastq_R2 \
+     $trimmed_fastq/${sample}_FWD_paired.fq.gz $trimmed_fastq/${sample}_FWD_unpaired.fq.gz \
+     $trimmed_fastq/${sample}_REV_paired.fq.gz $trimmed_fastq/${sample}_REV_unpaired.fq.gz \
+     ILLUMINACLIP:$trimmomatic_reference/trimmomatic_MHPS.fa:2:30:10:8:TRUE LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
+```
+The parameters are:
+* $trimmed_fastq: saving trimmed fastq output path
+* $sample: sample name or prefix for output
+
+
+b. align reads with STAR<br>
+We have done extensive comparison on RNAseq alignes reference allele mapping bias, and found that the best one with high efficiency and minimal bias is splice-aware aligner STAR with 2pass EndtoEnd alignment mode and WASP filtering : https://github.com/alexdobin/STAR. If you prefer to use aligned BAM files, you can directly use that as input.
+```bash
+% STAR --twopassMode Basic --runThreadN 24 --genomeDir $star_ind \
+      --readFilesIn $fastqDir/${sample}_FWD_paired.fq.gz $fastqDir/${sample}_REV_paired.fq.gz \
+      --alignEndsType EndToEnd \
+      --waspOutputMode SAMtag \
+      --varVCFfile $VCF \
+      --outFilterMismatchNmax 10 \
+      --outSAMtype BAM SortedByCoordinate \
+      --outReadsUnmapped Fastx \
+      --outSAMattributes NH HI NM MD AS nM jM jI XS vA vG vW \
+      --readFilesCommand "gunzip -c" \
+      --outFileNamePrefix $output_prefix
+
+% java -jar $picardDir/picard.jar MarkDuplicates \
+     I=$output_prefix/Aligned.sortedByCoord.out.bam \
+     O=$output_prefix/Aligned.sortedByCoord.out.picard_markdup.bam
+```
+The parameters are:
+* $fastqDir: input path for trimmed fastq
+* $star_ind: index for STAR aligner
+* $VCF: VCF file for sample. VCF file has 'chr' in the chromosome column.
+* $sample: sample name or prefix for output
+* $output_prefix: output path with output prefix for aligned BAM
+
 
 ### Citing:
 Please cite this paper when using BEASTIE for your publications.
