@@ -50,31 +50,6 @@ We don't build a singularity image directly, but you can build one using the doc
 % singularity run --bind <directory> beastie.sif -c <config_file>
 ```
 
-### Customized installation:
-#### Software prerequisites
-Only if you want to use our recommended pipeline to align RNAseq reads and modify the pipeline:
-* [bedtools2.25](https://bedtools.readthedocs.io/en/latest/content/installation.html)
-* [picard](https://broadinstitute.github.io/picard/) - set location as $picard_path
-* [samtools1.9](https://github.com/samtools/samtools)
-* [htslib-1.12](http://www.htslib.org/download/)
-* [STAR2.7](https://github.com/alexdobin/STAR)  - set location as $STAR
-
-
-The following tools are required to install and run BEASTIE directly on your system:
-* BEASTIE has been tested on **Linux**. It may or may not work on other UNIX systems.
-* [Python 3.6](https://www.python.org/downloads/release/python-360/) version 3.6 or higher is required.
-* [R 4.0](https://cran.r-project.org/bin/macosx/)
-
-The following Python packages are required to install in your system:
-* os, sys, configparser, subprocess, pandas, re, pickle, numpy
-
-Most of these pakages can be installed from CRAN using the `install.packages` R function. However, "pasilla" is a Bioconductor package and must be installed using the
-[Bioconductor Manager](https://cran.r-project.org/web/packages/BiocManager/index.html) package. Once BiocManager is installed run `BiocManager::install("pasilla")` to install it.
-Git clone our BEASTIE scripts and example data in your working directory ($workdir)
-```bash
-% git clone --recurse-submodules https://github.com/x811zou/BEASTIE.git
-```
-
 Register [LD token](https://ldlink.nci.nih.gov/?tab=apiaccess)
 
 install BEASTIE docker:
@@ -92,7 +67,7 @@ or install BEASTIE into a python virtual environment:
 ```
 
 ----------------------------------------
-Optional preparation step: process raw fastq data
+Recommended preparation step: process raw fastq data
 ----------------------------------------
 
 a. trim raw RNAseq fastq reads using [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
