@@ -50,7 +50,6 @@ We don't build a singularity image directly, but you can build one using the doc
 % singularity run --bind <directory> beastie.sif -c <config_file>
 ```
 
-
 ### Customized installation:
 #### Software prerequisites
 Only if you want to use our recommended pipeline to align RNAseq reads and modify the pipeline:
@@ -59,27 +58,15 @@ Only if you want to use our recommended pipeline to align RNAseq reads and modif
 * [samtools1.9](https://github.com/samtools/samtools)
 * [htslib-1.12](http://www.htslib.org/download/)
 * [STAR2.7](https://github.com/alexdobin/STAR)  - set location as $STAR
-* [Trimmomatic](https://github.com/usadellab/Trimmomatic) - set location as $trimmomatic_path
-* [vcftools0.1.15](https://vcftools.github.io/)
-* [tabix](https://github.com/samtools/htslib)
+
 
 The following tools are required to install and run BEASTIE directly on your system:
 * BEASTIE has been tested on **Linux**. It may or may not work on other UNIX systems.
-* [CmdStan](https://mc-stan.org/users/interfaces/cmdstan) must be installed.  This is the command-line interface to the STAN statistical programming language. Set the location as $STAN. Installing and Compiling BEASTIE source code.
 * [Python 3.6](https://www.python.org/downloads/release/python-360/) version 3.6 or higher is required.
 * [R 4.0](https://cran.r-project.org/bin/macosx/)
 
 The following Python packages are required to install in your system:
 * os, sys, configparser, subprocess, pandas, re, pickle, numpy
-
-The following R packages are required to install in your system:
-* [LDlinkR](https://github.com/CBIIT/LDlinkR)
-* [reshape2](https://github.com/hadley/reshape)
-* [data.table](https://github.com/Rdatatable/data.table)
-* [dplyr](https://www.r-project.org/nosvn/pandoc/dplyr.html)
-* [pasilla](https://bioconductor.org/packages/release/data/experiment/html/pasilla.html)
-* [readr](https://cran.r-project.org/web/packages/readr/readme/README.html)
-* [glmnetUtils](https://www.rdocumentation.org/packages/glmnetUtils/versions/1.1.8)
 
 Most of these pakages can be installed from CRAN using the `install.packages` R function. However, "pasilla" is a Bioconductor package and must be installed using the
 [Bioconductor Manager](https://cran.r-project.org/web/packages/BiocManager/index.html) package. Once BiocManager is installed run `BiocManager::install("pasilla")` to install it.
@@ -87,7 +74,6 @@ Git clone our BEASTIE scripts and example data in your working directory ($workd
 ```bash
 % git clone --recurse-submodules https://github.com/x811zou/BEASTIE.git
 ```
-Installing [CmdStan](https://mc-stan.org/users/interfaces/cmdstan), and set the environment variable $STAN to the directory where CmdStan has been installed.
 
 Register [LD token](https://ldlink.nci.nih.gov/?tab=apiaccess)
 
