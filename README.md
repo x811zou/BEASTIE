@@ -14,7 +14,22 @@ The workflow is detailed in the 'Example Code Usage' section below.
 ### QuickBEAST Model
 If you prefer to run the QuickBEAST model only, visit the [QuickBEAST Github page](https://github.com/x811zou/QuickBEAST).
 
-
+----------------------------------------
+Input Preparation & Testing data
+----------------------------------------
+* sample.vcf.gz
+* sample.bam.gz
+* shapeit2 phasing file
+* reference directory (gencode reference, Allele frequency reference extracted from 1000 Genome Project across different ancestries)
+* optional testing data
+  <br>
+Download testing data and/or reference files from shared google drive folder:
+Example testing data: "NA12878_chr21"<br>
+Zipped reference data: unzip and set the environment variable $refdir to the directory where reference folder has been unzipped.
+```
+https://drive.google.com/drive/folders/1z63jSyNWBKFJu4CZ4z54OFXHK8LsXu9O?usp=drive_link
+```
+----------------------------------------
 ## Installation options
 ----------------------------------------
 ### Using Docker Image locally
@@ -73,32 +88,15 @@ pip install -r requirements.txt
 make install
 ```
 
-
-----------------------------------------
-Input Preparation & Testing data
-----------------------------------------
-* sample.vcf.gz
-* sample.bam.gz
-* shapeit2 phasing file
-* reference directory (gencode reference, Allele frequency reference extracted from 1000 Genome Project across different ancestries)
-* optional testing data
-  <br>
-Download testing data and/or reference files from shared google drive folder:
-Example testing data: "NA12878_chr21"<br>
-Zipped reference data: unzip and set the environment variable $refdir to the directory where reference folder has been unzipped.
-```
-https://drive.google.com/drive/folders/1z63jSyNWBKFJu4CZ4z54OFXHK8LsXu9O?usp=drive_link
-```
-
 ----------------------------------------
 Example code usage (details in the run_BEASTIE.sh file):
 ----------------------------------------
-This running script has parameters definition and all options.
+This section provides step-by-step examples of running the BEASTIE pipeline using Docker.
 ```
 sh run_BEASTIE.sh
 ```
 #### step0: Clean VCF file.
-* Only keep bi-allelic het sites
+* Clean your VCF file to retain only bi-allelic heterozygous sites.
 ```
 docker run  -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie
     cleanVCF \
@@ -114,7 +112,7 @@ NOTES:<br>
 #### step1: Extract Heterozygous sites from gencode reference on VCF file.
 * Extract heterozygous sites from gencode reference for samtools mpileup (We provide pre-split gencode v19 for all 22 chromosome in reference folder, users are free to use their version of gencode reference and use vcftools tools to split it).
 * Parse pileup read counts by our faster version python script originally adopted from [ASEreadCounter](https://github.com/gimelbrantlab/ASEReadCounter_star).
-* Thinning reads by read length. One read only count once.
+* Thinning reads by read length. One read only counts once.
 * Annotate AF and LD for bi-allelic het SNPs pairs
 ```
 docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
@@ -126,7 +124,7 @@ docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
     --gencode-dir $ref_dir/reference/gencode_chr 
 ```
 
-#### step2: Parsing gene coverage from aligned BAM file using SAMTOOLS PILEUP.
+#### step2: Parse Gene Coverage from BAM
 ```
 docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
     pileupReads \
@@ -144,6 +142,7 @@ docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
 ```
 
 #### step3: Simulate unbiased fastq reads on each allele for each gene.
+Simulate unbiased Fastq reads for each allele for each gene.
 ```
 docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
     simulateReads \
@@ -160,7 +159,8 @@ docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
 ```
 #### Required action: align simulated fastq reads with the same alignment tool/parameters you used for your data. Then use step2 to do pileup for the aligned BAM for simulated reads. 
 
-#### step4: Filter out het sites with genotyping errors.
+#### step4: Filter Genotyping Errors
+Filter out heterozygous sites with genotyping errors.
 ```
 docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
     filterGenotypingError \
@@ -186,7 +186,7 @@ docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
 * Run BEASTIE model
 * Generate gene list with user-defined p-value cutoff
 
-(1): run BEASTIE with phasing from VCF file.
+(1): Using Phasing from VCF:
 ```
 docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
     runModel \
@@ -207,7 +207,7 @@ docker run -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
     --ld-token $LD_token \
     --simulation-pileup-file $input_simulation_pileup_gz
 ```
-(2): run BEASTIE with phasing from provided shapeit2 files or other phasing software.
+(2): Using Phasing from Shapeit2 Files:
 ```
 docker run  -v `pwd`:`pwd` -v $working_dir:/mnt xuezou/beastie \
     runModel \
