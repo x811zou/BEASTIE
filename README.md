@@ -14,7 +14,7 @@ The workflow is detailed in the 'Example Code Usage' section below.
 ### QuickBEAST Model
 If you prefer to run the QuickBEAST model only, visit the [QuickBEAST Github page](https://github.com/x811zou/QuickBEAST).
 
-----------------------------------------
+
 ## Installation options
 ----------------------------------------
 ### Using Docker Image locally
