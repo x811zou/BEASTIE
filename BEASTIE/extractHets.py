@@ -87,7 +87,7 @@ def count_all_het_sites(
     outputFilename,
     chr_start,
     chr_end,
-    gencode_path,
+    genecode_gz,
     require_pass,
     DEBUG_GENES=None,
     **kwargs,
@@ -115,8 +115,8 @@ def count_all_het_sites(
 
     for chrId in chrRange(chr_start, chr_end, include_x_chromosome):
         reader = GffTranscriptReader()
-        geneFile = gencode_path + f"/gencode.chr{chrId}.gtf.gz"
-        geneList = reader.loadGenes(geneFile)
+        # geneFile = gencode_path + f"/gencode.chr{chrId}.gtf.gz"
+        geneList = reader.loadGenes(genecode_gz)
         chr = f"chr{chrId}"
         geneList = list(filter(lambda gene: gene.getSubstrate() == chr, geneList))
         logging.info(
@@ -313,7 +313,7 @@ def count_all_het_sites_forpeaks(vcfFilename, outputFilename, annotation_file):
 def main():
     if len(sys.argv) != 8:
         print(
-            "Usage: extractHets.py <in_vcfgz> <out_hetSNP> <chr_start> <chr_end> <annotation> <skip_require_pass> <debug_gene>"
+            "Usage: extractHets.py <in_vcfgz> <out_hetSNP> <chr_start> <chr_end> <annotation_gz> <skip_require_pass> <debug_gene>"
         )
         sys.exit(1)
     
@@ -321,11 +321,11 @@ def main():
     hetSNP_filename = sys.argv[2]
     chr_start = int(sys.argv[3])
     chr_end = int(sys.argv[4])
-    annotation = sys.argv[5]
+    annotation_gz = sys.argv[5]
     skip_require_pass = False
     debug_gene = None
 
-    count_all_het_sites(vcfgz_path_filename, hetSNP_filename, chr_start, chr_end, annotation, not skip_require_pass, debug_gene)
+    count_all_het_sites(vcfgz_path_filename, hetSNP_filename, chr_start, chr_end, annotation_gz, not skip_require_pass, debug_gene)
 
 if __name__ == "__main__":
     main()
