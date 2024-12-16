@@ -49,9 +49,9 @@ def filter_vcf(input_vcfgz, tmp_dir, sample, bihet_vcfgz, threads, cutoff, pass_
     compress_and_index(f"{tmp_dir}/{sample}.no_chr.content.SNPs.hets.vcf", bihet_vcfgz)
 
     if pass_flag:
-        all_command = f"bgzip -@ {threads} -cd {input_vcfgz} | grep -v '^#' | awk -v OFS='\t' 'sub(/:.*/,\"\",$10) && length($4)==1 && length($5)==1 && $7==\"PASS\"' > {tmp_dir}/tmp.content.all.vcf"
+        all_command = f"bgzip -@ {threads} -cd {input_vcfgz} | grep -v '^#' | awk -v OFS='\t' 'sub(/:.*/,\"\",$9) && sub(/:.*/,\"\",$10) && length($4)==1 && length($5)==1 && $7==\"PASS\"' > {tmp_dir}/tmp.content.all.vcf"
     else:
-        all_command = f"bgzip -@ {threads} -cd {input_vcfgz} | grep -v '^#' | awk -v OFS='\t' 'sub(/:.*/,\"\",$10) && length($4)==1 && length($5)==1 && $6>={cutoff}' > {tmp_dir}/tmp.content.all.vcf"
+        all_command = f"bgzip -@ {threads} -cd {input_vcfgz} | grep -v '^#' | awk -v OFS='\t' 'sub(/:.*/,\"\",$9) && sub(/:.*/,\"\",$10) && length($4)==1 && length($5)==1 && $6>={cutoff}' > {tmp_dir}/tmp.content.all.vcf"
 
     subprocess.run(all_command, shell=True)
 
