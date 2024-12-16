@@ -58,7 +58,7 @@ def check_file_existence(vcfgz, pileup, het_snp_file):
     vcfgztbi = "{0}.tbi".format(vcfgz)
     if not os.path.isfile(vcfgz):
         logging.error(
-            "..... Oops! vcfgz file {0} doesn't exist. Please try again ...".format(vcfgz)
+            "..... Oops! VCFGZ file {0} doesn't exist. Please try again ...".format(vcfgz)
         )
         exit(1)
     if os.path.isfile(vcfgz) and (
