@@ -34,10 +34,10 @@ def filter_vcf(input_vcfgz, tmp_dir, sample, bihet_vcfgz, threads, cutoff, pass_
     os.makedirs(tmp_dir, exist_ok=True)
     if pass_flag:
         logging.info(f"..... VCF file has PASS, filter by PASS flag in 7th column")
-        command = f"bgzip -@ {threads} -cd {input_vcfgz} | grep -v '^#' | awk -v OFS='\t' 'sub(/:.*/,\"\",$10) && length($4)==1 && length($5)==1 && $7==\"PASS\" && ($10==\"1/0\" || $10==\"0/1\" || $10==\"1|0\" || $10==\"0|1\")' | awk '{{gsub(/\\chr/, \"\")}}1' > {tmp_dir}/tmp.content.vcf"
+        command = f"bgzip -@ {threads} -cd {input_vcfgz} | grep -v '^#' | awk -v OFS='\t' 'sub(/:.*/,\"\",$9) && sub(/:.*/,\"\",$10) && length($4)==1 && length($5)==1 && $7==\"PASS\" && ($10==\"1/0\" || $10==\"0/1\" || $10==\"1|0\" || $10==\"0|1\")' | awk '{{gsub(/\\chr/, \"\")}}1' > {tmp_dir}/tmp.content.vcf"
     else:
-        logging.info(f"..... VCF file does not have PASS, filter by quality score in 6th column > {cutoff}")
-        command = f"bgzip -@ {threads} -cd {input_vcfgz} | grep -v '^#' | awk -v OFS='\t' 'sub(/:.*/,\"\",$10) && length($4)==1 && length($5)==1 && $6>{cutoff} && ($10==\"1/0\" || $10==\"0/1\" || $10==\"1|0\" || $10==\"0|1\")' | awk '{{gsub(/\\chr/, \"\")}}1' > {tmp_dir}/tmp.content.vcf"
+        logging.info(f"..... VCF file does not have PASS, filter by quality score in 6th column >= {cutoff}")
+        command = f"bgzip -@ {threads} -cd {input_vcfgz} | grep -v '^#' | awk -v OFS='\t' 'sub(/:.*/,\"\",$9) && sub(/:.*/,\"\",$10) && length($4)==1 && length($5)==1 && $6>={cutoff} && ($10==\"1/0\" || $10==\"0/1\" || $10==\"1|0\" || $10==\"0|1\")' | awk '{{gsub(/\\chr/, \"\")}}1' > {tmp_dir}/tmp.content.vcf"
 
     header_command = f"zcat {input_vcfgz} | grep '^#' > {tmp_dir}/tmp.header.vcf"
     combined_command = f"cat {tmp_dir}/tmp.header.vcf {tmp_dir}/tmp.content.vcf > {tmp_dir}/{sample}.no_chr.content.SNPs.hets.vcf"
@@ -51,7 +51,7 @@ def filter_vcf(input_vcfgz, tmp_dir, sample, bihet_vcfgz, threads, cutoff, pass_
     if pass_flag:
         all_command = f"bgzip -@ {threads} -cd {input_vcfgz} | grep -v '^#' | awk -v OFS='\t' 'sub(/:.*/,\"\",$10) && length($4)==1 && length($5)==1 && $7==\"PASS\"' > {tmp_dir}/tmp.content.all.vcf"
     else:
-        all_command = f"bgzip -@ {threads} -cd {input_vcfgz} | grep -v '^#' | awk -v OFS='\t' 'sub(/:.*/,\"\",$10) && length($4)==1 && length($5)==1 && $6>10' > {tmp_dir}/tmp.content.all.vcf"
+        all_command = f"bgzip -@ {threads} -cd {input_vcfgz} | grep -v '^#' | awk -v OFS='\t' 'sub(/:.*/,\"\",$10) && length($4)==1 && length($5)==1 && $6>={cutoff}' > {tmp_dir}/tmp.content.all.vcf"
 
     subprocess.run(all_command, shell=True)
 
@@ -95,7 +95,7 @@ def cleaning(tmp_dir, input_vcfgz, bi_vcfgz, bihet_vcfgz, cutoff, pass_flag):
     
     logging.info(f"..... Done sample {vcf_sample}")
 
-def main():
+def main(): 
     if len(sys.argv) != 7:
         print("Usage: cleanVCF.py <tmp_dir> <in_vcf> <bi_vcf> <bihet_vcf> <cutoff> <pass_flag>")
         sys.exit(1)
