@@ -55,8 +55,8 @@ def configure_cleanVCF_parser(parser):
     )
     parser.add_argument(
         "--quality-score-min",
-        help="quality score cutoff in VCF fields[6]. Default 0 means we are using PASS filtering",
-        default=0,
+        help="quality score cutoff in VCF fields[6]. 0 means we are using PASS filtering",
+        default=10,
         type=int,
     )
 
@@ -66,7 +66,7 @@ def beastie_extractHets(args):
     vcfgz_path_filename = args.vcfgz_file
     chr_start = args.chr_start
     chr_end = args.chr_end
-    annotation = args.gencode_dir
+    annotation = args.gencode_gz
     skip_require_pass = args.skip_require_pass
     debug_gene = args.debug_gene
     logging.basicConfig(
@@ -96,8 +96,8 @@ def configure_extractHets_parser(parser):
         required=True,
     )
     parser.add_argument(
-        "--gencode-dir",
-        help="Path to gencode reference directory.  Should contain files gencode.chr{1..22}.gtf.gz",
+        "--gencode-gz",
+        help="Path to gene body reference gz file",
         required=True,
     )
     parser.add_argument(
