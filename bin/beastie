@@ -76,6 +76,7 @@ def configure_cleanVCF_parser(parser):
 
 
 def beastie_extractHets(args):
+    sample = args.sample
     filename = args.out_hetSNP
     vcfgz_path_filename = args.vcfgz_file
     chr_start = args.chr_start
@@ -88,6 +89,7 @@ def beastie_extractHets(args):
         level=logging.DEBUG,
     )
     extractHets.count_all_het_sites(
+        sample,
         vcfgz_path_filename,
         filename,
         chr_start,
@@ -99,6 +101,11 @@ def beastie_extractHets(args):
 
 def configure_extractHets_parser(parser):
     parser.set_defaults(func=beastie_extractHets)
+    parser.add_argument(
+        "--sample",
+        help="Sample name",
+        required=True,
+    )
     parser.add_argument(
         "--vcfgz-file",
         help="Path to VCFGZ file",
