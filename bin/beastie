@@ -6,6 +6,7 @@ import logging
 import sys
 
 def beastie_cleanVCF(args):
+    sample = args.sample
     vcfgz = args.vcfgz_file
     bi_vcfgz = args.filtered_bi_vcfgz
     bihets_vcfgz = args.filtered_bihets_vcfgz
@@ -18,6 +19,7 @@ def beastie_cleanVCF(args):
         level=logging.DEBUG,
     )
     cleanVCF.cleaning(
+        sample,
         vcf_sample_name,
         tmp_path,
         vcfgz,
@@ -29,6 +31,11 @@ def beastie_cleanVCF(args):
 
 def configure_cleanVCF_parser(parser):
     parser.set_defaults(func=beastie_cleanVCF)
+    parser.add_argument(
+        "--sample",
+        help="Sample name",
+        required=True,
+    )
     parser.add_argument(
         "--vcfgz-file",
         help="Full path to VCFGZ file",
