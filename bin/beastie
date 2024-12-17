@@ -10,6 +10,7 @@ def beastie_cleanVCF(args):
     bi_vcfgz = args.filtered_bi_vcfgz
     bihets_vcfgz = args.filtered_bihets_vcfgz
     tmp_path = args.tmp_dir
+    vcf_sample_name = args.vcf_sample_name
     quality_score_cutoff = args.quality_score_min
     skip_require_pass = args.skip_require_pass
     logging.basicConfig(
@@ -17,6 +18,7 @@ def beastie_cleanVCF(args):
         level=logging.DEBUG,
     )
     cleanVCF.cleaning(
+        vcf_sample_name,
         tmp_path,
         vcfgz,
         bi_vcfgz,
@@ -45,6 +47,11 @@ def configure_cleanVCF_parser(parser):
     parser.add_argument(
         "--tmp-dir",
         help="full path of tmp dir",
+        required=True,
+    )
+    parser.add_argument(
+        "--vcf-sample-name",
+        help="sample name in VCFGZ file",
         required=True,
     )
     parser.add_argument(
