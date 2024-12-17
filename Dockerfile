@@ -72,7 +72,7 @@ ENV CYTHONIZE 1
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   r-base-core r-base-dev libicu66 libstdc++6 openssl libxml2 libcurl4 zlib1g \
-  libbz2-1.0 lzma libhts3 vcftools samtools pipenv python3.8-venv libtbb2 \
+  libbz2-1.0 lzma libhts3 vcftools bcftools samtools pipenv python3.8-venv libtbb2 \
   r-cran-dplyr r-cran-readr krb5-user sssd-krb5 jags libgsl23
 
 RUN ln -s /usr/bin/python3.8 /usr/bin/python
