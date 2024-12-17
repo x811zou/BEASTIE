@@ -15,6 +15,12 @@ from .misc_tools.GffTranscriptReader import GffTranscriptReader
 from .misc_tools.Pipe import Pipe
 import subprocess
 
+def normalize_chromosome_name(chrom):
+    """
+    Remove 'chr' prefix and any leading/trailing whitespace from chromosome names.
+    """
+    return chrom.strip().lstrip("chr")
+
 def chunk_iter(iter, n):
     """Yield successive n-sized chunks from iter."""
     res = []
@@ -115,10 +121,15 @@ def count_all_het_sites(
 
     for chrId in chrRange(chr_start, chr_end, include_x_chromosome):
         reader = GffTranscriptReader()
-        # geneFile = gencode_path + f"/gencode.chr{chrId}.gtf.gz"
+        logging.info(
+            f"..... Loading GTF file: {genecode_gz}")
         geneList = reader.loadGenes(genecode_gz)
         chr = f"chr{chrId}"
-        geneList = list(filter(lambda gene: gene.getSubstrate() == chr, geneList))
+        normalized_chr = normalize_chromosome_name(chr)  # Strip 'chr'
+
+        geneList = list(
+        filter(lambda gene: normalize_chromosome_name(gene.getSubstrate()) == normalized_chr, geneList)
+    )
         logging.info(
             f"..... Start loading gencode annotation chr {chrId} with {len(geneList)} genes")
 
@@ -201,7 +212,7 @@ def count_all_het_sites(
                     print(pos)
                 for transcript in transcripts:
                     # geneID = transcript.getGeneId()
-                    assert chr == transcript.getSubstrate()
+                    assert normalize_chromosome_name(chr) == normalize_chromosome_name(transcript.getSubstrate())
                     chr_pos = f"{chr}_{pos}"
                     if chr_pos not in variant_to_transcript_info:
                         variant_to_transcript_info[chr_pos] = []
