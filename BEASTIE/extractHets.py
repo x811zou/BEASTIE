@@ -89,6 +89,7 @@ def check(hetSNP, VCF):
     return False
 
 def count_all_het_sites(
+    sample,
     vcfFilename,
     outputFilename,
     chr_start,
@@ -102,9 +103,6 @@ def count_all_het_sites(
         format="%(asctime)-15s [%(levelname)s] %(message)s",
         level=logging.INFO,
     )
-    base_name = os.path.basename(outputFilename)
-    suffix = ".hetSNP.tsv"
-    sample = base_name[:-len(suffix)] 
 
     logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> extractHets: Start sample {sample}")
     if check(outputFilename, vcfFilename):
@@ -212,6 +210,10 @@ def count_all_het_sites(
                     print(pos)
                 for transcript in transcripts:
                     # geneID = transcript.getGeneId()
+                    print(normalize_chromosome_name(chr))
+                    print(transcript.getSubstrate())
+                    print(normalize_chromosome_name(transcript.getSubstrate()))
+                    sys.exit()
                     assert normalize_chromosome_name(chr) == normalize_chromosome_name(transcript.getSubstrate())
                     chr_pos = f"{chr}_{pos}"
                     if chr_pos not in variant_to_transcript_info:
@@ -324,19 +326,20 @@ def count_all_het_sites_forpeaks(vcfFilename, outputFilename, annotation_file):
 def main():
     if len(sys.argv) != 8:
         print(
-            "Usage: extractHets.py <in_vcfgz> <out_hetSNP> <chr_start> <chr_end> <annotation_gz> <skip_require_pass> <debug_gene>"
+            "Usage: extractHets.py <sample> <in_vcfgz> <annotation_gz> <chr_start> <chr_end> <out_hetSNP> <skip_require_pass> <debug_gene>"
         )
         sys.exit(1)
     
-    vcfgz_path_filename = sys.argv[1]
-    hetSNP_filename = sys.argv[2]
-    chr_start = int(sys.argv[3])
-    chr_end = int(sys.argv[4])
-    annotation_gz = sys.argv[5]
+    sample = sys.argv[1]
+    vcfgz_path_filename = sys.argv[2]
+    annotation_gz = sys.argv[3]
+    chr_start = int(sys.argv[4])
+    chr_end = int(sys.argv[5])
+    hetSNP_filename = sys.argv[6]
     skip_require_pass = False
     debug_gene = None
 
-    count_all_het_sites(vcfgz_path_filename, hetSNP_filename, chr_start, chr_end, annotation_gz, not skip_require_pass, debug_gene)
+    count_all_het_sites(sample, vcfgz_path_filename, hetSNP_filename, chr_start, chr_end, annotation_gz, not skip_require_pass, debug_gene)
 
 if __name__ == "__main__":
     main()

@@ -80,15 +80,11 @@ def compress_and_index_vcf(tmp_dir, sample, bi_vcfgz):
     compress_and_index(f"{tmp_dir}/{sample}.no_chr.content.SNPs.vcf", bi_vcfgz)
 
 # python cleanVCF.py /data2/BEASTIE_example_output/NA12878_chr21/tmp/vcf /home/scarlett/github/BEASTIE/BEASTIE_example/NA12878_chr21/HG001_GRCh37_GIAB.chr21.vcf.gz /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21.bi.vcf.gz /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21.bihets.vcf.gz 0 true
-def cleaning(vcf_sample_name, tmp_dir, input_vcfgz, bi_vcfgz, bihet_vcfgz, cutoff, pass_flag):
+def cleaning(sample, vcf_sample_name, tmp_dir, input_vcfgz, bi_vcfgz, bihet_vcfgz, cutoff, pass_flag):
     logging.basicConfig(
         format="%(asctime)-15s [%(levelname)s] %(message)s",
         level=logging.INFO,
     )
-    # Extract the filename from the path
-    filename = os.path.basename(bi_vcfgz)
-    # Extract the part before the first dot
-    sample = filename.split('.')[0]
     out_dir = os.path.dirname(bi_vcfgz)
 
     logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CleanVCF: Start sample {sample}")
@@ -107,7 +103,7 @@ def cleaning(vcf_sample_name, tmp_dir, input_vcfgz, bi_vcfgz, bihet_vcfgz, cutof
 
 def main(): 
     if len(sys.argv) != 7:
-        print("Usage: cleanVCF.py <tmp_dir> <in_vcf> <bi_vcf> <bihet_vcf> <vcf_sample_coln> <quality_score_min> <pass_flag>")
+        print("Usage: cleanVCF.py <tmp_dir> <in_vcf> <bi_vcf> <bihet_vcf> <vcf_sample_coln> <sample> <quality_score_min> <pass_flag>")
         sys.exit(1)
     
     tmp_dir = sys.argv[1]
@@ -115,10 +111,11 @@ def main():
     bi_vcfgz = sys.argv[3]
     bihet_vcfgz = sys.argv[4]
     vcf_sample_name = sys.argv[5]
-    quality_score_min = sys.argv[6]
+    sample = sys.argv[6]
+    quality_score_min = sys.argv[7]
     skip_require_pass = False
 
-    cleaning(vcf_sample_name, tmp_dir, input_vcfgz, bi_vcfgz, bihet_vcfgz, quality_score_min, not skip_require_pass)
+    cleaning(sample, vcf_sample_name, tmp_dir, input_vcfgz, bi_vcfgz, bihet_vcfgz, quality_score_min, not skip_require_pass)
 
 if __name__ == "__main__":
     main()
