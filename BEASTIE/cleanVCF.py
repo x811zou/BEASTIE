@@ -14,7 +14,7 @@ def extract_file_name(input_path):
     file_name = file_name_with_extension.replace(".vcf.gz", "")
     return file_name
 
-def check_and_cleanup(bi_vcfgz, bihet_vcfgz, tmp_dir):
+def check_and_cleanup(bi_vcfgz, bihet_vcfgz):
     if os.path.exists(bi_vcfgz) and os.path.exists(bihet_vcfgz):
         bi_vcfgz_lines = subprocess.run(f"zcat {bi_vcfgz} | head -n20 | wc -l", shell=True, capture_output=True, text=True)
         bihet_vcfgz_lines = subprocess.run(f"zcat {bihet_vcfgz} | head -n20 | wc -l", shell=True, capture_output=True, text=True)
@@ -26,8 +26,7 @@ def check_and_cleanup(bi_vcfgz, bihet_vcfgz, tmp_dir):
             subprocess.run(f"rm {bi_vcfgz}*", shell=True)
     else:
         logging.info(f"..... Check: {os.path.basename(bi_vcfgz)} && {os.path.basename(bihet_vcfgz)} does not exist -- generating VCF files")
-    if os.path.exists(tmp_dir):
-        subprocess.run(f"rm -r {tmp_dir}", shell=True)
+
     return False
 
 def filter_vcf(input_vcfgz, tmp_dir, sample, vcf_sample_name, bihet_vcfgz, threads, cutoff, pass_flag):
@@ -96,16 +95,11 @@ def cleaning(vcf_sample_name, tmp_dir, input_vcfgz, bi_vcfgz, bihet_vcfgz, cutof
 
     os.makedirs(out_dir, exist_ok=True)
 
-    if check_and_cleanup(bi_vcfgz, bihet_vcfgz, tmp_dir):
-        if os.path.exists(tmp_dir):
-            shutil.rmtree(tmp_dir)
-        return
-
     filter_vcf(input_vcfgz, tmp_dir, sample, vcf_sample_name, bihet_vcfgz, threads=1, cutoff=cutoff, pass_flag=pass_flag)
     
     compress_and_index_vcf(tmp_dir, sample, bi_vcfgz)
 
-    if check_and_cleanup(bi_vcfgz, bihet_vcfgz, tmp_dir):
+    if check_and_cleanup(bi_vcfgz, bihet_vcfgz):
         if os.path.exists(tmp_dir):
             shutil.rmtree(tmp_dir)
     
