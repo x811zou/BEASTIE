@@ -209,11 +209,8 @@ def count_all_het_sites(
                 if DEBUG_GENES is not None:
                     print(pos)
                 for transcript in transcripts:
-                    # geneID = transcript.getGeneId()
-                    print(normalize_chromosome_name(chr))
-                    print(transcript.getSubstrate())
-                    print(normalize_chromosome_name(transcript.getSubstrate()))
-                    sys.exit()
+                    logging.info(f"normalize_chromosome_name(chr) {normalize_chromosome_name(chr)}")
+                    logging.info(f"normalize_chromosome_name(transcript.getSubstrate() {normalize_chromosome_name(transcript.getSubstrate())}")
                     assert normalize_chromosome_name(chr) == normalize_chromosome_name(transcript.getSubstrate())
                     chr_pos = f"{chr}_{pos}"
                     if chr_pos not in variant_to_transcript_info:
