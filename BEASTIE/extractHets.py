@@ -104,7 +104,7 @@ def count_all_het_sites(
         level=logging.INFO,
     )
 
-    logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> extractHets: Start sample {sample}")
+    logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> extractHets: Start sample {sample} - require PASS :{require_pass}")
     if check(outputFilename, vcfFilename):
         return
 
@@ -114,7 +114,6 @@ def count_all_het_sites(
     out_stream.write(
         "chr\tchrN\tpos\tgeneID\ttranscriptID\ttranscript_pos\tSNP_id\tgenotype\n"
     )
-
     vcfline_processor = make_vcfline_processor(require_pass)
 
     for chrId in chrRange(chr_start, chr_end, include_x_chromosome):
@@ -124,7 +123,6 @@ def count_all_het_sites(
         geneList = reader.loadGenes(genecode_gz)
         chr = f"chr{chrId}"
         normalized_chr = normalize_chromosome_name(chr)  # Strip 'chr'
-
         geneList = list(
         filter(lambda gene: normalize_chromosome_name(gene.getSubstrate()) == normalized_chr, geneList)
     )
@@ -209,8 +207,8 @@ def count_all_het_sites(
                 if DEBUG_GENES is not None:
                     print(pos)
                 for transcript in transcripts:
-                    logging.info(f"normalize_chromosome_name(chr) {normalize_chromosome_name(chr)}")
-                    logging.info(f"normalize_chromosome_name(transcript.getSubstrate() {normalize_chromosome_name(transcript.getSubstrate())}")
+                    #logging.info(f"normalize_chromosome_name(chr) {normalize_chromosome_name(chr)}")
+                    #logging.info(f"normalize_chromosome_name(transcript.getSubstrate() {normalize_chromosome_name(transcript.getSubstrate())}")
                     assert normalize_chromosome_name(chr) == normalize_chromosome_name(transcript.getSubstrate())
                     chr_pos = f"{chr}_{pos}"
                     if chr_pos not in variant_to_transcript_info:
@@ -333,9 +331,8 @@ def main():
     chr_start = int(sys.argv[4])
     chr_end = int(sys.argv[5])
     hetSNP_filename = sys.argv[6]
-    skip_require_pass = False
+    skip_require_pass = sys.argv[7]
     debug_gene = None
-
     count_all_het_sites(sample, vcfgz_path_filename, hetSNP_filename, chr_start, chr_end, annotation_gz, not skip_require_pass, debug_gene)
 
 if __name__ == "__main__":
