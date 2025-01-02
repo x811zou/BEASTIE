@@ -116,15 +116,17 @@ def count_all_het_sites(
     )
     vcfline_processor = make_vcfline_processor(require_pass)
 
+    reader = GffTranscriptReader()
+    logging.info(
+        f"..... Loading GTF file: {genecode_gz}")
+    full_geneList = reader.loadGenes(genecode_gz)
+    
     for chrId in chrRange(chr_start, chr_end, include_x_chromosome):
-        reader = GffTranscriptReader()
-        logging.info(
-            f"..... Loading GTF file: {genecode_gz}")
-        geneList = reader.loadGenes(genecode_gz)
+        
         chr = f"chr{chrId}"
-        normalized_chr = normalize_chromosome_name(chr)  # Strip 'chr'
+        # normalized_chr = normalize_chromosome_name(chr)  # Strip 'chr'
         geneList = list(
-        filter(lambda gene: gene.getSubstrate() == chr, geneList)
+        filter(lambda gene: gene.getSubstrate() == chr, full_geneList)
     )
         logging.info(
             f"..... Start loading gencode annotation chr {chrId} with {len(geneList)} genes")
