@@ -124,7 +124,7 @@ def count_all_het_sites(
         chr = f"chr{chrId}"
         normalized_chr = normalize_chromosome_name(chr)  # Strip 'chr'
         geneList = list(
-        filter(lambda gene: normalize_chromosome_name(gene.getSubstrate()) == normalized_chr, geneList)
+        filter(lambda gene: gene.getSubstrate() == chr, geneList)
     )
         logging.info(
             f"..... Start loading gencode annotation chr {chrId} with {len(geneList)} genes")
@@ -207,15 +207,15 @@ def count_all_het_sites(
                 if DEBUG_GENES is not None:
                     print(pos)
                 for transcript in transcripts:
-                    #logging.info(f"normalize_chromosome_name(chr) {normalize_chromosome_name(chr)}")
-                    #logging.info(f"normalize_chromosome_name(transcript.getSubstrate() {normalize_chromosome_name(transcript.getSubstrate())}")
-                    assert normalize_chromosome_name(chr) == normalize_chromosome_name(transcript.getSubstrate())
-                    chr_pos = f"{chr}_{pos}"
-                    if chr_pos not in variant_to_transcript_info:
-                        variant_to_transcript_info[chr_pos] = []
-                    variant_to_transcript_info[chr_pos].append(
-                        (transcript, pos, rsid, genotype)
-                    )
+                    if chr == transcript.getSubstrate():
+                        chr_pos = f"{chr}_{pos}"
+                        if chr_pos not in variant_to_transcript_info:
+                            variant_to_transcript_info[chr_pos] = []
+                        variant_to_transcript_info[chr_pos].append(
+                            (transcript, pos, rsid, genotype)
+                        )
+                    # else:
+                    #     logging.info(f"Exception: chr {chr} - chr_pos {chr_pos} - rsid {rsid} - transcript {transcript.getSubstrate()} - transcriptID {transcript.getId()}")
 
         #print(">> dict variant_to_transcript_info")
         #print(f"len of dic: {len(variant_to_transcript_info)}")
