@@ -101,4 +101,4 @@ ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 
 
-ENTRYPOINT ["beastie"]
+CMD ["beastie"]
