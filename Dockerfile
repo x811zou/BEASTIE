@@ -17,6 +17,7 @@ WORKDIR /htslib
 RUN ./configure && make
 RUN cp bgzip /usr/local/bin/
 
+# QuickBEAST stage
 FROM ubuntu:20.04 AS QuickBEAST
 RUN apt-get update && apt-get install --no-install-recommends -qq wget ca-certificates make gcc g++ libbz2-1.0 libbz2-dev lbzip2 zlib1g-dev liblzma-dev git libncurses5-dev
 RUN apt-get install -qq libgsl-dev
@@ -35,6 +36,7 @@ RUN wget https://github.com/samtools/samtools/releases/download/1.15/samtools-1.
     cd .. && \
     rm -rf samtools-1.15 samtools-1.15.tar.bz2
 
+# BEASTIE Python stage
 FROM ubuntu:20.04 AS beastie-py
 RUN apt-get update && apt-get install --no-install-recommends -qq make pipenv python3.8-venv python3.8-dev pkg-config jags gcc g++
 WORKDIR /BEASTIE
@@ -44,6 +46,7 @@ RUN pip install statsmodels==0.13.5 && pip install Cython==0.29.24 && pip instal
 RUN pip install psutil==5.9.0  # Add this line to install psutil
 RUN pip install biopython==1.79  # Add this line to install Biopython
 
+# R Packages stage
 FROM ubuntu:20.04 AS rpackages
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update \
@@ -56,16 +59,22 @@ RUN apt-get update && apt-get install -y \
   wget
 
 # Install dependencies first
-# Install 'remotes' package which offers install_version() function
 RUN Rscript -e 'install.packages(c("remotes"), repos = "http://cran.r-project.org")'
 RUN wget -P / https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-45.tar.gz
 RUN R -e 'install.packages("/lattice_0.20-45.tar.gz", repos = NULL, type="source"); if (!library(lattice, logical.return=T)) quit(status=10)'
-# Install other necessary packages
 RUN Rscript -e 'remotes::install_version("Matrix", version = "1.4.1", repos = "http://cran.us.r-project.org")'
 RUN Rscript -e 'remotes::install_version("readr", version = "1.3.1", repos = "http://cran.us.r-project.org")'
 RUN Rscript -e 'remotes::install_version("glmnetUtils", version = "1.1.8", repos = "http://cran.us.r-project.org")'
-#RUN R -e 'install.packages("glmnetUtils", dependencies=T, repos="https://cran.rstudio.com/", Ncpus=4); if (!library(glmnetUtils, logical.return=T)) quit(status=10)'
 
+# UCSC tools stage
+FROM ubuntu:20.04 AS ucsc-tools
+WORKDIR /usr/local/bin
+RUN apt-get update && apt-get install --no-install-recommends -qq wget ca-certificates && \
+    wget http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/faToTwoBit && \
+    wget http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/twoBitToFa && \
+    chmod 744 faToTwoBit twoBitToFa
+
+# Final image
 FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND noninteractive
 ENV CYTHONIZE 1
@@ -79,13 +88,14 @@ RUN ln -s /usr/bin/python3.8 /usr/bin/python
 
 COPY --from=QuickBEAST /QuickBEAST/QuickBEAST /usr/local/bin
 COPY --from=QuickBEAST /usr/local/bin/samtools /usr/local/bin
-
 COPY --from=tabix /htslib/tabix /usr/local/bin
 COPY --from=tabix /usr/local/bin/bgzip /usr/local/bin
 COPY --from=rpackages /usr/local/lib/R/site-library /usr/local/lib/R/site-library
 COPY --from=sqlite /sqlite/.libs/libsqlite* /usr/local/lib/
 COPY --from=beastie-py /usr/local/lib/python3.8/dist-packages /usr/local/lib/python3.8/dist-packages
 COPY --from=beastie-py /usr/local/bin/beastie /usr/local/bin/
+COPY --from=ucsc-tools /usr/local/bin/faToTwoBit /usr/local/bin/
+COPY --from=ucsc-tools /usr/local/bin/twoBitToFa /usr/local/bin/
 
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
