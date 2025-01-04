@@ -25,6 +25,10 @@ def generate_twobit(fasta_file, twobit_file):
     """
     Generate a .2bit file from the given FASTA file using faToTwoBit.
     """
+    # Ensure the output directory exists
+    twobit_dir = os.path.dirname(twobit_file)
+    os.makedirs(twobit_dir, exist_ok=True)  # Create the directory if it doesn't exist
+    
     logging.info(f"Generating .2bit file from {fasta_file}...")
     command = f"faToTwoBit {fasta_file} {twobit_file}"
     run_command(command)
@@ -112,7 +116,7 @@ def run_simulation(chr_start, chr_end, outfastq_fwd, outfastq_rev, tmp_dir, fast
         )
 
     logging.info(f"..... Finish chr{int(chr_start)} to chr{int(chr_end)} simulation")
-    logging.info(f"..... start combining {sample}")
+    logging.info(f"..... Start combining {sample}")
 
     fwd_tmp = os.path.join(tmp_dir, 'fwd.tmp.fastq.gz')
     rev_tmp = os.path.join(tmp_dir, 'rev.tmp.fastq.gz')
@@ -131,8 +135,9 @@ def run_simulation(chr_start, chr_end, outfastq_fwd, outfastq_rev, tmp_dir, fast
     shutil.move(rev_tmp, outfastq_rev)
     logging.info(f"..... Output {os.path.basename(outfastq_fwd)} {os.path.basename(outfastq_rev)}")
     
-#python simulateREADS.py 21 21 /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_fwd2.fastq.gz /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_rev2.fastq.gz /data2/BEASTIE_example_output/NA12878_chr21/tmp/simulation2 /data2/reference/hg19/hg19.fa /data2/reference/gencode.v19.annotation.level12.gtf /home/scarlett/github/BEASTIE/BEASTIE_example/NA12878_chr21/NA12878_chr21.bam.gz /home/scarlett/github/BEASTIE/BEASTIE_example/NA12878_chr21/NA12878_chr21.bi.vcf.gz
-#docker run --rm -v $(pwd):/data beastie-with-ucsc python simulateREADS.py 21 21 /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_fwd2.fastq.gz /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_rev2.fastq.gz /data2/BEASTIE_example_output/NA12878_chr21/tmp/simulation2 /data2/reference/hg19/hg19.fa /data2/reference/gencode.v19.annotation.level12.gtf /home/scarlett/github/BEASTIE/BEASTIE_example/NA12878_chr21/NA12878_chr21.bam.gz /home/scarlett/github/BEASTIE/BEASTIE_example/NA12878_chr21/NA12878_chr21.bi.vcf.gz
+#docker run -it --entrypoint /bin/bash -v `pwd`:`pwd` -v /data2:/data2 xuezou/beastie
+#ls -lh /data2/reference/hg19/hg19.fa
+#python simulateREADS.py 21 21 /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_fwd2.fastq.gz /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_rev2.fastq.gz /data2/BEASTIE_example_output/NA12878_chr21/tmp/simulation2 /data2/reference/hg19/hg19.fa /data2/reference/gencode.v19.annotation.level12.gtf /data2/BEASTIE_example/NA12878_chr21/NA12878_chr21.bam.gz /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21.bi.vcf.gz
 
 if __name__ == "__main__":
     if len(sys.argv) != 10:
