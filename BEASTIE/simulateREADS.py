@@ -21,6 +21,16 @@ sys.path.append(simulator_path)
 # print("Sys.path:", sys.path)
 import unbiased_spliced_rna
 
+def generate_twobit(fasta_file, twobit_file):
+    """
+    Generate a .2bit file from the given FASTA file using faToTwoBit.
+    """
+    logging.info(f"Generating .2bit file from {fasta_file}...")
+    command = f"faToTwoBit {fasta_file} {twobit_file}"
+    run_command(command)
+    logging.info(f"Generated {twobit_file}")
+
+
 def run_command(command):
     subprocess.run(command, shell=True, check=True)
 
@@ -34,13 +44,22 @@ def convert_bamtosam(bamgz, samgz, thread):
     logging.info("... start indexing sam.gz")
 
 
-def run_simulation(chr_start, chr_end, outfastq_fwd, outfastq_rev, tmp_dir, twobit_dir, genome_2bit, gff, bamgz, vcfgz):
+def run_simulation(chr_start, chr_end, outfastq_fwd, outfastq_rev, tmp_dir, fasta, gff, bamgz, vcfgz):
+    """
+    Main simulation function. Automatically generates the .2bit file from the provided FASTA.
+    """
+    # Generate .2bit file in tmp_dir
+    genome_2bit = os.path.join(tmp_dir, "genome.2bit")
+    generate_twobit(fasta, genome_2bit)
+
     # Extract the filename from the path
     filename = os.path.basename(bamgz)
     # Extract the part before the first dot
     sample = filename.split('.')[0]
     samgz = os.path.join(tmp_dir, sample + ".sam.gz")
+
     logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> simulateReads: start sample {sample}")
+
     # Check if output files exist and are newer than the SAM file
     if (os.path.exists(outfastq_fwd) and os.path.getsize(outfastq_fwd) > 0 and 
         os.path.exists(outfastq_rev) and os.path.getsize(outfastq_rev) > 0 and
@@ -76,7 +95,21 @@ def run_simulation(chr_start, chr_end, outfastq_fwd, outfastq_rev, tmp_dir, twob
 
         logging.info(f"..... chr{N} fastq reads simulation")
         chrN = f"chr{N}"
-        unbiased_spliced_rna.simulation_pipeline(gff = gff, target_chromosome = chrN, target_gene = None, twoBitDir = twobit_dir, genome2bit = genome_2bit, outFile1 = outFile1name, outFile2 = outFile2name, SNPs = True, vcf = vcfgz, samgz = samgz, random = False, read_depth = 100, max_genes = 0)
+        unbiased_spliced_rna.simulation_pipeline(
+            gff = gff, 
+            target_chromosome = chrN, 
+            target_gene = None, 
+            twoBitDir = "/usr/local/bin", 
+            genome2bit = genome_2bit, 
+            outFile1 = outFile1name, 
+            outFile2 = outFile2name, 
+            SNPs = True, 
+            vcf = vcfgz, 
+            samgz = samgz, 
+            random = False, 
+            read_depth = 100, 
+            max_genes = 0,
+        )
 
     logging.info(f"..... Finish chr{int(chr_start)} to chr{int(chr_end)} simulation")
     logging.info(f"..... start combining {sample}")
@@ -98,11 +131,12 @@ def run_simulation(chr_start, chr_end, outfastq_fwd, outfastq_rev, tmp_dir, twob
     shutil.move(rev_tmp, outfastq_rev)
     logging.info(f"..... Output {os.path.basename(outfastq_fwd)} {os.path.basename(outfastq_rev)}")
     
-#python simulateREADS.py 21 21 /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_fwd.fastq.gz /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_rev.fastq.gz /data2/BEASTIE_example_output/NA12878_chr21/tmp/simulation /data2/reference/two_bit_linux /data2/reference/hg19/hg19.2bit /data2/reference/gencode.v19.annotation.level12.gtf /home/scarlett/github/BEASTIE/BEASTIE_example/NA12878_chr21/NA12878_chr21.bam.gz /home/scarlett/github/BEASTIE/BEASTIE_example/NA12878_chr21/NA12878_chr21.bi.vcf.gz
+#python simulateREADS.py 21 21 /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_fwd2.fastq.gz /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_rev2.fastq.gz /data2/BEASTIE_example_output/NA12878_chr21/tmp/simulation2 /data2/reference/hg19/hg19.fa /data2/reference/gencode.v19.annotation.level12.gtf /home/scarlett/github/BEASTIE/BEASTIE_example/NA12878_chr21/NA12878_chr21.bam.gz /home/scarlett/github/BEASTIE/BEASTIE_example/NA12878_chr21/NA12878_chr21.bi.vcf.gz
+#docker run --rm -v $(pwd):/data beastie-with-ucsc python simulateREADS.py 21 21 /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_fwd2.fastq.gz /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_rev2.fastq.gz /data2/BEASTIE_example_output/NA12878_chr21/tmp/simulation2 /data2/reference/hg19/hg19.fa /data2/reference/gencode.v19.annotation.level12.gtf /home/scarlett/github/BEASTIE/BEASTIE_example/NA12878_chr21/NA12878_chr21.bam.gz /home/scarlett/github/BEASTIE/BEASTIE_example/NA12878_chr21/NA12878_chr21.bi.vcf.gz
 
 if __name__ == "__main__":
-    if len(sys.argv) != 11:
-        print("Usage: simulateREADS.py <chr_start> <chr_end> <out_fwd> <out_rev> <tmp_dir> <util_dir> <genome> <gff> <bamgz> <vcfgz>")
+    if len(sys.argv) != 10:
+        print("Usage: simulateREADS.py <chr_start> <chr_end> <out_fwd> <out_rev> <tmp_dir> <genome> <gff> <bamgz> <vcfgz>")
         sys.exit(1)
     args = sys.argv[1:]
     logging.basicConfig(
