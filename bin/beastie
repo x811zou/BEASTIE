@@ -233,9 +233,8 @@ def beastie_simulateReads(args):
     out_fwd_fastqReads = args.out_fwd_fastq
     out_rev_fastqReads = args.out_rev_fastq
     tmp_path = args.tmp_dir
-    genome2bit = args.ref_genome_2bit
+    genome_fasta = args.ref_genome_fasta
     gff = args.ref_gff
-    twobit = args.ref_twobit_dir
     chr_start = args.chr_start
     chr_end = args.chr_end
     logging.basicConfig(
@@ -248,8 +247,7 @@ def beastie_simulateReads(args):
         out_fwd_fastqReads,
         out_rev_fastqReads,
         tmp_path,
-        twobit,
-        genome2bit,
+        genome_fasta,
         gff,
         bamgz,
         vcfgz,
@@ -278,15 +276,15 @@ def configure_simulateReads_parser(parser):
         required=True,
     )
     parser.add_argument(
-        "--ref-genome-2bit",
-        help="Full path to 2bit reference genome file",
+        "--ref-genome-fasta",
+        help="Full path to 2bit reference genome fasta file",
         required=True,
     )
-    parser.add_argument(
-        "--ref-twobit-dir",
-        help="Full path to 2bit reference directory (link: http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/). Should contain faToTwoBit and twoBitToFa",
-        required=True,
-    )
+    # parser.add_argument(
+    #     "--ref-twobit-dir",
+    #     help="Full path to 2bit reference directory (link: http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/). Should contain faToTwoBit and twoBitToFa",
+    #     required=True,
+    # )
     parser.add_argument(
         "--ref-gff",
         help="Full path to gff file",
