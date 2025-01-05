@@ -532,12 +532,6 @@ def configure_runModel():
         type=int,
     )
     parser.add_argument(
-        "--read-length",
-        help="Average length of reads for input fastq data.",
-        type=int,
-        required=True,
-    )
-    parser.add_argument(
         "--alignBiasP-cutoff",
         help="alignment bias Binomial test p-value cutoff.",
         default=0.05,
