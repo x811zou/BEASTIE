@@ -8,18 +8,52 @@ import os
 import os.path
 import pickle
 from pathlib import Path
-
+import statistics
 import numpy as np
 import pandas as pd
 from scipy import stats
-
+from scipy.stats import percentileofscore
 # def create_binomial_library(depth):
 #     count_p = {}
 #     for i in range(int(depth)+1):
 #         count_p[i] = binom.cdf(i, int(depth), 0.5)
 #     return count_p
 
-def getBaseline(fields, depth=None):
+def ADM_estimate(A, R):
+    ADM = abs(A - R) / (A + R)
+    return ADM
+
+
+def fixed_simulator(Depth, Mreps, N_gene):
+    """
+    Average ADM estiamtes per gene that has Mreps hets (with read depth per gene as Depth) for N_gene genes
+    """
+    esti = []
+    for k in range(N_gene):
+        AR = []
+        for i in range(Mreps):
+            A = np.random.binomial(Depth, 0.5)
+            R = Depth - A
+            AR.append(ADM_estimate(A, R))
+        esti.append(statistics.mean(AR))
+    return esti
+
+def getADM(fields, simulation_esti):
+    if len(fields) >= 4:
+        esti = []
+        Mreps = int(fields[1])
+        # Mreps = hets
+        for rep in range(Mreps):
+            A = float(fields[2 + rep * 2])
+            R = float(fields[3 + rep * 2])
+            estimate = ADM_estimate(A, R)
+            esti.append(estimate)
+        avg_esti = statistics.mean(esti)
+
+        pval = 1 - percentileofscore(simulation_esti, avg_esti) / 100
+    return avg_esti, pval
+
+def getBaseline(fields):
     if len(fields) >= 4:
         ############
         # count_p = create_binomial_library(depth)
@@ -68,7 +102,7 @@ def getBaseline(fields, depth=None):
         return (None, None, None, None)
 
 
-def getBaseline_pooled(fields, depth=None, hets=None):
+def getBaseline_pooled(fields):
     if len(fields) >= 4:
         base_thetas = []
         Mreps = int(fields[1])
@@ -154,24 +188,16 @@ def worker(line):
     d = int(fields[2]) + int(fields[3])
     FS_esti, FS_prob, MS_esti, MS_prob = getBaseline(fields)
     NS_esti, NS_prob, pseudo_esti, pseudo_p = getBaseline_pooled(fields)
-    #beta_1_1_pval,beta_10_10_pval,beta_20_20_pval,beta_50_50_pval,beta_100_100_pval=getBatabinomial_pooled(fields)
-    # return (
-    #     geneID,
-    #     FS_esti,
-    #     FS_prob,
-    #     NS_esti,
-    #     NS_prob,
-    #     pseudo_esti,
-    #     pseudo_p,
-    #     MS_esti,
-    #     MS_prob
-    # )
+    simu_esti = fixed_simulator(int(d), int(h), 1000)
+    ADM_esti, ADM_prob = getADM(fields, simu_esti)
     return (
         geneID,
         NS_esti,
         NS_prob,
         MS_esti,
-        MS_prob
+        MS_prob,
+        ADM_esti,
+        ADM_prob,
     )
 
 
@@ -187,7 +213,9 @@ def run(inFile,atacseq=False):
                 "NaiveSum_esti",
                 "NaiveSum_pval",
                 "MajorSite_esti",
-                "MajorSite_pval"
+                "MajorSite_pval",
+                "AbsoluteDiffMethod_esti",
+                "AbsoluteDiffMethod_pval",
             ],
         )
     else:
@@ -198,7 +226,9 @@ def run(inFile,atacseq=False):
                 "NaiveSum_esti",
                 "NaiveSum_pval",
                 "MajorSite_esti",
-                "MajorSite_pval"
+                "MajorSite_pval",
+                "AbsoluteDiffMethod_esti",
+                "AbsoluteDiffMethod_pval",
             ],
         )
     return binomial_df

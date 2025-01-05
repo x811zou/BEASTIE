@@ -592,7 +592,11 @@ def run(
     _, ms_fdr, _, _ = multipletests(ms_p, method='fdr_bh')
     merged_df["MS_fdr"] = ms_fdr
 
-    columns_to_drop = ['NaiveSum_esti','MajorSite_esti']
+    adm_p = merged_df["AbsoluteDiffMethod_pval"].values
+    _, adm_fdr, _, _ = multipletests(adm_p, method='fdr_bh')
+    merged_df["ADM_fdr"] = adm_fdr
+
+    columns_to_drop = ['NaiveSum_esti','MajorSite_esti','AbsoluteDiffMethod_esti']
     merged_df = merged_df.drop(columns=columns_to_drop)
     merged_out_path = os.path.join(result_path, f"{prefix}_ASE.tsv")
     merged_df.to_csv(merged_out_path, sep="\t", header=True, index=False)
@@ -601,10 +605,13 @@ def run(
     significant_qb = merged_df[merged_df["qb_fdr"] <= ase_cutoff]
     significant_ns = merged_df[merged_df["NS_fdr"] <= ase_cutoff]
     significant_ms = merged_df[merged_df["MS_fdr"] <= ase_cutoff]
+    significant_adm = merged_df[merged_df["ADM_fdr"] <= ase_cutoff]
     logging.info(f"....... Alpha (ASE cutoff): {ase_cutoff}")
     logging.info(f"....... Number/Percentage of significant genes found by QuickBEAST: {significant_qb.shape[0]} - {round(significant_qb.shape[0] / merged_df.shape[0]*100,2)}% out of {merged_df.shape[0]} genes")
     logging.info(f"....... Number of significant genes found by NaiveSum: {significant_ns.shape[0]} - {round(significant_ns.shape[0] / merged_df.shape[0]*100,2)}% out of {merged_df.shape[0]} genes")
     logging.info(f"....... Number of significant genes found by MajorSite: {significant_ms.shape[0]} - {round(significant_ms.shape[0] / merged_df.shape[0]*100,2)}% out of {merged_df.shape[0]} genes")
+    logging.info(f"....... Number of significant genes found by AbsoluteDiffMethod: {significant_adm.shape[0]} - {round(significant_adm.shape[0] / merged_df.shape[0]*100,2)}% out of {merged_df.shape[0]} genes")
+
 
     if not SAVE_INT:
         logging.info("....... removing TEMP folder {0}".format(tmp_path))
