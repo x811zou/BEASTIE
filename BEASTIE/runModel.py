@@ -222,7 +222,6 @@ def run(
     chr_end,
     min_total_cov,
     min_single_cov,
-    read_length,
     SAVE_INT,
     nophasing,
     atacseq,
@@ -364,9 +363,18 @@ def run(
                 "....... Phasing provided: shapeit2 phasing is NOT provided, we use VCF phasing information"
             )
             phasing_method = "VCF"
-            phased_filename = (
-                f"{os.path.splitext(alignBiasfiltered_filename)[0]}.phasedByVCF.tsv"
+            if collected_alignmentBias_file is not None:
+                phased_filename = (
+                    f"{os.path.splitext(alignBiasfiltered_filename)[0]}.phasedByVCF.tsv"
+                )
+            else:
+                alignBiasfiltered_filename=filtered_hetSNP_intersect_pileup
+                data23 = pd.read_csv(
+                alignBiasfiltered_filename, sep="\t", header=0, index_col=False
             )
+                phased_filename = (
+                    f"{os.path.splitext(alignBiasfiltered_filename)[0]}.phasedByVCF.tsv"
+                )
             phase_difference_filename = None
         else:
             logging.info(
@@ -380,6 +388,7 @@ def run(
     
     # running
     phased_clean_filename = f"{os.path.splitext(phased_filename)[0]}.cleaned.tsv"
+
     re_allocateReads(
         alignBiasfiltered_filename,
         shapeit2_file,
