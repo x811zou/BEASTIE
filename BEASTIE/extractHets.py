@@ -17,9 +17,63 @@ import subprocess
 
 def normalize_chromosome_name(chrom):
     """
-    Remove 'chr' prefix and any leading/trailing whitespace from chromosome names.
+    Normalize chromosome names by removing the 'chr' prefix (if present)
+    and returning the name in uppercase for consistency.
     """
-    return chrom.strip().lstrip("chr")
+    return str(chrom).strip().lstrip("chr").upper()
+
+def chrRange_species_aware(chr_start, chr_end, available_chromosomes):
+    """
+    Generate a list of target chromosomes, including special cases like 2A and 2B,
+    normalized to match the format in the VCF and GTF files.
+    """
+    # Generate normalized chromosome names for 1 to 22
+    chroms = [normalize_chromosome_name(str(i)) for i in range(chr_start, chr_end + 1)]
+
+    # Add special cases if present in the available chromosomes
+    if "2A" in available_chromosomes:
+        chroms.append("2A")
+    if "2B" in available_chromosomes:
+        chroms.append("2B")
+
+    # Filter chromosomes based on availability in the GTF and VCF
+    chroms = [chrom for chrom in chroms if chrom in available_chromosomes]
+
+    return chroms
+
+
+def get_available_chromosomes_from_vcf(vcf_filename):
+    """
+    Parse the VCF file to detect available chromosomes.
+    Normalize and return a set of unique chromosome names.
+    """
+    chromosomes = set()
+    with gzip.open(vcf_filename, "rt") as vcf_file:
+        for line in vcf_file:
+            if line.startswith("#"):
+                continue  # Skip header lines
+            fields = line.split("\t")
+            if len(fields) > 0:
+                chrom = normalize_chromosome_name(fields[0])
+                chromosomes.add(chrom)
+    return chromosomes
+
+
+def get_available_chromosomes(gtf_filename):
+    """
+    Parse the GTF file to detect available chromosomes.
+    Normalize and return a set of unique chromosome names.
+    """
+    chromosomes = set()
+    with gzip.open(gtf_filename, "rt") as gtf_file:
+        for line in gtf_file:
+            if line.startswith("#"):
+                continue  # Skip header lines
+            fields = line.split("\t")
+            if len(fields) > 0:
+                chrom = normalize_chromosome_name(fields[0])
+                chromosomes.add(chrom)
+    return chromosomes
 
 def chunk_iter(iter, n):
     """Yield successive n-sized chunks from iter."""
@@ -35,27 +89,15 @@ def chunk_iter(iter, n):
         if len(res) > 0:
             yield res
 
-
 """ Check if a genotype is heterozygous by testing whether them match with the 6 types of homozygous options
 """
 HOMOZYGOUS_GENOTYPES = [
-    "0|0",
-    "1|1",
-    "2|2",
-    "3|3",
-    "4|4",
-    "5|5",
-    "6|6",
-    "7|7",
-    "0/0",
-    "1/1",
-    "2/2",
+    "0|0", "1|1", "2|2", "3|3", "4|4", "5|5", "6|6", "7|7",
+    "0/0", "1/1", "2/2"
 ]
-
 
 def isHeterozygous(genotype):
     return not genotype in HOMOZYGOUS_GENOTYPES
-
 
 def make_vcfline_processor(require_pass):
     def vcfline_processor(line):
@@ -77,7 +119,6 @@ def make_vcfline_processor(require_pass):
         return (pos, rs, genotype)
 
     return vcfline_processor
-
 
 def check(hetSNP, VCF):
     if ((os.path.exists(hetSNP) and os.path.getsize(hetSNP) > 0) and
@@ -110,6 +151,28 @@ def count_all_het_sites(
 
     include_x_chromosome = kwargs.pop("include_x_chromosome", False)
 
+    # Step 1: Get available chromosomes from the GTF file
+    available_chromosomes = get_available_chromosomes(genecode_gz)
+    logging.info(f"Available chromosomes from reference: {available_chromosomes}")
+    
+    # Step 2: Determine target chromosomes by cross-checking GTF and VCF chromosomes
+    # Get available chromosomes from VCF
+    available_chromosomes_vcf = get_available_chromosomes_from_vcf(vcfFilename)
+    logging.info(f"Available chromosomes from VCF: {available_chromosomes_vcf}")
+
+    # Get the intersection of chromosomes in GTF and VCF
+    common_chromosomes = available_chromosomes.intersection(available_chromosomes_vcf)
+
+    # Determine target chromosomes
+    target_chromosomes = chrRange_species_aware(chr_start, chr_end, common_chromosomes)
+    logging.info(f"Target chromosomes for processing: {target_chromosomes}")
+
+
+    if include_x_chromosome:
+        target_chromosomes.append("X")
+    
+    logging.info(f"Target chromosomes for processing: {target_chromosomes}")
+
     out_stream = open(outputFilename, "w")
     out_stream.write(
         "chr\tchrN\tpos\tgeneID\ttranscriptID\ttranscript_pos\tSNP_id\tgenotype\n"
@@ -117,138 +180,64 @@ def count_all_het_sites(
     vcfline_processor = make_vcfline_processor(require_pass)
 
     reader = GffTranscriptReader()
-    logging.info(
-        f"..... Loading GTF file: {genecode_gz}")
+    logging.info(f"..... Loading GTF file: {genecode_gz}")
     full_geneList = reader.loadGenes(genecode_gz)
-    
-    for chrId in chrRange(chr_start, chr_end, include_x_chromosome):
-        
-        chr = f"chr{chrId}"
-        # normalized_chr = normalize_chromosome_name(chr)  # Strip 'chr'
+
+    for chrId in target_chromosomes:
+        chrom_name = f"chr{chrId}"
+        chr_normalized = normalize_chromosome_name(chrom_name)
+        if chr_normalized not in available_chromosomes:
+            logging.info(f"Skipping {chrId} as it is not present in the GTF file")
+            continue
+
         geneList = list(
-        filter(lambda gene: gene.getSubstrate() == chr, full_geneList)
-    )
-        logging.info(
-            f"..... Start loading gencode annotation chr {chrId} with {len(geneList)} genes")
+            filter(lambda gene: normalize_chromosome_name(gene.getSubstrate()) == chr_normalized, full_geneList)
+        )
+        logging.info(f"..... Start loading gencode annotation {chrId} with {len(geneList)} genes")
 
-        """
-        construct a dict with unique exon region with transcript {exon_region:transcript list} 
-        potential issue: 
-        within the same gene, multiple transcript may cover the same exon region
-        between genes, different transcripts may cover the same exon region
-        """
         exon_region_to_transcripts = {}
-        if DEBUG_GENES is not None:
-            print(f"Debugging specific genes: {DEBUG_GENES}")
-            geneList = list(filter(lambda x: x.getId() in DEBUG_GENES, geneList))
-
         for gene in geneList:
-            # gene.getSubstrate() chr21
-            # gene.getSubstrate().strip("chr")) 21
-            if DEBUG_GENES is not None:
-                logging.info(f">>>>>>>> DEBUGGING GENE {gene.getID()}")
-                logging.info(f">>>>>>>>")
-                logging.info(
-                    f">>>>>>>> DEBUG1: Check every exon start-end region on each transcript"
-                )
-            if str(gene.getSubstrate().strip("chr")) == chrId:
-                Num_transcript = gene.getNumTranscripts()
-                chrom = gene.getSubstrate()  # column 1 --> chr21
-                for n in range(Num_transcript):
-                    transcript = gene.getIthTranscript(n)
-                    if (
-                        DEBUG_GENES is not None
-                        and transcript.getId() == "ENST00000202917.5"
-                    ):
-                        print(f"{gene.getID()}-transcript {n} {transcript.getId()}")
-                    # rawExons = transcript.UTR
-                    # rawExons = transcript.exons
-                    rawExons = transcript.getRawExons()
-                    for exon in rawExons:
+            Num_transcript = gene.getNumTranscripts()
+            for n in range(Num_transcript):
+                transcript = gene.getIthTranscript(n)
+                rawExons = transcript.getRawExons()
+                for exon in rawExons:
+                    begin = exon.getBegin() + 1
+                    end = exon.getEnd()
+                    exon_region = f"{chrId}:{begin}-{end}"
+                    if exon_region not in exon_region_to_transcripts:
+                        exon_region_to_transcripts[exon_region] = []
+                    exon_region_to_transcripts[exon_region].append(transcript)
 
-                        begin = exon.getBegin() + 1  # column 7
-                        # print(begin)
-                        end = exon.getEnd()  # column 8
-                        exon_region = f"{chrId}:{begin}-{end}"
-                        if not exon_region in exon_region_to_transcripts:
-                            exon_region_to_transcripts[exon_region] = []
-                        exon_region_to_transcripts[exon_region].append(transcript)
-                        if DEBUG_GENES is not None:
-                            print(f"{exon_region}")
-                            # uncomment to debug duplicate transcript IDs as a possible optimization
-                            # for existing in exon_region_to_transcripts[exon_region]:
-                            # print(
-                            #     f"      existing transcript @ {exon_region} {existing.getTranscriptId()} != {transcript.getTranscriptId()}"
-                            # )
-
-        """
-        construct a dict with unique exon region with VCF records {exon_region:VCF records}
-        """
-        if DEBUG_GENES is not None:
-            logging.info(f">>>>>>>>")
-            logging.info(f">>>>>>>> DEBUG2: list all unique exon regions")
-            logging.info(f">>>>>>>>")
-            print(exon_region_to_transcripts.keys())
-        # print(vcfFilename)
         exon_region_to_snp_infos = tabix_regions(
             exon_region_to_transcripts.keys(), vcfline_processor, vcfFilename
         )
-        if DEBUG_GENES is not None:
-            logging.info(f">>>>>>>>")
-            logging.info(f">>>>>>>> DEBUG3: list all snp info corresponding to exon region")
-            logging.info(f">>>>>>>>")
-            print(exon_region_to_snp_infos)
+
         data = []
         variant_to_transcript_info = {}
         for exon_region in exon_region_to_snp_infos:
             snp_infos = exon_region_to_snp_infos[exon_region]
             transcripts = exon_region_to_transcripts[exon_region]
-            # transcript list contains transcripts from the same gene or different genes
-            for snp_info in snp_infos:  # loop through each variant record
+            for snp_info in snp_infos:
                 pos, rsid, genotype = snp_info
-                if DEBUG_GENES is not None:
-                    print(pos)
                 for transcript in transcripts:
-                    if chr == transcript.getSubstrate():
-                        chr_pos = f"{chr}_{pos}"
+                    if normalize_chromosome_name(chrom_name) == normalize_chromosome_name(transcript.getSubstrate()):
+                        chr_pos = f"{chrom_name}_{pos}"
                         if chr_pos not in variant_to_transcript_info:
                             variant_to_transcript_info[chr_pos] = []
                         variant_to_transcript_info[chr_pos].append(
                             (transcript, pos, rsid, genotype)
                         )
-                    # else:
-                    #     logging.info(f"Exception: chr {chr} - chr_pos {chr_pos} - rsid {rsid} - transcript {transcript.getSubstrate()} - transcriptID {transcript.getId()}")
 
-        #print(">> dict variant_to_transcript_info")
-        #print(f"len of dic: {len(variant_to_transcript_info)}")
-        # print(">> print")
         for chr_pos in variant_to_transcript_info:
-            gene_ids = set(
-                [x[0].getGeneId() for x in variant_to_transcript_info[chr_pos]]
-            )
-            # print(f"{chr_pos} ---- {gene_ids}")
+            gene_ids = set([x[0].getGeneId() for x in variant_to_transcript_info[chr_pos]])
             if len(gene_ids) == 1:
                 transcript, pos, rsid, genotype = variant_to_transcript_info[chr_pos][0]
-                # chrom = transcript.getSubstrate()
-                # chromN = chrom.strip("chr")
                 transcriptCoord = transcript.mapToTranscript(int(pos))
-                # print(
-                #     f"......... write {transcript.getId()},{transcript.getGeneId()},{rsid}, {genotype}"
-                # )
                 data.append(
-                    [
-                        chrom,
-                        chrId,
-                        pos,
-                        transcript.getGeneId(),
-                        transcript.getId(),
-                        transcriptCoord,
-                        rsid,
-                        genotype,
-                    ]
+                    [chrom_name, chrId, pos, transcript.getGeneId(), transcript.getId(), transcriptCoord, rsid, genotype]
                 )
-            # else:
-            #     print("......... SKIPPING")
+
         data.sort(key=lambda r: (r[1], r[2]))
         for r in data:
             out_stream.write("\t".join(map(str, r)))
@@ -256,69 +245,6 @@ def count_all_het_sites(
     out_stream.close()
     logging.info(f"..... Finish writing to {outputFilename}")
     logging.info(f"..... Done sample {sample}")
-
-def count_all_het_sites_forpeaks(vcfFilename, outputFilename, annotation_file):
-    out_stream = open(outputFilename, "w")
-    out_stream.write(
-        "chrN\tchr\tpos\tSNP_id\tgenotype\tpeak_start\tpeak_end\tpeakID\tgeneID\n"
-    )
-
-    """
-    1. construct a dict with unique peak region with IDs {peak_region: chr,peak_start_pos,peak_end_pos,geneID, peakID}
-    """
-    peak_region_to_IDs = {}
-    with gzip.open(annotation_file, "rt", newline="\n") as csvfile:
-        reader = csv.DictReader(csvfile, delimiter="\t")
-        for row in reader:
-            key = f"{row['chrN']}:{row['peak_start']}-{row['peak_end']}"
-            peak_region_to_IDs[key] = row
-
-    """
-    2. construct a dict with unique peak region with VCF records {peak_region:VCF records}
-    """
-    vcfline_processor = make_vcfline_processor(False)
-    peak_region_to_snp_infos = tabix_regions(
-        peak_region_to_IDs.keys(),
-        vcfline_processor,
-        vcfFilename,
-    )
-    """
-    3. write output data
-    """
-    data = []
-    for peak_region in peak_region_to_snp_infos:
-        snp_infos = peak_region_to_snp_infos[peak_region]
-        IDs = peak_region_to_IDs[peak_region]
-        for snp_info in snp_infos:  # loop through each variant record
-            pos, rsid, genotype = snp_info
-            chrId = IDs["chrN"]
-            chrom = "chr" + chrId
-            peak_start = IDs["peak_start"]
-            peak_end = IDs["peak_end"]
-            peakID = IDs["peakID"]
-            geneID = IDs["geneID"]
-            data.append(
-                [
-                    chrId,
-                    chrom,
-                    pos,
-                    rsid,
-                    genotype,
-                    peak_start,
-                    peak_end,
-                    peakID,
-                    geneID,
-                ]
-            )
-    data.sort(key=lambda r: (r[1], r[2]))
-    for r in data:
-        out_stream.write("\t".join(map(str, r)))
-        out_stream.write("\n")
-    out_stream.close()
-
-
-
-#python extractHets.py /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21_hetSNP.tsv /data2/BEASTIE_example_output/NA12878_chr21/NA12878_chr21.bihets.vcf.gz 21 21 /data2/reference/reference/gencode_chr
 
 def main():
     if len(sys.argv) != 8:
