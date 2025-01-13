@@ -10,6 +10,14 @@ from datetime import datetime
 import logging
 import shutil
 
+def normalize_chromosome_name(chrom):
+    """
+    Normalize chromosome names by removing the 'chr' prefix (if present)
+    and returning the name in uppercase for consistency.
+    """
+    return chrom.strip().lstrip("chr").upper()
+
+
 def mpileup(tmp_dir, hetSNP, bam_gz, output_file, ref, chrom_start, chrom_end):
     # Extract the filename from the path
     filename = os.path.basename(hetSNP)
@@ -39,18 +47,34 @@ def mpileup(tmp_dir, hetSNP, bam_gz, output_file, ref, chrom_start, chrom_end):
     # Create an index for the temporary BAM file
     run_command(f"samtools index {temp_bam.name}")
 
+    # # mpileup for each chromosome
+    # for chr in range(chrom_start, chrom_end + 1):
+    #     logging.info(f"..... Start with chr{chr}")
+    #     tmp_output = f"{tmp_dir}/{sample}_chr{chr}.pileup"
+    #     run_mpileup_chrom(hetSNP, temp_bam.name, tmp_output, chr, ref)
+    # Define the list of chromosomes to process (special handling for 2A/2B)
+    target_chromosomes = [str(i) for i in range(chrom_start, chrom_end + 1)]
+    
+    # Handle special case for chromosome 2A and 2B
+    if "2A" in hetSNP or "2B" in hetSNP:
+        target_chromosomes += ["2A", "2B"]
+
     # mpileup for each chromosome
-    for chr in range(chrom_start, chrom_end + 1):
-        logging.info(f"..... Start with chr{chr}")
+    for chr in target_chromosomes:
+        logging.info(f"..... Start with {chr}")
         tmp_output = f"{tmp_dir}/{sample}_chr{chr}.pileup"
         run_mpileup_chrom(hetSNP, temp_bam.name, tmp_output, chr, ref)
-        
-    # Combine all pileup files
+
+    # Combine only the pileup files that exist
+    pileup_files = [f"{tmp_dir}/{sample}_chr{chr}.pileup" for chr in target_chromosomes if os.path.exists(f"{tmp_dir}/{sample}_chr{chr}.pileup")]
+
+    if not pileup_files:
+        raise RuntimeError("No pileup files were generated. Check input data and parameters.")
+
     combined_tmp = f"{tmp_dir}/combined.gz"
-    chrom_range = " ".join([f"{tmp_dir}/{sample}_chr{chr}.pileup" for chr in range(chrom_start, chrom_end + 1)])
-    run_command(f"cat {chrom_range} | bgzip -@ {os.cpu_count()} -l3 -c > {combined_tmp}")
+    run_command(f"cat {' '.join(pileup_files)} | bgzip -@ {os.cpu_count()} -l3 -c > {combined_tmp}")
     os.rename(combined_tmp, output_file)
-    
+
     logging.info(f"..... Output {output_file}")
     logging.info(f"..... Done sample {sample}")
 
@@ -59,30 +83,42 @@ def mpileup(tmp_dir, hetSNP, bam_gz, output_file, ref, chrom_start, chrom_end):
     os.remove(temp_bam.name + ".bai")
 
 def run_mpileup_chrom(hetSNP, bam, output, chr, ref):
-    # Create a temporary file to hold the processed hetSNP content
-    with tempfile.NamedTemporaryFile(delete=False, mode='w') as temp_hetSNP:
-        # Process hetSNP content with tail, awk, and grep
-        awk_grep_command = f"cat {hetSNP} | tail -n+2 | awk '{{print $1,$3}}' | grep 'chr{chr}\\s'"
+    chr_variants = [f"{chr}"]
+    
+    # Special handling for chr2, checking if chr2A and chr2B are required
+    if chr == "2":
+        check_chr2_command = f"samtools idxstats {bam} | awk '{{print $1}}' | grep -w 'chr2'"
+        chr2_status = subprocess.run(check_chr2_command, shell=True).returncode
+
+        if chr2_status == 0:
+            chr_variants = ["2"]  # Use chr2 if it exists in BAM
+        else:
+            chr_variants = ["2A", "2B"]  # Fallback to chr2A and chr2B
+
+    for chr_variant in chr_variants:
+        logging.info(f"..... Processing chr{chr_variant}")
+        tmp_output = output
+           
+        # Extract relevant lines from hetSNP for the current chromosome
+        awk_grep_command = f"cat {hetSNP} | tail -n+2 | awk '{{print $1,$3}}' | grep 'chr{chr_variant}\\s'"
         try:
-            result = subprocess.run(awk_grep_command, shell=True, check=True, stdout=temp_hetSNP, stderr=subprocess.PIPE)
+            with tempfile.NamedTemporaryFile(delete=False, mode='w') as temp_hetSNP:
+                subprocess.run(awk_grep_command, shell=True, check=True, stdout=temp_hetSNP, stderr=subprocess.PIPE)
+            
+            # Define and run the samtools mpileup command
+            mpileup_command = f"samtools mpileup -d 0 -s -f {ref} -r chr{chr_variant} -l {temp_hetSNP.name} {bam} > {tmp_output}"
+            subprocess.run(mpileup_command, shell=True, check=True, stderr=subprocess.PIPE)
+
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Error running command: {awk_grep_command}\n"
                                f"Command output: {e.stdout}\n"
                                f"Command stderr: {e.stderr.decode()}") from e
 
-    try:
-        # Run samtools mpileup command
-        mpileup_command = f"samtools mpileup -d 0 -s -f {ref} -r chr{chr} -l {temp_hetSNP.name} {bam} > {output}"
-        
-        try:
-            subprocess.run(mpileup_command, shell=True, check=True, stderr=subprocess.PIPE)
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Error running command: {mpileup_command}\n"
-                               f"Command output: {e.stdout}\n"
-                               f"Command stderr: {e.stderr.decode()}") from e
-    finally:
-        # Clean up the temporary file
-        os.remove(temp_hetSNP.name)
+        finally:
+            # Ensure the temporary file is deleted
+            os.remove(temp_hetSNP.name)
+
+
 
 def run_command(command):
     subprocess.run(command, shell=True, check=True)

@@ -447,21 +447,35 @@ def run(
     if atacseq is True:
         logging.info("=================")
         logging.info("================= input data is ATACseq, skipping common step 1.2 annotating AF information")
-        hetSNP_AF=het_snp_file
+        hetSNP_AF = het_snp_file
         data12 = pd.read_csv(het_snp_file, sep="\t", header=0, index_col=False)
     else:
-        hetSNP_AF = os.path.join(tmp_path, f"{sample}_hetSNP_AF{chr_suffix}.tsv")
         logging.info("=================")
         logging.info("================= Starting common step 1.2")
+
+        # Separate rows with chr2A and chr2B before annotating AF
+        hetSNP_df = pd.read_csv(het_snp_file, sep="\t", header=0, index_col=False)
+        chr2A_B_df = hetSNP_df[hetSNP_df["chrN"].isin(["2A", "2B"])]
+        non_chr2A_B_df = hetSNP_df[~hetSNP_df["chrN"].isin(["2A", "2B"])]
+
         hetSNP_AF = os.path.join(tmp_path, f"{sample}_hetSNP_AF{chr_suffix}.tsv")
+        
         if os.path.isfile(hetSNP_AF):
             logging.info("================= Found hetSNP_AF file, skipping common step 1.2")
             logging.info("=================")
         else:
             logging.info("..... start annotating hetSNP from 1.1 with AF from 1000 Genome")
-            annotateAF(af_path, ancestry, het_snp_file, hetSNP_AF)
+            non_chr2A_B_AF = os.path.join(tmp_path, f"{sample}_non_chr2A_B_AF{chr_suffix}.tsv")
+            
+            # Annotate AF only for rows without chr2A and chr2B
+            non_chr2A_B_df.to_csv(non_chr2A_B_AF, sep="\t", index=False)
+            annotateAF(af_path, ancestry, non_chr2A_B_AF, hetSNP_AF)
 
-        data12 = pd.read_csv(hetSNP_AF, sep="\t", header=0, index_col=False)
+        # Merge annotated AF data with chr2A and chr2B data
+        annotated_AF_df = pd.read_csv(hetSNP_AF, sep="\t", header=0, index_col=False)
+        combined_df = pd.concat([annotated_AF_df, chr2A_B_df], ignore_index=True)
+        combined_df.to_csv(hetSNP_AF, sep="\t", index=False)
+        data12 = combined_df
         logging.debug(
             "output {0} annotates {1} het SNPs with AF annotation".format(
                 os.path.basename(hetSNP_AF), data12.shape[0]

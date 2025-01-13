@@ -45,10 +45,23 @@ def Intersect_exonicHetSnps(
         df4 = df3[df3["totalCount"] >= int(min_totalcounts)]
         df5 = df4[df4["if_SNP"] == "Y"]
         df6 = df5[df5["if_biallelic"] == "Y"]
-        df6["contig"] = df6["contig"].astype(int)
+        def custom_sort(chrom):
+            """ Custom sort: numeric chromosomes first, followed by non-numeric ones. """
+            try:
+                # Try to convert to integer for numeric sorting
+                return int(chrom), ''
+            except ValueError:
+                # If not numeric, return a high integer and the chromosome string for sorting
+                return float('inf'), chrom
+
+        df6["contig"] = df6["contig"].astype(str)  # Ensure all values are strings
+        df6 = df6.sort_values(by="contig", key=lambda col: col.map(custom_sort))
+
         df6["position"] = df6["position"].astype(int)
         df6 = df6.drop_duplicates()
-        hetSNP_data["contig"] = hetSNP_data["contig"].astype(int)
+        hetSNP_data["contig"] = hetSNP_data["contig"].astype(str)
+        hetSNP_data = hetSNP_data.sort_values(by="contig", key=lambda col: col.map(custom_sort))
+        
         hetSNP_data["position"] = hetSNP_data["position"].astype(int)
         # take intersection between these two dataframes
         df_overlapped = pd.merge(
