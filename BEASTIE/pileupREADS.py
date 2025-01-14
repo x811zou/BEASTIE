@@ -84,28 +84,35 @@ def mpileup(tmp_dir, hetSNP, bam_gz, output_file, ref, chrom_start, chrom_end):
 
 def run_mpileup_chrom(hetSNP, bam, output, chr, ref):
     chr_variants = [f"{chr}"]
-    
-    # Special handling for chr2, checking if chr2A and chr2B are required
-    if chr == "2":
-        check_chr2_command = f"samtools idxstats {bam} | awk '{{print $1}}' | grep -w 'chr2'"
-        chr2_status = subprocess.run(check_chr2_command, shell=True).returncode
 
-        if chr2_status == 0:
-            chr_variants = ["2"]  # Use chr2 if it exists in BAM
+    # Read the first chromosome entry from hetSNP file to determine case
+    with open(hetSNP, 'r') as f:
+        # Skip the header and get the first data line
+        next(f)  # Skip header
+        first_line = next(f).strip().split()
+        chr_in_hetSNP = first_line[0]  # Get the chromosome column (chr)
+
+    # Normalize chr2 special cases dynamically based on hetSNP content
+    if chr == "2":
+        if "2A" in chr_in_hetSNP or "2B" in chr_in_hetSNP:
+            chr_variants = ["2A", "2B"]
+        elif "2a" in chr_in_hetSNP or "2b" in chr_in_hetSNP:
+            chr_variants = ["2a", "2b"]
         else:
-            chr_variants = ["2A", "2B"]  # Fallback to chr2A and chr2B
+            logging.info("..... No chr2A/chr2B found in hetSNP, skipping special chromosomes.")
+            return
 
     for chr_variant in chr_variants:
         logging.info(f"..... Processing chr{chr_variant}")
         tmp_output = output
-           
-        # Extract relevant lines from hetSNP for the current chromosome
+
+        # Extract relevant lines from hetSNP for the current chromosome (exact case match)
         awk_grep_command = f"cat {hetSNP} | tail -n+2 | awk '{{print $1,$3}}' | grep 'chr{chr_variant}\\s'"
         try:
             with tempfile.NamedTemporaryFile(delete=False, mode='w') as temp_hetSNP:
                 subprocess.run(awk_grep_command, shell=True, check=True, stdout=temp_hetSNP, stderr=subprocess.PIPE)
-            
-            # Define and run the samtools mpileup command
+
+            # Define and run the samtools mpileup command using the detected chromosome case
             mpileup_command = f"samtools mpileup -d 0 -s -f {ref} -r chr{chr_variant} -l {temp_hetSNP.name} {bam} > {tmp_output}"
             subprocess.run(mpileup_command, shell=True, check=True, stderr=subprocess.PIPE)
 
@@ -117,7 +124,6 @@ def run_mpileup_chrom(hetSNP, bam, output, chr, ref):
         finally:
             # Ensure the temporary file is deleted
             os.remove(temp_hetSNP.name)
-
 
 
 def run_command(command):
