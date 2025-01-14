@@ -18,62 +18,56 @@ import subprocess
 def normalize_chromosome_name(chrom):
     """
     Normalize chromosome names by removing the 'chr' prefix (if present)
-    and returning the name in uppercase for consistency.
+    and converting to lowercase for consistent comparison.
     """
-    return str(chrom).strip().lstrip("chr").upper()
+    return chrom.strip().lstrip("chr").lower()
+
 
 def chrRange_species_aware(chr_start, chr_end, available_chromosomes):
     """
-    Generate a list of target chromosomes, including special cases like 2A and 2B,
-    normalized to match the format in the VCF and GTF files.
+    Generate a list of target chromosomes based on the range and available chromosomes.
     """
-    # Generate normalized chromosome names for 1 to 22
-    chroms = [normalize_chromosome_name(str(i)) for i in range(chr_start, chr_end + 1)]
-
-    # Add special cases if present in the available chromosomes
-    if "2A" in available_chromosomes:
-        chroms.append("2A")
-    if "2B" in available_chromosomes:
-        chroms.append("2B")
-
-    # Filter chromosomes based on availability in the GTF and VCF
-    chroms = [chrom for chrom in chroms if chrom in available_chromosomes]
-
+    chroms = [str(i) for i in range(chr_start, chr_end + 1)]
+    special_chroms = [chrom for chrom in available_chromosomes if chrom not in chroms]
+    chroms.extend(special_chroms)
     return chroms
 
 
 def get_available_chromosomes_from_vcf(vcf_filename):
     """
     Parse the VCF file to detect available chromosomes.
-    Normalize and return a set of unique chromosome names.
+    Return a dictionary mapping normalized names to original names.
     """
-    chromosomes = set()
+    chromosomes = {}
     with gzip.open(vcf_filename, "rt") as vcf_file:
         for line in vcf_file:
             if line.startswith("#"):
                 continue  # Skip header lines
             fields = line.split("\t")
             if len(fields) > 0:
-                chrom = normalize_chromosome_name(fields[0])
-                chromosomes.add(chrom)
+                chrom = fields[0].strip()
+                normalized_chrom = normalize_chromosome_name(chrom)
+                chromosomes[normalized_chrom] = chrom  # Map normalized to original case
     return chromosomes
 
 
 def get_available_chromosomes(gtf_filename):
     """
     Parse the GTF file to detect available chromosomes.
-    Normalize and return a set of unique chromosome names.
+    Return a dictionary mapping normalized names to original names.
     """
-    chromosomes = set()
+    chromosomes = {}
     with gzip.open(gtf_filename, "rt") as gtf_file:
         for line in gtf_file:
             if line.startswith("#"):
                 continue  # Skip header lines
             fields = line.split("\t")
             if len(fields) > 0:
-                chrom = normalize_chromosome_name(fields[0])
-                chromosomes.add(chrom)
+                chrom = fields[0].strip()
+                normalized_chrom = normalize_chromosome_name(chrom)
+                chromosomes[normalized_chrom] = chrom  # Map normalized to original case
     return chromosomes
+
 
 def chunk_iter(iter, n):
     """Yield successive n-sized chunks from iter."""
@@ -153,30 +147,34 @@ def count_all_het_sites(
 
     # Step 1: Get available chromosomes from the GTF file
     available_chromosomes = get_available_chromosomes(genecode_gz)
-    logging.info(f"Available chromosomes from reference: {available_chromosomes}")
-    
-    # Step 2: Determine target chromosomes by cross-checking GTF and VCF chromosomes
-    # Get available chromosomes from VCF
+    logging.info(f"Chromosomes parsed from GTF: {available_chromosomes}")
+
+    # Step 2: Get available chromosomes from the VCF
     available_chromosomes_vcf = get_available_chromosomes_from_vcf(vcfFilename)
-    logging.info(f"Available chromosomes from VCF: {available_chromosomes_vcf}")
+    # After loading chromosomes from VCF
+    logging.info(f"Chromosomes parsed from VCF: {available_chromosomes_vcf}")   
 
-    # Get the intersection of chromosomes in GTF and VCF
-    common_chromosomes = available_chromosomes.intersection(available_chromosomes_vcf)
+    # Step 3: Get the intersection of chromosomes in GTF and VCF
+    common_chromosomes = set(available_chromosomes.keys()).intersection(set(available_chromosomes_vcf.keys()))
+    logging.info(f"Common chromosomes for processing: {common_chromosomes}")
 
-    # Determine target chromosomes
-    target_chromosomes = chrRange_species_aware(chr_start, chr_end, common_chromosomes)
-    logging.info(f"Target chromosomes for processing: {target_chromosomes}")
+    # Step 4: Generate the list of target chromosomes
+    # Only include chromosomes that exist in both VCF and GTF
+    target_chromosomes = [
+        chrom for chrom in chrRange_species_aware(chr_start, chr_end, common_chromosomes)
+        if chrom in available_chromosomes_vcf
+    ]
 
+    if include_x_chromosome and 'x' in available_chromosomes_vcf:
+        target_chromosomes.append('x')
 
-    if include_x_chromosome:
-        target_chromosomes.append("X")
-    
-    logging.info(f"Target chromosomes for processing: {target_chromosomes}")
+    logging.info(f"Target chromosomes for extraction: {target_chromosomes}")
 
     out_stream = open(outputFilename, "w")
     out_stream.write(
         "chr\tchrN\tpos\tgeneID\ttranscriptID\ttranscript_pos\tSNP_id\tgenotype\n"
     )
+
     vcfline_processor = make_vcfline_processor(require_pass)
 
     reader = GffTranscriptReader()
@@ -184,34 +182,48 @@ def count_all_het_sites(
     full_geneList = reader.loadGenes(genecode_gz)
 
     for chrId in target_chromosomes:
-        chrom_name = f"chr{chrId}"
+        chrom_name = available_chromosomes_vcf[chrId]  # Get the original chromosome name from VCF
         chr_normalized = normalize_chromosome_name(chrom_name)
+
+        # Initialize geneList as an empty list
+        geneList = []
+
         if chr_normalized not in available_chromosomes:
             logging.info(f"Skipping {chrId} as it is not present in the GTF file")
             continue
 
+        # Filter genes for the current chromosome
         geneList = list(
             filter(lambda gene: normalize_chromosome_name(gene.getSubstrate()) == chr_normalized, full_geneList)
         )
+
         logging.info(f"..... Start loading gencode annotation {chrId} with {len(geneList)} genes")
 
         exon_region_to_transcripts = {}
-        for gene in geneList:
-            Num_transcript = gene.getNumTranscripts()
-            for n in range(Num_transcript):
-                transcript = gene.getIthTranscript(n)
-                rawExons = transcript.getRawExons()
-                for exon in rawExons:
-                    begin = exon.getBegin() + 1
-                    end = exon.getEnd()
-                    exon_region = f"{chrId}:{begin}-{end}"
-                    if exon_region not in exon_region_to_transcripts:
-                        exon_region_to_transcripts[exon_region] = []
-                    exon_region_to_transcripts[exon_region].append(transcript)
+        exon_region_to_snp_infos = {}  # Ensure this variable is always initialized
 
-        exon_region_to_snp_infos = tabix_regions(
-            exon_region_to_transcripts.keys(), vcfline_processor, vcfFilename
-        )
+        if geneList:  # Proceed only if geneList is not empty
+            for gene in geneList:
+                Num_transcript = gene.getNumTranscripts()
+                for n in range(Num_transcript):
+                    transcript = gene.getIthTranscript(n)
+                    rawExons = transcript.getRawExons()
+                    for exon in rawExons:
+                        begin = exon.getBegin() + 1
+                        end = exon.getEnd()
+                        exon_region = f"{chrId}:{begin}-{end}"
+                        if exon_region not in exon_region_to_transcripts:
+                            exon_region_to_transcripts[exon_region] = []
+                        exon_region_to_transcripts[exon_region].append(transcript)
+
+            exon_region_to_snp_infos = tabix_regions(
+                exon_region_to_transcripts.keys(), vcfline_processor, vcfFilename
+            )
+
+            logging.info(f"Extracted SNPs for {chrId}: {len(exon_region_to_snp_infos)} regions")
+        else:
+            logging.info(f"No genes found for chromosome {chrId}, skipping SNP extraction")
+
 
         data = []
         variant_to_transcript_info = {}
@@ -234,11 +246,19 @@ def count_all_het_sites(
             if len(gene_ids) == 1:
                 transcript, pos, rsid, genotype = variant_to_transcript_info[chr_pos][0]
                 transcriptCoord = transcript.mapToTranscript(int(pos))
+
+                # Use the original chromosome name with 'chr' for the 'chr' column
+                chr_original = available_chromosomes[chrId]
+                
+                # Strip 'chr' from the chromosome name for the 'chrN' column
+                chrN = chr_original.lstrip("chr")
+
                 data.append(
-                    [chrom_name, chrId, pos, transcript.getGeneId(), transcript.getId(), transcriptCoord, rsid, genotype]
+                    [chr_original, chrN, pos, transcript.getGeneId(), transcript.getId(), transcriptCoord, rsid, genotype]
                 )
 
-        data.sort(key=lambda r: (r[1], r[2]))
+        data.sort(key=lambda r: (normalize_chromosome_name(r[1]), r[2]))
+
         for r in data:
             out_stream.write("\t".join(map(str, r)))
             out_stream.write("\n")
