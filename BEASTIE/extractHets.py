@@ -14,6 +14,55 @@ from .helpers import chrRange, tabix_regions
 from .misc_tools.GffTranscriptReader import GffTranscriptReader
 from .misc_tools.Pipe import Pipe
 import subprocess
+from datetime import datetime
+
+def setup_logging(outputFilename):
+    """
+    Set up logging with a dynamic log file name.
+    The log file will be stored in a 'log' folder within the directory of the output file.
+    """
+    # Get the directory of the output file
+    output_dir = os.path.dirname(os.path.abspath(outputFilename))
+    
+    # Define the log directory as a subdirectory named "log"
+    log_dir = os.path.join(output_dir, "log")
+    
+    # Ensure the log directory exists
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    # Generate the log file name
+    current_date = datetime.now().strftime("%b-%d-%Y")  # Format: Jan-14-2025
+    log_filename = os.path.join(log_dir, f"BEASTIE-extractHetSNP-{current_date}.log")
+
+    # Remove all existing handlers to avoid duplication
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+
+    # Configure logging to file and console
+    logging.basicConfig(
+        filename=log_filename,
+        filemode='w',  # Overwrite log file if it exists
+        format="%(asctime)-15s [%(levelname)s] %(message)s",
+        level=logging.INFO,
+    )
+    
+    # Add a console handler to also print logs to the console
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(logging.Formatter("%(asctime)-15s [%(levelname)s] %(message)s"))
+    logging.getLogger().addHandler(console_handler)
+
+    # Log initialization message
+    logging.info(f"Logging initialized. Log file: {log_filename}")
+    
+    # Debug check for log file creation
+    if not os.path.exists(log_filename):
+        print(f"Error: Log file {log_filename} was not created.")
+    else:
+        print(f"Log file successfully created at {log_filename}")
+
+
 
 def normalize_chromosome_name(chrom):
     """
@@ -134,12 +183,17 @@ def count_all_het_sites(
     DEBUG_GENES=None,
     **kwargs,
 ):
-    logging.basicConfig(
-        format="%(asctime)-15s [%(levelname)s] %(message)s",
-        level=logging.INFO,
-    )
+    setup_logging(outputFilename)  # Set up logging at the beginning
+    print("Logging setup complete")
 
     logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> extractHets: Start sample {sample} - require PASS :{require_pass}")
+
+    # Initialize counters
+    gene_count_per_chr = {}
+    het_snp_count_per_chr = {}
+    total_genes = 0
+    total_het_snps = 0
+
     if check(outputFilename, vcfFilename):
         return
 
@@ -197,7 +251,12 @@ def count_all_het_sites(
             filter(lambda gene: normalize_chromosome_name(gene.getSubstrate()) == chr_normalized, full_geneList)
         )
 
-        logging.info(f"..... Start loading gencode annotation {chrId} with {len(geneList)} genes")
+        # Update gene count
+        num_genes = len(geneList)
+        gene_count_per_chr[chrId] = num_genes
+        total_genes += num_genes
+
+        logging.info(f"..... Start loading gencode annotation chr{chrId} with {num_genes} genes")
 
         exon_region_to_transcripts = {}
         exon_region_to_snp_infos = {}  # Ensure this variable is always initialized
@@ -220,7 +279,11 @@ def count_all_het_sites(
                 exon_region_to_transcripts.keys(), vcfline_processor, vcfFilename
             )
 
-            logging.info(f"Extracted SNPs for {chrId}: {len(exon_region_to_snp_infos)} regions")
+            num_het_snps = sum(len(snp_infos) for snp_infos in exon_region_to_snp_infos.values())
+            het_snp_count_per_chr[chrId] = num_het_snps
+            total_het_snps += num_het_snps
+
+            logging.info(f"Extracted {num_het_snps} SNPs for chr{chrId}")
         else:
             logging.info(f"No genes found for chromosome {chrId}, skipping SNP extraction")
 
@@ -266,6 +329,44 @@ def count_all_het_sites(
     logging.info(f"..... Finish writing to {outputFilename}")
     logging.info(f"..... Done sample {sample}")
 
+    # Step 5: Generate summary by reading the output file
+    logging.info("\nSummary of Het SNP Extraction by Chromosome:")
+
+    # Initialize summary counters
+    summary = {}
+
+    # Read the hetSNP output file and summarize by chromosome
+    with open(outputFilename, "r") as het_file:
+        next(het_file)  # Skip header
+        for line in het_file:
+            fields = line.strip().split("\t")
+            chrom = fields[0]
+            gene_id = fields[3]
+            pos = fields[2]
+
+            if chrom not in summary:
+                summary[chrom] = {"genes": set(), "het_snps": 0}
+
+            summary[chrom]["genes"].add(gene_id)
+            summary[chrom]["het_snps"] += 1
+
+    # Log the summary table
+    logging.info(f"{'Chromosome':<12}{'Genes':<8}{'Het SNPs':<10}")
+    logging.info("-" * 30)
+    
+    for chrom in sorted(summary.keys(), key=lambda x: (x.lstrip('chr').isdigit(), int(x.lstrip('chr')) if x.lstrip('chr').isdigit() else x)):
+        num_genes = len(summary[chrom]["genes"])
+        num_het_snps = summary[chrom]["het_snps"]
+        logging.info(f"{chrom:<12}{num_genes:<8}{num_het_snps:<10}")
+    
+    # Log total counts
+    total_genes = sum(len(summary[chrom]["genes"]) for chrom in summary)
+    total_het_snps = sum(summary[chrom]["het_snps"] for chrom in summary)
+    logging.info("-" * 30)
+    logging.info(f"Total Genes: {total_genes}")
+    logging.info(f"Total Het SNPs: {total_het_snps}")
+
+
 def main():
     if len(sys.argv) != 8:
         print(
@@ -281,7 +382,19 @@ def main():
     hetSNP_filename = sys.argv[6]
     skip_require_pass = sys.argv[7]
     debug_gene = None
-    count_all_het_sites(sample, vcfgz_path_filename, hetSNP_filename, chr_start, chr_end, annotation_gz, not skip_require_pass, debug_gene)
+
+    try:
+        # Initialize logging before any processing
+        setup_logging(hetSNP_filename)
+        logging.info("Starting the extraction process...")
+        
+        # Call the main function to process the het SNPs
+        count_all_het_sites(sample, vcfgz_path_filename, hetSNP_filename, chr_start, chr_end, annotation_gz, not skip_require_pass, debug_gene)
+        logging.info("Extraction process completed successfully.")
+    except Exception as e:
+        logging.error(f"An error occurred: {str(e)}")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
